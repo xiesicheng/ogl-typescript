@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
     <title>OGL • Cube Map</title>
     <link href="assets/main.css" rel="stylesheet">
 </head>
+
 <body>
     <div class="Info">Cube Map. Texture by <a href="http://www.humus.name" target="_blank">Humus</a></div>
     <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
-        import {Box, Orbit} from '../src/Extras.js';
-        
+        import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../lib/Core.js';
+        import { Box, Orbit } from '../lib/Extras.js';
+
         const vertex = /* glsl */ `
             attribute vec3 position;
 
@@ -49,25 +52,25 @@
         `;
 
         {
-            const renderer = new Renderer({dpr: 2});
+            const renderer = new Renderer({ dpr: 2 });
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
+            const camera = new Camera(gl, { fov: 45 });
             camera.position.set(-2, 1, -3);
 
-            const controls = new Orbit(camera);
+            const controls = new Orbit(camera, { ease: 1 });
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+                camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
             }
             window.addEventListener('resize', resize, false);
             resize();
 
             const scene = new Transform();
-            
+
             // Create an empty texture using the gl.TEXTURE_CUBE_MAP target
             const texture = new Texture(gl, {
                 target: gl.TEXTURE_CUBE_MAP,
@@ -110,16 +113,16 @@
                 vertex,
                 fragment,
                 uniforms: {
-                    tMap: {value: texture},
+                    tMap: { value: texture },
                 },
                 cullFace: null,
             });
 
-            const skybox = new Mesh(gl, {geometry, program});
+            const skybox = new Mesh(gl, { geometry, program });
             skybox.setParent(scene);
             skybox.scale.set(20);
 
-            const mesh = new Mesh(gl, {geometry, program});
+            const mesh = new Mesh(gl, { geometry, program });
             mesh.setParent(scene);
 
             requestAnimationFrame(update);
@@ -129,10 +132,11 @@
                 controls.update();
 
                 mesh.rotation.y += 0.003;
-                renderer.render({scene, camera});
+                renderer.render({ scene, camera });
             }
         }
 
     </script>
 </body>
+
 </html>

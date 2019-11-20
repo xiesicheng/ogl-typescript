@@ -1,10 +1,22 @@
 import pkg from './package.json';
+import resolve from 'rollup-plugin-node-resolve';
+import babel from 'rollup-plugin-babel';
+import { terser } from 'rollup-plugin-terser';
+
+const extensions = ['.ts'];
 
 export default [{
-    input: 'src/index.js',
+    input: './src/index.ts',
+    external: [],
+    plugins: [
+        resolve({ extensions }),
+        babel({ extensions, include: ['./src/**/*'] }),
+    ],
     output: [
-        { file: pkg.browser, format: 'cjs' },
+        { file: pkg.browser, format: 'iife', name: 'window', extend: true, globals: {} },
+        { file: pkg.browserMin, format: 'iife', name: 'window', extend: true, globals: {}, plugins: [terser()] },
         { file: pkg.module, format: 'es' },
+        { file: pkg.moduleMin, format: 'es', plugins: [terser()] },
         { file: pkg.unpkg, format: 'umd', name: 'ogl' },
     ],
 }];

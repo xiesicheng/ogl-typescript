@@ -2,9 +2,11 @@
     "name": "ogl",
     "version": "0.0.33",
     "description": "WebGL Framework",
-    "main": "src/index.js",
+    "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",
-    "module": "dist/ogl.mjs",
+    "browserMin": "dist/ogl.min.js",
+    "module": "dist/ogl.es.js",
+    "moduleMin": "dist/ogl.es.min.js",
     "unpkg": "dist/ogl.umd.js",
     "sideEffects": false,
     "directories": {
@@ -12,6 +14,7 @@
     },
     "scripts": {
         "build": "rimraf libs/* && tsc",
+        "bundle": "rimraf dist/* && rollup -c",
         "prepublish": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
@@ -32,8 +35,18 @@
         "url": "https://github.com/oframe/ogl/issues"
     },
     "devDependencies": {
+        "@babel/cli": "^7.7.0",
+        "@babel/core": "^7.7.2",
+        "@babel/plugin-proposal-class-properties": "^7.7.0",
+        "@babel/plugin-proposal-numeric-separator": "^7.2.0",
+        "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
+        "@babel/preset-typescript": "^7.7.2",
         "rimraf": "^3.0.0",
-        "rollup": "^1.27.2"
+        "rollup": "^1.27.2",
+        "rollup-plugin-babel": "^4.3.3",
+        "rollup-plugin-node-resolve": "^5.2.0",
+        "rollup-plugin-terser": "^5.1.2",
+        "typescript": "^3.7.2"
     },
     "homepage": "https://github.com/oframe/ogl#readme"
 }

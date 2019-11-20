@@ -1,4 +1,4 @@
-import * as QuatFunc from './functions/QuatFunc.js';
+import * as QuatFunc from './functions/QuatFunc';
 
 export class Quat extends Array<number> {
     onChange: () => void;

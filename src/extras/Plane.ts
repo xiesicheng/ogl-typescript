@@ -1,5 +1,5 @@
-import { Geometry } from '../core/Geometry.js';
-import { OGLRenderingContext } from '../core/Renderer.js';
+import { Geometry } from '../core/Geometry';
+import { OGLRenderingContext } from '../core/Renderer';
 
 export class Plane extends Geometry {
 

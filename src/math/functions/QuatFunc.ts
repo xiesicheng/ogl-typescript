@@ -1,5 +1,5 @@
-import * as vec3 from './Vec3Func.js';
-import * as vec4 from './Vec4Func.js';
+import * as vec3 from './Vec3Func';
+import * as vec4 from './Vec4Func';
 
 /**
  * Set a quat to the identity quaternion

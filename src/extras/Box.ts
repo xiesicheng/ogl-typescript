@@ -1,6 +1,6 @@
-import { Geometry } from '../core/Geometry.js';
-import { Plane } from './Plane.js';
-import { OGLRenderingContext } from '../core/Renderer.js';
+import { Geometry } from '../core/Geometry';
+import { Plane } from './Plane';
+import { OGLRenderingContext } from '../core/Renderer';
 
 export class Box extends Geometry {
     constructor(gl: OGLRenderingContext, {

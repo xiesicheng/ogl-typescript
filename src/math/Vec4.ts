@@ -1,4 +1,4 @@
-import * as Vec4Func from './functions/Vec4Func.js';
+import * as Vec4Func from './functions/Vec4Func';
 
 export class Vec4 extends Array<number> {
     constructor(x = 0, y = x, z = x, w = x) {

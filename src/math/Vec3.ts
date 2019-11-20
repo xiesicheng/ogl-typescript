@@ -1,4 +1,4 @@
-import * as Vec3Func from './functions/Vec3Func.js';
+import * as Vec3Func from './functions/Vec3Func';
 // typescript
 export class Vec3 extends Array<number>{
 

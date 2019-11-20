@@ -1,5 +1,5 @@
 // TODO : support more color formats - e.g 0xffffff
-import * as ColorFunc from './functions/ColorFunc.js';
+import * as ColorFunc from './functions/ColorFunc';
 
 export class Color extends Array<number> {
     constructor(r: string | number = 0, g = 0, b = 0) {

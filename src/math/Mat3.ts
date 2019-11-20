@@ -1,4 +1,4 @@
-import * as Mat3Func from './functions/Mat3Func.js';
+import * as Mat3Func from './functions/Mat3Func';
 
 export class Mat3 extends Array<number> {
     constructor(

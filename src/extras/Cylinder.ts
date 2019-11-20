@@ -1,5 +1,5 @@
-import {Geometry} from '../core/Geometry.js';
-import {Vec3} from '../math/Vec3.js';
+import {Geometry} from '../core/Geometry';
+import {Vec3} from '../math/Vec3';
 
 export class Cylinder extends Geometry {
     constructor(gl, {

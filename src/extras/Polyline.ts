@@ -1,10 +1,10 @@
-import { Geometry } from '../core/Geometry.js';
-import { Program } from '../core/Program.js';
-import { Mesh } from '../core/Mesh.js';
-import { Vec2 } from '../math/Vec2.js';
-import { Vec3 } from '../math/Vec3.js';
-import { Color } from '../math/Color.js';
-import { OGLRenderingContext } from '../core/Renderer.js';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh';
+import { Vec2 } from '../math/Vec2';
+import { Vec3 } from '../math/Vec3';
+import { Color } from '../math/Color';
+import { OGLRenderingContext } from '../core/Renderer';
 
 const tmp = new Vec3();
 
@@ -34,7 +34,7 @@ export class Polyline {
     miter: { value: number };
 
     program: Program;
-    mesh:Mesh;
+    mesh: Mesh;
 
     constructor(gl: OGLRenderingContext, {
         points, // Array of Vec3s

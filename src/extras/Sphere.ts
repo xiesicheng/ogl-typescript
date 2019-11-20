@@ -1,6 +1,6 @@
-import { Geometry } from '../core/Geometry.js';
-import { Vec3 } from '../math/Vec3.js';
-import { OGLRenderingContext } from '../core/Renderer.js';
+import { Geometry } from '../core/Geometry';
+import { Vec3 } from '../math/Vec3';
+import { OGLRenderingContext } from '../core/Renderer';
 
 export class Sphere extends Geometry {
     constructor(gl: OGLRenderingContext, {

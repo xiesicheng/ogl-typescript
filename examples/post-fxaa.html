@@ -12,8 +12,8 @@
 <body>
     <div class="Info">Post FXAA (Fast Approximate Anti-Aliasing)</div>
     <script type="module">
-        import {Renderer, Camera, Program, Mesh, Vec2} from '../lib/Core.js';
-        import {Post, Box, NormalProgram} from '../lib/Extras.js';
+        import {Renderer, Camera, Program, Mesh, Vec2} from '../dist/ogl.es.min.js';
+        import {Post, Box, NormalProgram} from '../dist/ogl.es.min.js';
 
         const fragment = /* glsl */ `
             precision highp float;

@@ -12,8 +12,8 @@
 <body>
     <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
     <script type="module">
-        import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2} from '../lib/Core.js';
-        import {GPGPU} from '../lib/Extras.js';
+        import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2} from '../dist/ogl.es.min.js';
+        import {GPGPU} from '../dist/ogl.es.min.js';
         
         const vertex = /* glsl */ `
             precision highp float;

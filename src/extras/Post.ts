@@ -25,8 +25,13 @@ export interface Pass {
     uniforms: any,
     enabled: boolean,
     textureUniform: any,
+    vertex?: string,
+    fragment?: string
+
 
 }
+
+
 
 export class Post {
 
@@ -80,13 +85,14 @@ export class Post {
         this.resize({ width, height, dpr });
     }
 
+
     addPass({
         vertex = defaultVertex,
         fragment = defaultFragment,
         uniforms = {},
         textureUniform = 'tMap',
         enabled = true,
-    } = {}) {
+    }: Partial<Pass> = {}) {
         uniforms[textureUniform] = { value: this.fbo.read.texture };
 
         const program = new Program(this.gl, { vertex, fragment, uniforms });

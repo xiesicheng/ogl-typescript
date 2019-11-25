@@ -19,4 +19,9 @@ export default [{
         { file: pkg.moduleMin, format: 'es', plugins: [terser()] },
         { file: pkg.unpkg, format: 'umd', name: 'ogl' },
     ],
+    watch: {
+        chokidar: {
+            usePolling: true
+        }
+    }
 }];

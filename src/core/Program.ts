@@ -14,7 +14,7 @@ export interface ProgramOptions {
     uniforms: { [name: string]: any };
 
     transparent: boolean;
-    cullFace: GLenum;
+    cullFace: GLenum | false;
     frontFace: GLenum;
     depthTest: boolean;
     depthWrite: boolean;
@@ -47,7 +47,7 @@ export class Program {
     id: number;
 
     transparent: boolean;
-    cullFace: GLenum;
+    cullFace: GLenum | false;
     frontFace: GLenum;
     depthTest: boolean;
     depthWrite: boolean;

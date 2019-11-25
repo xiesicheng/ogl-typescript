@@ -13,10 +13,10 @@
         "example": "examples"
     },
     "scripts": {
-        "build": "rimraf libs/* && tsc",
-        "bundle": "rimraf dist/* && rollup -c",
-        "prepublish": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "dev": "rollup -c -w",
+        "build": "rimraf dist/* && rollup -c",
+        "build:examples": "rollup -c rollup.config.examples.js",
+        "dev:examples": "rollup -c rollup.config.examples.js -w"
     },
     "repository": {
         "type": "git",
@@ -44,6 +44,7 @@
         "rimraf": "^3.0.0",
         "rollup": "^1.27.2",
         "rollup-plugin-babel": "^4.3.3",
+        "rollup-plugin-generate-html-template": "^1.6.0",
         "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-terser": "^5.1.2",
         "typescript": "^3.7.2"

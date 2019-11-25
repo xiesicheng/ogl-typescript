@@ -15,7 +15,7 @@ function isPowerOf2(value) {
 let ID = 1;
 
 export interface TextureOptions {
-    image: HTMLImageElement | HTMLImageElement[] | Float32Array;
+    image: HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView;
     target: number;            // gl.TEXTURE_2D
     type: number;            // gl.UNSIGNED_BYTE,
     format: number;            // gl.RGBA,
@@ -39,7 +39,7 @@ export class Texture {
 
     gl: OGLRenderingContext;
     id: number;
-    image: HTMLImageElement | HTMLImageElement[] | Float32Array;
+    image: HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView;
 
     // options
     target: number;            // gl.TEXTURE_2D

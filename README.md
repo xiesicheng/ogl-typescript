@@ -1,3 +1,9 @@
+I just port OGL to Typescript for learning :)
+
+you can  `yarn build` to build the framework.
+
+you can use `yarn build:examples` to build all examples.
+
 <p align="center">
   <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="OGL" width="510" />
 </p>

@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.33",
+    "version": "0.0.35",
     "description": "WebGL Framework",
     "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",
@@ -42,12 +42,12 @@
         "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
         "@babel/preset-typescript": "^7.7.2",
         "rimraf": "^3.0.0",
-        "rollup": "^1.27.2",
         "rollup-plugin-babel": "^4.3.3",
         "rollup-plugin-generate-html-template": "^1.6.0",
         "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-terser": "^5.1.2",
-        "typescript": "^3.7.2"
+        "typescript": "^3.7.2",
+        "rollup": "^1.27.13"
     },
     "homepage": "https://github.com/oframe/ogl#readme"
 }

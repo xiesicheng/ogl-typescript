@@ -25,7 +25,7 @@ you can use `yarn build:examples` to build all examples.
     </a>
 </p>
 
-<p align="center"><b>Minimal WebGL framework.</b></p>
+<p align="center"><b>Minimal WebGL library.</b></p>
 
 <br />
 
@@ -48,7 +48,7 @@ Keeping the level of abstraction low helps to make the library easier to underst
 **or**
 
 ```
-npm i ogl -D
+npm i ogl
 ```
 
 ## Examples
@@ -70,7 +70,7 @@ With tree-shaking applied in a build step, one can expect the final size to be m
 
 ## Usage
 
-If installed amongst your project files importing can be done from one single entry point.
+If installed amongst your project files, importing can be done from one single entry point.
 
 ```js
 import { ... } from './path/to/src/index.mjs';
@@ -149,6 +149,8 @@ As a basic API example, below renders a spinning white cube.
     }
 }
 ```
+Here you can play with the above template live in a codesandbox
+https://codesandbox.io/s/ogl-5i69p
 
 For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices (cameras) are not necessary. 
 

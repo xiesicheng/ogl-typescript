@@ -1,7 +1,7 @@
 {
     "name": "ogl",
     "version": "0.0.35",
-    "description": "WebGL Framework",
+    "description": "WebGL Library",
     "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",
     "browserMin": "dist/ogl.min.js",

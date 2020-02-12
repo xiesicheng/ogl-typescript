@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh, Vec3 } from '../../Core';
+import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh, Vec3 } from '../../index';
 import { Orbit, Cylinder, NormalProgram } from '../../Extras';
 
 const vertex = /* glsl */ `
@@ -43,7 +43,7 @@ const fragment = /* glsl */ `
             }
         `;
 
-let cameraShape:Mesh;
+let cameraShape: Mesh;
 
 const renderer = new Renderer({ dpr: 2 });
 const gl = renderer.gl;
@@ -107,7 +107,7 @@ async function loadForest() {
         mesh.position.set((i % size - size * 0.5) * 2, 0, (Math.floor(i / size) - size * 0.5) * 2);
         mesh.position.y += Math.sin(mesh.position.x * 0.5) * Math.sin(mesh.position.z * 0.5) * 0.5;
         mesh.rotation.y = Math.random() * Math.PI * 2;
-        mesh.scale.set(0.8 + Math.random() * 0.3)
+        mesh.scale.set(0.8 + Math.random() * 0.3);
     }
 }
 

@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../Core';
+import { Renderer, Camera, Transform, Geometry, Triangle, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../index';
 import { Orbit } from '../../Extras';
 
 const vertex100 = /* glsl */ `
@@ -249,11 +249,7 @@ async function initScene() {
 }
 
 function initPost() {
-    const geometry = new Geometry(gl, {
-        position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-        uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-    });
-
+    const geometry = new Triangle(gl);
     // Create 10 random lights
     const lights = [];
     for (let i = 0; i < 10; i++) {

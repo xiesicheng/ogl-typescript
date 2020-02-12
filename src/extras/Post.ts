@@ -1,9 +1,9 @@
 // TODO: Destroy render targets if size changed and exists
 
-import { Geometry } from '../core/Geometry';
 import { Program } from '../core/Program';
 import { Mesh } from '../core/Mesh';
 import { RenderTarget } from '../core/RenderTarget';
+import { Triangle } from './Triangle';
 import { OGLRenderingContext } from '../core/Renderer';
 
 export interface PostOptions {
@@ -14,7 +14,7 @@ export interface PostOptions {
     wrapT: GLenum;  //gl.CLAMP_TO_EDGE,
     minFilter: GLenum; // gl.LINEAR,
     magFilter: GLenum; // gl.LINEAR,
-    geometry: Geometry;
+    geometry: Triangle;
     targetOnly: any;
 }
 
@@ -26,7 +26,7 @@ export interface Pass {
     enabled: boolean,
     textureUniform: any,
     vertex?: string,
-    fragment?: string
+    fragment?: string;
 
 
 }
@@ -36,10 +36,10 @@ export interface Pass {
 export class Post {
 
     gl: OGLRenderingContext;
-    options: { wrapS: GLenum, wrapT: GLenum, minFilter: GLenum, magFilter: GLenum, width?: number, height?: number };
+    options: { wrapS: GLenum, wrapT: GLenum, minFilter: GLenum, magFilter: GLenum, width?: number, height?: number; };
     passes: Pass[];
-    geometry: Geometry;
-    uniform: { value: any };
+    geometry: Triangle;
+    uniform: { value: any; };
     targetOnly: any;
     fbo: any;
     dpr: number;
@@ -54,10 +54,7 @@ export class Post {
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
         magFilter = gl.LINEAR,
-        geometry = new Geometry(gl, {
-            position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-            uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-        }),
+        geometry = new Triangle(gl),
         targetOnly = null,
     }: Partial<PostOptions> = {}) {
 
@@ -110,7 +107,7 @@ export class Post {
         return pass;
     }
 
-    resize({ width, height, dpr }: Partial<{ width: number, height: number, dpr: number }> = {}) {
+    resize({ width, height, dpr }: Partial<{ width: number, height: number, dpr: number; }> = {}) {
         if (dpr) this.dpr = dpr;
         if (width) {
             this.width = width;

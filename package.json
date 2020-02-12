@@ -1,7 +1,7 @@
 {
-    "name": "ogl",
-    "version": "0.0.33",
-    "description": "WebGL Framework",
+    "name": "ogl-typescript",
+    "version": "0.0.37",
+    "description": "WebGL Library",
     "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",
     "browserMin": "dist/ogl.min.js",
@@ -13,10 +13,12 @@
         "example": "examples"
     },
     "scripts": {
-        "dev": "rollup -c -w",
         "build": "rimraf dist/* && rollup -c",
         "build:examples": "rollup -c rollup.config.examples.js",
-        "dev:examples": "rollup -c rollup.config.examples.js -w"
+        "dev": "rollup -c -w",
+        "dev:examples": "rollup -c rollup.config.examples.js -w",
+        "serve": "npx http-server examples -o"
+
     },
     "repository": {
         "type": "git",
@@ -42,12 +44,12 @@
         "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
         "@babel/preset-typescript": "^7.7.2",
         "rimraf": "^3.0.0",
-        "rollup": "^1.27.2",
         "rollup-plugin-babel": "^4.3.3",
         "rollup-plugin-generate-html-template": "^1.6.0",
         "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-terser": "^5.1.2",
-        "typescript": "^3.7.2"
+        "typescript": "^3.7.2",
+        "rollup": "^1.27.13"
     },
     "homepage": "https://github.com/oframe/ogl#readme"
 }

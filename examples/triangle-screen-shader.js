@@ -3913,6 +3913,25 @@
 
   }
 
+  class Triangle extends Geometry {
+    constructor(gl, {
+      attributes = {}
+    } = {}) {
+      Object.assign(attributes, {
+        position: {
+          size: 2,
+          data: new Float32Array([-1, -1, 3, -1, -1, 3])
+        },
+        uv: {
+          size: 2,
+          data: new Float32Array([0, 0, 2, 0, 0, 2])
+        }
+      });
+      super(gl, attributes);
+    }
+
+  }
+
   const vertex =
   /* glsl */
 `
@@ -3961,16 +3980,7 @@
   //         |__|_\                  |__|_\
   //   (-1, -1)   (3, -1)        (0, 0)   (2, 0)
 
-  const geometry = new Geometry(gl, {
-    position: {
-      size: 2,
-      data: new Float32Array([-1, -1, 3, -1, -1, 3])
-    },
-    uv: {
-      size: 2,
-      data: new Float32Array([0, 0, 2, 0, 0, 2])
-    }
-  });
+  const geometry = new Triangle(gl);
   const program = new Program(gl, {
     vertex,
     fragment,

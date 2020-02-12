@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../Core';
+import { Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../index';
 import { Orbit } from '../../Extras';
 
 const vertex100 = /* glsl */ `

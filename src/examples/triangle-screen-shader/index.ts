@@ -1,5 +1,5 @@
 
-import { Renderer, Geometry, Program, Color, Mesh } from '../../Core';
+import { Renderer, Geometry, Program, Color, Mesh } from '../../index';
 
 const vertex = /* glsl */ `
             attribute vec2 uv;

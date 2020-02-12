@@ -41,6 +41,7 @@ export default [
     buildExample('wireframe-shader'),
     buildExample('msdf-text'),
     buildExample('pbr'),
+    buildExample('compressed-textures'),
 
     // Frame Buffer
     buildExample('render-to-texture'),

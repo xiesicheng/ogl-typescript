@@ -5,6 +5,7 @@ import { OGLRenderingContext, RenderState, RendererOptions } from "./Renderer";
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
 // TODO: use texSubImage2D for updates
 // TODO: need? encoding = linearEncoding
+// TODO: support non-compressed mipmaps uploads
 
 const emptyPixel = new Uint8Array(4);
 
@@ -31,15 +32,24 @@ export interface TextureOptions {
     level: number;
     width: number;
     height: number;
-    anisotropy: number
-
+    anisotropy: number;
 }
+
+type CompressedImage = {
+    isCompressedTexture: boolean;
+    mipmaps: { data: Uint8Array, width: number, height: number; }[];
+};
+
+const isCompressedImage = (image: any): image is CompressedImage => (image as CompressedImage).isCompressedTexture === true;
 
 export class Texture {
 
     gl: OGLRenderingContext;
     id: number;
-    image: HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView;
+    image: HTMLImageElement | HTMLVideoElement
+        | HTMLImageElement[] // cube maps
+        | ArrayBufferView // Data texture
+        | CompressedImage;
 
     // options
     target: number;            // gl.TEXTURE_2D
@@ -68,7 +78,7 @@ export class Texture {
         magFilter: number,
         wrapS: number,
         wrapT: number,
-        anisotropy: number
+        anisotropy: number;
     };
 
     needsUpdate: Boolean;
@@ -197,18 +207,31 @@ export class Texture {
         }
 
         if (this.image) {
-            if ((this.image as HTMLImageElement).width) {
-                this.width = (this.image as HTMLImageElement).width;
-                this.height = (this.image as HTMLImageElement).height;
+            if ((this.image as any).width) {
+                this.width = (this.image as any).width;
+                this.height = (this.image as any).height;
             }
 
+
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+
+                // For cube maps
                 for (let i = 0; i < 6; i++) {
                     this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
                 }
             } else if (ArrayBuffer.isView(this.image)) {
+                // Data texture
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+            } else if (isCompressedImage(this.image)) {
+                // Compressed texture
+                let m;
+                for (let level = 0; level < this.image.mipmaps.length; level++) {
+                    m = this.image.mipmaps[level];
+                    this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
+                }
             } else {
+
+                // Regular texture
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image as HTMLImageElement);
             }
 

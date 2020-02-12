@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2 } from '../../Core';
+import { Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2 } from '../../index';
 import { GPGPU } from '../../Extras';
 
 const vertex = /* glsl */ `

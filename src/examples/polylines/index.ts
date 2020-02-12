@@ -1,6 +1,6 @@
 
 
-import { Renderer, Transform, Vec3, Color } from '../../Core';
+import { Renderer, Transform, Vec3, Color } from '../../index';
 import { Polyline } from '../../Extras';
 
 const vertex = /* glsl */ `

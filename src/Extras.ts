@@ -15,3 +15,5 @@ export { Flowmap } from './extras/Flowmap';
 export { GPGPU } from './extras/GPGPU';
 export { Polyline } from './extras/Polyline';
 export { Shadow } from './extras/Shadow';
+export { KTXTexture } from './extras/KTXTexture';
+export { TextureLoader } from './extras/TextureLoader';

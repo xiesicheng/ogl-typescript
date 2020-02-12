@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Program, Mesh, Vec2 } from '../../Core';
+import { Renderer, Camera, Program, Mesh, Vec2 } from '../../index';
 import { Post, Box, NormalProgram } from '../../Extras';
 
 const fragment = /* glsl */ `

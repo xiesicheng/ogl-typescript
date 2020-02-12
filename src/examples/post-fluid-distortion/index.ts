@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2 } from '../../Core';
+import { Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2 } from '../../index';
 import { Box, NormalProgram, Post } from '../../Extras';
 import { RenderTargetOptions } from '../../core/RenderTarget';
 

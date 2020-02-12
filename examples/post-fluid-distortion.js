@@ -4028,6 +4028,7 @@
   // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
   // TODO: use texSubImage2D for updates
   // TODO: need? encoding = linearEncoding
+  // TODO: support non-compressed mipmaps uploads
   const emptyPixel = new Uint8Array(4);
 
   function isPowerOf2(value) {
@@ -4035,6 +4036,9 @@
   }
 
   let ID$3 = 1;
+
+  const isCompressedImage = image => image.isCompressedTexture === true;
+
   class Texture {
     // options
     // gl.TEXTURE_2D
@@ -4211,12 +4215,23 @@
         }
 
         if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+          // For cube maps
           for (let i = 0; i < 6; i++) {
             this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
           }
         } else if (ArrayBuffer.isView(this.image)) {
+          // Data texture
           this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+        } else if (isCompressedImage(this.image)) {
+          // Compressed texture
+          let m;
+
+          for (let level = 0; level < this.image.mipmaps.length; level++) {
+            m = this.image.mipmaps[level];
+            this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
+          }
         } else {
+          // Regular texture
           this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
         }
 

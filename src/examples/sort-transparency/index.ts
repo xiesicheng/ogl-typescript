@@ -1,8 +1,8 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Mesh, Color } from '../../Core';
+import { Renderer, Camera, Transform, Texture, Program, Mesh, Color } from '../../index';
 import { Plane } from '../../Extras';
 
-type SpeedMesh = Mesh & { speed?: number };
+type SpeedMesh = Mesh & { speed?: number; };
 
 const vertex = /* glsl */ `
             precision highp float;

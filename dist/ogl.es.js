@@ -4025,6 +4025,7 @@ class Mesh extends Transform {
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
 // TODO: use texSubImage2D for updates
 // TODO: need? encoding = linearEncoding
+// TODO: support non-compressed mipmaps uploads
 const emptyPixel = new Uint8Array(4);
 
 function isPowerOf2(value) {
@@ -4032,6 +4033,9 @@ function isPowerOf2(value) {
 }
 
 let ID$3 = 1;
+
+const isCompressedImage = image => image.isCompressedTexture === true;
+
 class Texture {
   // options
   // gl.TEXTURE_2D
@@ -4208,12 +4212,23 @@ class Texture {
       }
 
       if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+        // For cube maps
         for (let i = 0; i < 6; i++) {
           this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
         }
       } else if (ArrayBuffer.isView(this.image)) {
+        // Data texture
         this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+      } else if (isCompressedImage(this.image)) {
+        // Compressed texture
+        let m;
+
+        for (let level = 0; level < this.image.mipmaps.length; level++) {
+          m = this.image.mipmaps[level];
+          this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
+        }
       } else {
+        // Regular texture
         this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
       }
 
@@ -7023,4 +7038,266 @@ const defaultFragment$3 =
     }
 `;
 
-export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GPGPU, Geometry, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, Transform, Vec2, Vec3, Vec4 };
+// Generate textures using https://github.com/TimvanScherpenzeel/texture-compressor
+
+class KTXTexture extends Texture {
+  constructor(gl, {
+    buffer,
+    wrapS = gl.CLAMP_TO_EDGE,
+    wrapT = gl.CLAMP_TO_EDGE,
+    anisotropy = 0
+  } = {}) {
+    super(gl, {
+      generateMipmaps: false,
+      wrapS,
+      wrapT,
+      anisotropy
+    });
+    if (buffer) this.parseBuffer(buffer);
+  }
+
+  parseBuffer(buffer) {
+    const ktx = new KhronosTextureContainer(buffer); // Update texture
+
+    this.image = {
+      isCompressedTexture: true,
+      mipmaps: ktx.mipmaps
+    };
+    this.internalFormat = ktx.glInternalFormat;
+    this.minFilter = ktx.numberOfMipmapLevels > 1 ? this.gl.NEAREST_MIPMAP_LINEAR : this.gl.LINEAR; // TODO: support cube maps
+    // ktx.numberOfFaces
+  }
+
+}
+
+class KhronosTextureContainer {
+  constructor(buffer) {
+    _defineProperty(this, "glInternalFormat", void 0);
+
+    _defineProperty(this, "numberOfFaces", void 0);
+
+    _defineProperty(this, "numberOfMipmapLevels", void 0);
+
+    _defineProperty(this, "mipmaps", void 0);
+
+    _defineProperty(this, "isCompressedTexture", void 0);
+
+    const idCheck = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x31, 0x31, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
+    const id = new Uint8Array(buffer, 0, 12);
+
+    for (let i = 0; i < id.length; i++) if (id[i] !== idCheck[i]) {
+      console.error('File missing KTX identifier');
+      return;
+    }
+
+    const size = Uint32Array.BYTES_PER_ELEMENT;
+    const head = new DataView(buffer, 12, 13 * size);
+    const littleEndian = head.getUint32(0, true) === 0x04030201;
+    const glType = head.getUint32(1 * size, littleEndian);
+
+    if (glType !== 0) {
+      console.warn('only compressed formats currently supported');
+      return;
+    }
+    this.glInternalFormat = head.getUint32(4 * size, littleEndian);
+    let width = head.getUint32(6 * size, littleEndian);
+    let height = head.getUint32(7 * size, littleEndian);
+    this.numberOfFaces = head.getUint32(10 * size, littleEndian);
+    this.numberOfMipmapLevels = Math.max(1, head.getUint32(11 * size, littleEndian));
+    const bytesOfKeyValueData = head.getUint32(12 * size, littleEndian);
+    this.mipmaps = [];
+    let offset = 12 + 13 * 4 + bytesOfKeyValueData;
+
+    for (let level = 0; level < this.numberOfMipmapLevels; level++) {
+      const levelSize = new Int32Array(buffer, offset, 1)[0]; // size per face, since not supporting array cubemaps
+
+      offset += 4; // levelSize field
+
+      for (let face = 0; face < this.numberOfFaces; face++) {
+        const data = new Uint8Array(buffer, offset, levelSize);
+        this.mipmaps.push({
+          data,
+          width,
+          height
+        });
+        offset += levelSize;
+        offset += 3 - (levelSize + 3) % 4; // add padding for odd sized image
+      }
+
+      width = width >> 1;
+      height = height >> 1;
+    }
+  }
+
+}
+
+const supportedExtensions = [];
+class TextureLoader {
+  static load(gl, {
+    src,
+    // string or object of extension:src key-values
+    // {
+    //     pvrtc: '...ktx',
+    //     s3tc: '...ktx',
+    //     etc: '...ktx',
+    //     etc1: '...ktx',
+    //     astc: '...ktx',
+    //     webp: '...webp',
+    //     jpg: '...jpg',
+    //     png: '...png',
+    // }
+    // Only props relevant to KTXTexture
+    wrapS = gl.CLAMP_TO_EDGE,
+    wrapT = gl.CLAMP_TO_EDGE,
+    anisotropy = 0,
+    // For regular images
+    format = gl.RGBA,
+    internalFormat = format,
+    generateMipmaps = true,
+    minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
+    magFilter = gl.LINEAR,
+    premultiplyAlpha = false,
+    unpackAlignment = 4,
+    flipY = true
+  } = {}) {
+    const support = TextureLoader.getSupportedExtensions(gl);
+    let ext = 'none'; // If src is string, determine which format from the extension
+
+    if (typeof src === 'string') {
+      ext = src.split('.').pop().split('?')[0].toLowerCase();
+    } // If src is object, use supported extensions and provided list to choose best option
+    // Get first supported match, so put in order of preference
+
+
+    if (typeof src === 'object') {
+      for (const prop in src) {
+        if (support.includes(prop.toLowerCase())) {
+          ext = prop.toLowerCase();
+          src = src[prop];
+          break;
+        }
+      }
+    }
+
+    let texture;
+
+    switch (ext) {
+      case 'ktx':
+      case 'pvrtc':
+      case 's3tc':
+      case 'etc':
+      case 'etc1':
+      case 'astc':
+        // Load compressed texture using KTX format
+        texture = new KTXTexture(gl, {
+          src: src,
+          wrapS,
+          wrapT,
+          anisotropy
+        });
+        TextureLoader.loadKTX(src, texture);
+        break;
+
+      case 'webp':
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        texture = new Texture(gl, {
+          wrapS,
+          wrapT,
+          anisotropy,
+          format,
+          internalFormat,
+          generateMipmaps,
+          minFilter,
+          magFilter,
+          premultiplyAlpha,
+          unpackAlignment,
+          flipY
+        });
+        this.loadImage(gl, src, texture);
+        break;
+
+      default:
+        console.warn('No supported format supplied');
+        texture = new Texture(gl);
+    }
+
+    texture.format = ext; // TODO: store in cache
+
+    return texture;
+  }
+
+  static getSupportedExtensions(gl) {
+    if (supportedExtensions.length) return supportedExtensions;
+    const extensions = {
+      pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc'),
+      s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc'),
+      etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
+      etc1: gl.renderer.getExtension('WEBGL_compressed_texture_etc1'),
+      astc: gl.renderer.getExtension('WEBGL_compressed_texture_astc')
+    };
+
+    for (const ext in extensions) if (extensions[ext]) supportedExtensions.push(ext); // Check for WebP support
+
+
+    if (detectWebP) supportedExtensions.push('webp'); // Formats supported by all
+
+    supportedExtensions.push('png', 'jpg');
+    return supportedExtensions;
+  }
+
+  static loadKTX(src, texture) {
+    fetch(src).then(res => res.arrayBuffer()).then(buffer => texture.parseBuffer(buffer));
+  }
+
+  static loadImage(gl, src, texture) {
+    decodeImage(src).then(imgBmp => {
+      // Catch non POT textures and update params to avoid errors
+      if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
+        if (texture.generateMipmaps) texture.generateMipmaps = false;
+        if (texture.minFilter === gl.NEAREST_MIPMAP_LINEAR) texture.minFilter = gl.LINEAR;
+        if (texture.wrapS === gl.REPEAT) texture.wrapS = texture.wrapT = gl.CLAMP_TO_EDGE;
+      }
+
+      texture.image = imgBmp; // For createImageBitmap, close once uploaded
+
+      texture.onUpdate = () => {
+        if (imgBmp.close) imgBmp.close();
+        texture.onUpdate = null;
+      };
+    });
+  }
+
+}
+
+function detectWebP() {
+  return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') == 0;
+}
+
+function powerOfTwo(value) {
+  return Math.log2(value) % 1 === 0;
+}
+
+function decodeImage(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.src = src; // Only chrome's implementation of createImageBitmap is fully supported
+    // const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
+    // if (!!window.createImageBitmap && isChrome) {
+    //     img.onload = () => {
+    //         createImageBitmap(img, {
+    //             imageOrientation: 'flipY',
+    //             premultiplyAlpha: 'none',
+    //         }).then(imgBmp => {
+    //             resolve(imgBmp);
+    //         });
+    //     };
+    // } else {
+
+    img.onload = () => resolve(img); // }
+
+  });
+}
+
+export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GPGPU, Geometry, KTXTexture, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, TextureLoader, Transform, Vec2, Vec3, Vec4 };

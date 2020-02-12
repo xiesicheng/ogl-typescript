@@ -1,6 +1,6 @@
 {
-    "name": "ogl",
-    "version": "0.0.35",
+    "name": "ogl-typescript",
+    "version": "0.0.36",
     "description": "WebGL Library",
     "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",
@@ -13,10 +13,12 @@
         "example": "examples"
     },
     "scripts": {
-        "dev": "rollup -c -w",
         "build": "rimraf dist/* && rollup -c",
         "build:examples": "rollup -c rollup.config.examples.js",
-        "dev:examples": "rollup -c rollup.config.examples.js -w"
+        "dev": "rollup -c -w",
+        "dev:examples": "rollup -c rollup.config.examples.js -w",
+        "serve": "npx http-server examples -o"
+
     },
     "repository": {
         "type": "git",

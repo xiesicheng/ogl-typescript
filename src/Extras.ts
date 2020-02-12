@@ -3,6 +3,8 @@ export { Plane } from './extras/Plane';
 export { Box } from './extras/Box';
 export { Sphere } from './extras/Sphere';
 export { Cylinder } from './extras/Cylinder';
+export { Triangle } from './extras/Triangle';
+
 export { Orbit } from './extras/Orbit';
 export { Raycast } from './extras/Raycast';
 // export {Curve} from './extras/Curve.js';

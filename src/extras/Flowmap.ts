@@ -1,8 +1,8 @@
 import { RenderTarget } from '../core/RenderTarget';
-import { Geometry } from '../core/Geometry';
 import { Program } from '../core/Program';
 import { Mesh } from '../core/Mesh';
 import { Vec2 } from '../math/Vec2';
+import { Triangle } from "./Triangle";
 import { OGLRenderingContext } from '../core/Renderer';
 
 export interface FlowmapOptions {
@@ -15,12 +15,12 @@ export interface FlowmapOptions {
 export class Flowmap {
 
     gl: OGLRenderingContext;
-    uniform: { value: any };
+    uniform: { value: any; };
     mask: {
         read: any,
         write: any,
         swap: () => void;
-    }
+    };
 
     aspect: number;
     mouse: Vec2;
@@ -51,7 +51,7 @@ export class Flowmap {
                 _this.mask.write = temp;
                 _this.uniform.value = _this.mask.read.texture;
             },
-        }
+        };
 
         {
             createFBOs();
@@ -87,10 +87,7 @@ export class Flowmap {
             return new Mesh(gl, {
 
                 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-                geometry: new Geometry(gl, {
-                    position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-                    uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-                }),
+                geometry: new Triangle(gl),
 
                 program: new Program(gl, {
                     vertex,

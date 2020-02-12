@@ -5286,6 +5286,25 @@ class Cylinder extends Geometry {
 
 }
 
+class Triangle extends Geometry {
+  constructor(gl, {
+    attributes = {}
+  } = {}) {
+    Object.assign(attributes, {
+      position: {
+        size: 2,
+        data: new Float32Array([-1, -1, 3, -1, -1, 3])
+      },
+      uv: {
+        size: 2,
+        data: new Float32Array([0, 0, 2, 0, 0, 2])
+      }
+    });
+    super(gl, attributes);
+  }
+
+}
+
 // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
 const STATE = {
   NONE: -1,
@@ -5741,16 +5760,7 @@ class Post {
     wrapT = gl.CLAMP_TO_EDGE,
     minFilter = gl.LINEAR,
     magFilter = gl.LINEAR,
-    geometry = new Geometry(gl, {
-      position: {
-        size: 2,
-        data: new Float32Array([-1, -1, 3, -1, -1, 3])
-      },
-      uv: {
-        size: 2,
-        data: new Float32Array([0, 0, 2, 0, 0, 2])
-      }
-    }),
+    geometry = new Triangle(gl),
     targetOnly = null
   } = {}) {
     _defineProperty(this, "gl", void 0);
@@ -6416,16 +6426,7 @@ class Flowmap {
     function initProgram() {
       return new Mesh(gl, {
         // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-        geometry: new Geometry(gl, {
-          position: {
-            size: 2,
-            data: new Float32Array([-1, -1, 3, -1, -1, 3])
-          },
-          uv: {
-            size: 2,
-            data: new Float32Array([0, 0, 2, 0, 0, 2])
-          }
-        }),
+        geometry: new Triangle(gl),
         program: new Program(gl, {
           vertex: vertex$1,
           fragment: fragment$1,
@@ -6517,16 +6518,7 @@ class GPGPU {
   constructor(gl, {
     // Always pass in array of vec4s (RGBA values within texture)
     data = new Float32Array(16),
-    geometry = new Geometry(gl, {
-      position: {
-        size: 2,
-        data: new Float32Array([-1, -1, 3, -1, -1, 3])
-      },
-      uv: {
-        size: 2,
-        data: new Float32Array([0, 0, 2, 0, 0, 2])
-      }
-    })
+    geometry = new Triangle(gl)
   }) {
     _defineProperty(this, "gl", void 0);
 
@@ -7300,4 +7292,4 @@ function decodeImage(src) {
   });
 }
 
-export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GPGPU, Geometry, KTXTexture, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, TextureLoader, Transform, Vec2, Vec3, Vec4 };
+export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GPGPU, Geometry, KTXTexture, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, TextureLoader, Transform, Triangle, Vec2, Vec3, Vec4 };

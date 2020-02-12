@@ -5289,6 +5289,25 @@
 
   }
 
+  class Triangle extends Geometry {
+    constructor(gl, {
+      attributes = {}
+    } = {}) {
+      Object.assign(attributes, {
+        position: {
+          size: 2,
+          data: new Float32Array([-1, -1, 3, -1, -1, 3])
+        },
+        uv: {
+          size: 2,
+          data: new Float32Array([0, 0, 2, 0, 0, 2])
+        }
+      });
+      super(gl, attributes);
+    }
+
+  }
+
   // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
   const STATE = {
     NONE: -1,
@@ -5744,16 +5763,7 @@
       wrapT = gl.CLAMP_TO_EDGE,
       minFilter = gl.LINEAR,
       magFilter = gl.LINEAR,
-      geometry = new Geometry(gl, {
-        position: {
-          size: 2,
-          data: new Float32Array([-1, -1, 3, -1, -1, 3])
-        },
-        uv: {
-          size: 2,
-          data: new Float32Array([0, 0, 2, 0, 0, 2])
-        }
-      }),
+      geometry = new Triangle(gl),
       targetOnly = null
     } = {}) {
       _defineProperty(this, "gl", void 0);
@@ -6419,16 +6429,7 @@
       function initProgram() {
         return new Mesh(gl, {
           // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-          geometry: new Geometry(gl, {
-            position: {
-              size: 2,
-              data: new Float32Array([-1, -1, 3, -1, -1, 3])
-            },
-            uv: {
-              size: 2,
-              data: new Float32Array([0, 0, 2, 0, 0, 2])
-            }
-          }),
+          geometry: new Triangle(gl),
           program: new Program(gl, {
             vertex: vertex$1,
             fragment: fragment$1,
@@ -6520,16 +6521,7 @@
     constructor(gl, {
       // Always pass in array of vec4s (RGBA values within texture)
       data = new Float32Array(16),
-      geometry = new Geometry(gl, {
-        position: {
-          size: 2,
-          data: new Float32Array([-1, -1, 3, -1, -1, 3])
-        },
-        uv: {
-          size: 2,
-          data: new Float32Array([0, 0, 2, 0, 0, 2])
-        }
-      })
+      geometry = new Triangle(gl)
     }) {
       _defineProperty(this, "gl", void 0);
 
@@ -7333,6 +7325,7 @@
   exports.Texture = Texture;
   exports.TextureLoader = TextureLoader;
   exports.Transform = Transform;
+  exports.Triangle = Triangle;
   exports.Vec2 = Vec2;
   exports.Vec3 = Vec3;
   exports.Vec4 = Vec4;

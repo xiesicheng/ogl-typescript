@@ -4808,6 +4808,25 @@
 
   }
 
+  class Triangle extends Geometry {
+    constructor(gl, {
+      attributes = {}
+    } = {}) {
+      Object.assign(attributes, {
+        position: {
+          size: 2,
+          data: new Float32Array([-1, -1, 3, -1, -1, 3])
+        },
+        uv: {
+          size: 2,
+          data: new Float32Array([0, 0, 2, 0, 0, 2])
+        }
+      });
+      super(gl, attributes);
+    }
+
+  }
+
   // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
   const STATE = {
     NONE: -1,
@@ -5422,16 +5441,7 @@
   }
 
   function initPost() {
-    const geometry = new Geometry(gl, {
-      position: {
-        size: 2,
-        data: new Float32Array([-1, -1, 3, -1, -1, 3])
-      },
-      uv: {
-        size: 2,
-        data: new Float32Array([0, 0, 2, 0, 0, 2])
-      }
-    }); // Create 10 random lights
+    const geometry = new Triangle(gl); // Create 10 random lights
 
     const lights = [];
 

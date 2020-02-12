@@ -4808,11 +4808,11 @@
 
   }
 
-  class GPGPU {
+  class Triangle extends Geometry {
     constructor(gl, {
-      // Always pass in array of vec4s (RGBA values within texture)
-      data = new Float32Array(16),
-      geometry = new Geometry(gl, {
+      attributes = {}
+    } = {}) {
+      Object.assign(attributes, {
         position: {
           size: 2,
           data: new Float32Array([-1, -1, 3, -1, -1, 3])
@@ -4821,7 +4821,17 @@
           size: 2,
           data: new Float32Array([0, 0, 2, 0, 0, 2])
         }
-      })
+      });
+      super(gl, attributes);
+    }
+
+  }
+
+  class GPGPU {
+    constructor(gl, {
+      // Always pass in array of vec4s (RGBA values within texture)
+      data = new Float32Array(16),
+      geometry = new Triangle(gl)
     }) {
       _defineProperty(this, "gl", void 0);
 

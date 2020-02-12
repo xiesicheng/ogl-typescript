@@ -1,5 +1,5 @@
 
-import { Renderer, Geometry, Program, Texture, Mesh, Vec2 } from '../../index';
+import { Renderer, Triangle, Program, Texture, Mesh, Vec2 } from '../../index';
 import { Flowmap } from '../../Extras';
 
 const vertex = /* glsl */ `
@@ -65,10 +65,7 @@ resize();
 const flowmap = new Flowmap(gl);
 
 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-const geometry = new Geometry(gl, {
-    position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-    uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-});
+const geometry = new Triangle(gl);
 
 const texture = new Texture(gl, { wrapS: gl.REPEAT, wrapT: gl.REPEAT });
 const img = new Image();

@@ -4935,6 +4935,25 @@
 
   }
 
+  class Triangle extends Geometry {
+    constructor(gl, {
+      attributes = {}
+    } = {}) {
+      Object.assign(attributes, {
+        position: {
+          size: 2,
+          data: new Float32Array([-1, -1, 3, -1, -1, 3])
+        },
+        uv: {
+          size: 2,
+          data: new Float32Array([0, 0, 2, 0, 0, 2])
+        }
+      });
+      super(gl, attributes);
+    }
+
+  }
+
   class Post {
     constructor(gl, {
       width,
@@ -4944,16 +4963,7 @@
       wrapT = gl.CLAMP_TO_EDGE,
       minFilter = gl.LINEAR,
       magFilter = gl.LINEAR,
-      geometry = new Geometry(gl, {
-        position: {
-          size: 2,
-          data: new Float32Array([-1, -1, 3, -1, -1, 3])
-        },
-        uv: {
-          size: 2,
-          data: new Float32Array([0, 0, 2, 0, 0, 2])
-        }
-      }),
+      geometry = new Triangle(gl),
       targetOnly = null
     } = {}) {
       _defineProperty(this, "gl", void 0);

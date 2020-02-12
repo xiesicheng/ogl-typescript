@@ -1,8 +1,8 @@
-import { Geometry } from '../core/Geometry';
 import { Program } from '../core/Program';
 import { Mesh } from '../core/Mesh';
 import { Texture } from '../core/Texture';
 import { RenderTarget } from '../core/RenderTarget';
+import { Triangle } from "./Triangle";
 import { OGLRenderingContext } from '../core/Renderer';
 
 export interface GPGPUpass {
@@ -18,22 +18,19 @@ export class GPGPU {
 
     gl: OGLRenderingContext;
     passes: GPGPUpass[];
-    geometry: Geometry;
+    geometry: Triangle;
     dataLength: number;
     size: number;
     coords: Float32Array;
-    uniform: { value: any };
-    fbo: { read: RenderTarget, write: RenderTarget, swap: () => void };
+    uniform: { value: any; };
+    fbo: { read: RenderTarget, write: RenderTarget, swap: () => void; };
 
     constructor(gl: OGLRenderingContext, {
 
         // Always pass in array of vec4s (RGBA values within texture)
         data = new Float32Array(16),
 
-        geometry = new Geometry(gl, {
-            position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-            uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-        }),
+        geometry = new Triangle(gl),
     }) {
         this.gl = gl;
         const initialData = data;

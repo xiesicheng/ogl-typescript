@@ -1,5 +1,5 @@
 
-import { Renderer, Geometry, Program, Color, Mesh } from '../../index';
+import { Renderer, Triangle, Program, Color, Mesh } from '../../index';
 
 const vertex = /* glsl */ `
             attribute vec2 uv;
@@ -49,10 +49,7 @@ resize();
 //         |__|_\                  |__|_\
 //   (-1, -1)   (3, -1)        (0, 0)   (2, 0)
 
-const geometry = new Geometry(gl, {
-    position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
-    uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
-});
+const geometry = new Triangle(gl);
 
 const program = new Program(gl, {
     vertex,

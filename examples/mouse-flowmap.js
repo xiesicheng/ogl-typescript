@@ -4077,7 +4077,10 @@
           } else {
             this.gl.generateMipmap(this.target);
           }
-        }
+        } // Callback for when data is pushed to GPU
+
+
+        this.onUpdate && this.onUpdate();
       } else {
         if (this.target === this.gl.TEXTURE_CUBE_MAP) {
           // Upload empty pixel for each side while no image to avoid errors while image or video loading
@@ -4094,7 +4097,6 @@
       }
 
       this.store.image = this.image;
-      this.onUpdate && this.onUpdate();
     }
 
   }

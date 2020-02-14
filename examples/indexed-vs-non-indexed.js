@@ -3325,7 +3325,8 @@
       left,
       right,
       bottom,
-      top
+      top,
+      zoom = 1
     } = {}) {
       super();
 
@@ -3336,6 +3337,16 @@
       _defineProperty(this, "fov", void 0);
 
       _defineProperty(this, "aspect", void 0);
+
+      _defineProperty(this, "left", void 0);
+
+      _defineProperty(this, "right", void 0);
+
+      _defineProperty(this, "bottom", void 0);
+
+      _defineProperty(this, "top", void 0);
+
+      _defineProperty(this, "zoom", void 0);
 
       _defineProperty(this, "projectionMatrix", void 0);
 
@@ -3349,21 +3360,24 @@
 
       _defineProperty(this, "frustum", void 0);
 
-      this.near = near;
-      this.far = far;
-      this.fov = fov;
-      this.aspect = aspect;
-      this.projectionMatrix = new Mat4();
-      this.viewMatrix = new Mat4();
-      this.projectionViewMatrix = new Mat4();
-      this.worldPosition = new Vec3(); // Use orthographic if values set, else default to perspective camera
-
-      if (left || right) this.orthographic({
+      Object.assign(this, {
+        near,
+        far,
+        fov,
+        aspect,
         left,
         right,
         bottom,
-        top
-      });else this.perspective();
+        top,
+        zoom
+      });
+      this.projectionMatrix = new Mat4();
+      this.viewMatrix = new Mat4();
+      this.projectionViewMatrix = new Mat4();
+      this.worldPosition = new Vec3(); // Use orthographic if left/right set, else default to perspective camera
+
+      this.type = left || right ? 'orthographic' : 'perspective';
+      if (this.type === 'orthographic') this.orthographic();else this.perspective();
     }
 
     perspective({
@@ -3372,6 +3386,12 @@
       fov = this.fov,
       aspect = this.aspect
     } = {}) {
+      Object.assign(this, {
+        near,
+        far,
+        fov,
+        aspect
+      });
       this.projectionMatrix.fromPerspective({
         fov: fov * (Math.PI / 180),
         aspect,
@@ -3385,11 +3405,25 @@
     orthographic({
       near = this.near,
       far = this.far,
-      left = -1,
-      right = 1,
-      bottom = -1,
-      top = 1
+      left = this.left,
+      right = this.right,
+      bottom = this.bottom,
+      top = this.top,
+      zoom = this.zoom
     } = {}) {
+      Object.assign(this, {
+        near,
+        far,
+        left,
+        right,
+        bottom,
+        top,
+        zoom
+      });
+      left /= zoom;
+      right /= zoom;
+      bottom /= zoom;
+      top /= zoom;
       this.projectionMatrix.fromOrthogonal({
         left,
         right,

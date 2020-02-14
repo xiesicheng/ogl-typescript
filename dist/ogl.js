@@ -1494,9 +1494,9 @@
       } // updates all scene graph matrices
 
 
-      if (update) scene.updateMatrixWorld(); // Update camera separately if not in scene graph
+      if (update) scene.updateMatrixWorld(); // Update camera separately, in case not in scene graph
 
-      if (camera && camera.parent === null) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
+      if (camera) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
 
       const renderList = this.getRenderList({
         scene,
@@ -5293,6 +5293,12 @@
     constructor(gl, {
       attributes = {}
     } = {}) {
+      //         position                uv
+      //      (-1, 3)                  (0, 2)
+      //         |\                      |\
+      //         |__\(1, 1)              |__\(1, 1)
+      //         |__|_\                  |__|_\
+      //   (-1, -1)   (3, -1)        (0, 0)   (2, 0)
       Object.assign(attributes, {
         position: {
           size: 2,
@@ -5563,6 +5569,7 @@
     const onMouseWheel = e => {
       if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
       e.stopPropagation();
+      e.preventDefault();
 
       if (e.deltaY < 0) {
         dolly(1 / getZoomScale());
@@ -5627,7 +5634,9 @@
     function addHandlers() {
       element.addEventListener('contextmenu', onContextMenu, false);
       element.addEventListener('mousedown', onMouseDown, false);
-      window.addEventListener('wheel', onMouseWheel, false);
+      element.addEventListener('wheel', onMouseWheel, {
+        passive: false
+      });
       element.addEventListener('touchstart', onTouchStart, {
         passive: false
       });
@@ -5638,14 +5647,14 @@
     }
 
     this.remove = function () {
-      element.removeEventListener('contextmenu', onContextMenu, false);
-      element.removeEventListener('mousedown', onMouseDown, false);
-      window.removeEventListener('wheel', onMouseWheel, false);
-      element.removeEventListener('touchstart', onTouchStart, false);
-      element.removeEventListener('touchend', onTouchEnd, false);
-      element.removeEventListener('touchmove', onTouchMove, false);
-      window.removeEventListener('mousemove', onMouseMove, false);
-      window.removeEventListener('mouseup', onMouseUp, false);
+      element.removeEventListener('contextmenu', onContextMenu);
+      element.removeEventListener('mousedown', onMouseDown);
+      element.removeEventListener('wheel', onMouseWheel);
+      element.removeEventListener('touchstart', onTouchStart);
+      element.removeEventListener('touchend', onTouchEnd);
+      element.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
 
     addHandlers();
@@ -7190,7 +7199,7 @@
             wrapT,
             anisotropy
           });
-          TextureLoader.loadKTX(src, texture);
+          texture.loaded = this.loadKTX(src, texture);
           break;
 
         case 'webp':
@@ -7210,7 +7219,7 @@
             unpackAlignment,
             flipY
           });
-          this.loadImage(gl, src, texture);
+          texture.loaded = this.loadImage(gl, src, texture);
           break;
 
         default:
@@ -7243,11 +7252,11 @@
     }
 
     static loadKTX(src, texture) {
-      fetch(src).then(res => res.arrayBuffer()).then(buffer => texture.parseBuffer(buffer));
+      return fetch(src).then(res => res.arrayBuffer()).then(buffer => texture.parseBuffer(buffer));
     }
 
     static loadImage(gl, src, texture) {
-      decodeImage(src).then(imgBmp => {
+      return decodeImage(src).then(imgBmp => {
         // Catch non POT textures and update params to avoid errors
         if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
           if (texture.generateMipmaps) texture.generateMipmaps = false;

@@ -1494,9 +1494,9 @@
       } // updates all scene graph matrices
 
 
-      if (update) scene.updateMatrixWorld(); // Update camera separately if not in scene graph
+      if (update) scene.updateMatrixWorld(); // Update camera separately, in case not in scene graph
 
-      if (camera && camera.parent === null) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
+      if (camera) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
 
       const renderList = this.getRenderList({
         scene,
@@ -5064,6 +5064,7 @@
     const onMouseWheel = e => {
       if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
       e.stopPropagation();
+      e.preventDefault();
 
       if (e.deltaY < 0) {
         dolly(1 / getZoomScale());
@@ -5128,7 +5129,9 @@
     function addHandlers() {
       element.addEventListener('contextmenu', onContextMenu, false);
       element.addEventListener('mousedown', onMouseDown, false);
-      window.addEventListener('wheel', onMouseWheel, false);
+      element.addEventListener('wheel', onMouseWheel, {
+        passive: false
+      });
       element.addEventListener('touchstart', onTouchStart, {
         passive: false
       });
@@ -5139,14 +5142,14 @@
     }
 
     this.remove = function () {
-      element.removeEventListener('contextmenu', onContextMenu, false);
-      element.removeEventListener('mousedown', onMouseDown, false);
-      window.removeEventListener('wheel', onMouseWheel, false);
-      element.removeEventListener('touchstart', onTouchStart, false);
-      element.removeEventListener('touchend', onTouchEnd, false);
-      element.removeEventListener('touchmove', onTouchMove, false);
-      window.removeEventListener('mousemove', onMouseMove, false);
-      window.removeEventListener('mouseup', onMouseUp, false);
+      element.removeEventListener('contextmenu', onContextMenu);
+      element.removeEventListener('mousedown', onMouseDown);
+      element.removeEventListener('wheel', onMouseWheel);
+      element.removeEventListener('touchstart', onTouchStart);
+      element.removeEventListener('touchend', onTouchEnd);
+      element.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
 
     addHandlers();

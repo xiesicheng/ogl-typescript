@@ -1494,9 +1494,9 @@
       } // updates all scene graph matrices
 
 
-      if (update) scene.updateMatrixWorld(); // Update camera separately if not in scene graph
+      if (update) scene.updateMatrixWorld(); // Update camera separately, in case not in scene graph
 
-      if (camera && camera.parent === null) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
+      if (camera) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
 
       const renderList = this.getRenderList({
         scene,

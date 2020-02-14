@@ -246,6 +246,9 @@ export class Texture {
                     this.gl.generateMipmap(this.target);
                 }
             }
+
+            // Callback for when data is pushed to GPU
+            this.onUpdate && this.onUpdate();
         } else {
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
 
@@ -264,7 +267,5 @@ export class Texture {
             }
         }
         this.store.image = this.image;
-
-        this.onUpdate && this.onUpdate();
     }
 }

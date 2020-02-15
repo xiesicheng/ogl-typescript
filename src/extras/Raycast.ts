@@ -1,4 +1,3 @@
-// TODO: test orthographic
 // TODO: add barycentric ?
 
 import { Vec3 } from '../math/Vec3';
@@ -16,7 +15,7 @@ const tempMat4 = new Mat4();
 
 export class Raycast {
 
-    gl: OGLRenderingContext
+    gl: OGLRenderingContext;
     origin: Vec3;
     direction: Vec3;
 
@@ -29,14 +28,29 @@ export class Raycast {
 
     // Set ray from mouse unprojection
     castMouse(camera: Camera, mouse = [0, 0]) {
+        if (camera.type === 'orthographic') {
+            // Set origin
+            // Since camera is orthographic, origin is not the camera position
+            const { left, right, bottom, top, zoom } = camera;
+            const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
+            const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
+            this.origin.set(x, y, 0);
+            this.origin.applyMatrix4(camera.worldMatrix);
 
-        // Set origin
-        camera.worldMatrix.getTranslation(this.origin);
+            // Set direction
+            // https://community.khronos.org/t/get-direction-from-transformation-matrix-or-quat/65502/2
+            this.direction.x = -camera.worldMatrix[8];
+            this.direction.y = -camera.worldMatrix[9];
+            this.direction.z = -camera.worldMatrix[10];
+        } else {
+            // Set origin
+            camera.worldMatrix.getTranslation(this.origin);
 
-        // Set direction
-        this.direction.set(mouse[0], mouse[1], 0.5);
-        camera.unproject(this.direction);
-        this.direction.sub(this.origin).normalize();
+            // Set direction
+            this.direction.set(mouse[0], mouse[1], 0.5);
+            camera.unproject(this.direction);
+            this.direction.sub(this.origin).normalize();
+        }
     }
 
     intersectBounds(meshes: Mesh | Mesh[]) {
@@ -59,18 +73,20 @@ export class Raycast {
             origin.copy(this.origin).applyMatrix4(invWorldMat4);
             direction.copy(this.direction).transformDirection(invWorldMat4);
 
-            let distance = 0;
+            let localDistance = 0;
             if (mesh.geometry.raycast === 'sphere') {
-                distance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
+                localDistance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
             } else {
-                distance = this.intersectBox(mesh.geometry.bounds, origin, direction);
+                localDistance = this.intersectBox(mesh.geometry.bounds, origin, direction);
             }
-            if (!distance) return;
+            if (!localDistance) return;
 
             // Create object on mesh to avoid generating lots of objects
-            if (!mesh.hit) mesh.hit = { localPoint: new Vec3(), distance: distance };
+            if (!mesh.hit) mesh.hit = {localPoint: new Vec3(), point: new Vec3()};
 
-            mesh.hit.localPoint.copy(direction).multiply(distance).add(origin);
+            mesh.hit.localPoint.copy(direction).multiply(localDistance).add(origin);
+            mesh.hit.point.copy(mesh.hit.localPoint).applyMatrix4(mesh.worldMatrix);
+            mesh.hit.distance = mesh.hit.point.distance(this.origin);
 
             hits.push(mesh);
         });

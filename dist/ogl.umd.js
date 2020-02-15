@@ -3328,7 +3328,8 @@
       left,
       right,
       bottom,
-      top
+      top,
+      zoom = 1
     } = {}) {
       super();
 
@@ -3339,6 +3340,16 @@
       _defineProperty(this, "fov", void 0);
 
       _defineProperty(this, "aspect", void 0);
+
+      _defineProperty(this, "left", void 0);
+
+      _defineProperty(this, "right", void 0);
+
+      _defineProperty(this, "bottom", void 0);
+
+      _defineProperty(this, "top", void 0);
+
+      _defineProperty(this, "zoom", void 0);
 
       _defineProperty(this, "projectionMatrix", void 0);
 
@@ -3352,21 +3363,24 @@
 
       _defineProperty(this, "frustum", void 0);
 
-      this.near = near;
-      this.far = far;
-      this.fov = fov;
-      this.aspect = aspect;
-      this.projectionMatrix = new Mat4();
-      this.viewMatrix = new Mat4();
-      this.projectionViewMatrix = new Mat4();
-      this.worldPosition = new Vec3(); // Use orthographic if values set, else default to perspective camera
-
-      if (left || right) this.orthographic({
+      Object.assign(this, {
+        near,
+        far,
+        fov,
+        aspect,
         left,
         right,
         bottom,
-        top
-      });else this.perspective();
+        top,
+        zoom
+      });
+      this.projectionMatrix = new Mat4();
+      this.viewMatrix = new Mat4();
+      this.projectionViewMatrix = new Mat4();
+      this.worldPosition = new Vec3(); // Use orthographic if left/right set, else default to perspective camera
+
+      this.type = left || right ? 'orthographic' : 'perspective';
+      if (this.type === 'orthographic') this.orthographic();else this.perspective();
     }
 
     perspective({
@@ -3375,6 +3389,12 @@
       fov = this.fov,
       aspect = this.aspect
     } = {}) {
+      Object.assign(this, {
+        near,
+        far,
+        fov,
+        aspect
+      });
       this.projectionMatrix.fromPerspective({
         fov: fov * (Math.PI / 180),
         aspect,
@@ -3388,11 +3408,25 @@
     orthographic({
       near = this.near,
       far = this.far,
-      left = -1,
-      right = 1,
-      bottom = -1,
-      top = 1
+      left = this.left,
+      right = this.right,
+      bottom = this.bottom,
+      top = this.top,
+      zoom = this.zoom
     } = {}) {
+      Object.assign(this, {
+        near,
+        far,
+        left,
+        right,
+        bottom,
+        top,
+        zoom
+      });
+      left /= zoom;
+      right /= zoom;
+      bottom /= zoom;
+      top /= zoom;
       this.projectionMatrix.fromOrthogonal({
         left,
         right,
@@ -4247,7 +4281,10 @@
           } else {
             this.gl.generateMipmap(this.target);
           }
-        }
+        } // Callback for when data is pushed to GPU
+
+
+        this.onUpdate && this.onUpdate();
       } else {
         if (this.target === this.gl.TEXTURE_CUBE_MAP) {
           // Upload empty pixel for each side while no image to avoid errors while image or video loading
@@ -4264,7 +4301,6 @@
       }
 
       this.store.image = this.image;
-      this.onUpdate && this.onUpdate();
     }
 
   }
@@ -5682,12 +5718,33 @@
 
 
     castMouse(camera, mouse = [0, 0]) {
-      // Set origin
-      camera.worldMatrix.getTranslation(this.origin); // Set direction
+      if (camera.type === 'orthographic') {
+        // Set origin
+        // Since camera is orthographic, origin is not the camera position
+        const {
+          left,
+          right,
+          bottom,
+          top,
+          zoom
+        } = camera;
+        const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
+        const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
+        this.origin.set(x, y, 0);
+        this.origin.applyMatrix4(camera.worldMatrix); // Set direction
+        // https://community.khronos.org/t/get-direction-from-transformation-matrix-or-quat/65502/2
 
-      this.direction.set(mouse[0], mouse[1], 0.5);
-      camera.unproject(this.direction);
-      this.direction.sub(this.origin).normalize();
+        this.direction.x = -camera.worldMatrix[8];
+        this.direction.y = -camera.worldMatrix[9];
+        this.direction.z = -camera.worldMatrix[10];
+      } else {
+        // Set origin
+        camera.worldMatrix.getTranslation(this.origin); // Set direction
+
+        this.direction.set(mouse[0], mouse[1], 0.5);
+        camera.unproject(this.direction);
+        this.direction.sub(this.origin).normalize();
+      }
     }
 
     intersectBounds(meshes) {
@@ -5704,21 +5761,23 @@
         invWorldMat4.inverse(mesh.worldMatrix);
         origin.copy(this.origin).applyMatrix4(invWorldMat4);
         direction.copy(this.direction).transformDirection(invWorldMat4);
-        let distance = 0;
+        let localDistance = 0;
 
         if (mesh.geometry.raycast === 'sphere') {
-          distance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
+          localDistance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
         } else {
-          distance = this.intersectBox(mesh.geometry.bounds, origin, direction);
+          localDistance = this.intersectBox(mesh.geometry.bounds, origin, direction);
         }
 
-        if (!distance) return; // Create object on mesh to avoid generating lots of objects
+        if (!localDistance) return; // Create object on mesh to avoid generating lots of objects
 
         if (!mesh.hit) mesh.hit = {
           localPoint: new Vec3(),
-          distance: distance
+          point: new Vec3()
         };
-        mesh.hit.localPoint.copy(direction).multiply(distance).add(origin);
+        mesh.hit.localPoint.copy(direction).multiply(localDistance).add(origin);
+        mesh.hit.point.copy(mesh.hit.localPoint).applyMatrix4(mesh.worldMatrix);
+        mesh.hit.distance = mesh.hit.point.distance(this.origin);
         hits.push(mesh);
       });
       hits.sort((a, b) => a.hit.distance - b.hit.distance);

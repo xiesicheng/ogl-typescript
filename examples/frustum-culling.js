@@ -546,6 +546,8 @@
   //     index: { data: index },
   // }
 
+  // To stop inifinite warnings
+  let isBoundsWarned = false;
   class Geometry {
     constructor(gl, attributes = {}) {
       _defineProperty(this, "gl", void 0);
@@ -592,18 +594,25 @@
     addAttribute(key, attr) {
       this.attributes[key] = attr; // Set options
 
-      attr.id = ATTR_ID++;
+      attr.id = ATTR_ID++; // TODO: currently unused, remove?
+
       attr.size = attr.size || 1;
       attr.type = attr.type || (attr.data.constructor === Float32Array ? this.gl.FLOAT : attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : this.gl.UNSIGNED_INT); // Uint32Array
 
       attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
-      attr.normalize = attr.normalize || false;
-      attr.buffer = this.gl.createBuffer();
-      attr.count = attr.data.length / attr.size;
+      attr.normalized = attr.normalized || false;
+      attr.stride = attr.stride || 0;
+      attr.offset = attr.offset || 0;
+      attr.count = attr.count || attr.data.length / attr.size;
       attr.divisor = attr.instanced || 0;
-      attr.needsUpdate = false; // Push data to buffer
+      attr.needsUpdate = false;
 
-      this.updateAttribute(attr); // Update geometry counts. If indexed, ignore regular attributes
+      if (!attr.buffer) {
+        attr.buffer = this.gl.createBuffer(); // Push data to buffer
+
+        this.updateAttribute(attr);
+      } // Update geometry counts. If indexed, ignore regular attributes
+
 
       if (attr.divisor) {
         this.isInstanced = true;
@@ -622,10 +631,9 @@
     }
 
     updateAttribute(attr) {
-      // Already bound, prevent gl command
-      if (this.glState.boundBuffer !== attr.id) {
+      if (this.glState.boundBuffer !== attr.buffer) {
         this.gl.bindBuffer(attr.target, attr.buffer);
-        this.glState.boundBuffer = attr.id;
+        this.glState.boundBuffer = attr.buffer;
       }
 
       this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
@@ -662,10 +670,8 @@
 
         const attr = this.attributes[name];
         this.gl.bindBuffer(attr.target, attr.buffer);
-        this.glState.boundBuffer = attr.id;
-        this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalize, 0, // stride
-        0 // offset
-        );
+        this.glState.boundBuffer = attr.buffer;
+        this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalized, attr.stride, attr.offset);
         this.gl.enableVertexAttribArray(location); // For instanced attributes, divisor needs to be set.
         // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
 
@@ -699,17 +705,25 @@
         }
       } else {
         if (this.attributes.index) {
-          this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start);
+          this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2);
         } else {
           this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
         }
       }
     }
 
-    computeBoundingBox(array) {
-      // Use position buffer if available
-      if (!array && this.attributes.position) array = this.attributes.position.data;
-      if (!array) console.warn('No position buffer found to compute bounds');
+    getPositionArray() {
+      // Use position buffer, or min/max if available
+      const attr = this.attributes.position;
+      if (attr.min) return [attr.min, attr.max];
+      if (attr.data) return attr.data;
+      if (isBoundsWarned) return;
+      console.warn('No position buffer data found to compute bounds');
+      return isBoundsWarned = true;
+    }
+
+    computeBoundingBox(array = null) {
+      if (!array) array = this.getPositionArray();
 
       if (!this.bounds) {
         this.bounds = {
@@ -726,7 +740,7 @@
       const center = this.bounds.center;
       const scale = this.bounds.scale;
       min.set(+Infinity);
-      max.set(-Infinity);
+      max.set(-Infinity); // TODO: use offset/stride if exists
 
       for (let i = 0, l = array.length; i < l; i += 3) {
         const x = array[i];
@@ -744,10 +758,8 @@
       center.add(min, max).divide(2);
     }
 
-    computeBoundingSphere(array) {
-      // Use position buffer if available
-      if (!array && this.attributes.position) array = this.attributes.position.data;
-      if (!array) console.warn('No position buffer found to compute bounds');
+    computeBoundingSphere(array = null) {
+      if (!array) array = this.getPositionArray();
       if (!this.bounds) this.computeBoundingBox(array);
       let maxRadiusSq = 0;
 
@@ -1544,22 +1556,6 @@
    * Set the components of a mat4 to the given values
    *
    * @param {mat4} out the receiving matrix
-   * @param {Number} m00 Component in column 0, row 0 position (index 0)
-   * @param {Number} m01 Component in column 0, row 1 position (index 1)
-   * @param {Number} m02 Component in column 0, row 2 position (index 2)
-   * @param {Number} m03 Component in column 0, row 3 position (index 3)
-   * @param {Number} m10 Component in column 1, row 0 position (index 4)
-   * @param {Number} m11 Component in column 1, row 1 position (index 5)
-   * @param {Number} m12 Component in column 1, row 2 position (index 6)
-   * @param {Number} m13 Component in column 1, row 3 position (index 7)
-   * @param {Number} m20 Component in column 2, row 0 position (index 8)
-   * @param {Number} m21 Component in column 2, row 1 position (index 9)
-   * @param {Number} m22 Component in column 2, row 2 position (index 10)
-   * @param {Number} m23 Component in column 2, row 3 position (index 11)
-   * @param {Number} m30 Component in column 3, row 0 position (index 12)
-   * @param {Number} m31 Component in column 3, row 1 position (index 13)
-   * @param {Number} m32 Component in column 3, row 2 position (index 14)
-   * @param {Number} m33 Component in column 3, row 3 position (index 15)
    * @returns {mat4} out
    */
 
@@ -2026,9 +2022,9 @@
     let m31 = mat[8];
     let m32 = mat[9];
     let m33 = mat[10];
-    out[0] = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-    out[1] = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-    out[2] = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
+    out[0] = Math.hypot(m11, m12, m13);
+    out[1] = Math.hypot(m21, m22, m23);
+    out[2] = Math.hypot(m31, m32, m33);
     return out;
   }
   function getMaxScaleOnAxis(mat) {
@@ -2056,39 +2052,55 @@
    * @return {quat} out
    */
 
-  function getRotation(out, mat) {
-    // Algorithm taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-    let trace = mat[0] + mat[5] + mat[10];
-    let S = 0;
+  const getRotation = function () {
+    const temp = [0, 0, 0];
+    return function (out, mat) {
+      let scaling = temp;
+      getScaling(scaling, mat);
+      let is1 = 1 / scaling[0];
+      let is2 = 1 / scaling[1];
+      let is3 = 1 / scaling[2];
+      let sm11 = mat[0] * is1;
+      let sm12 = mat[1] * is2;
+      let sm13 = mat[2] * is3;
+      let sm21 = mat[4] * is1;
+      let sm22 = mat[5] * is2;
+      let sm23 = mat[6] * is3;
+      let sm31 = mat[8] * is1;
+      let sm32 = mat[9] * is2;
+      let sm33 = mat[10] * is3;
+      let trace = sm11 + sm22 + sm33;
+      let S = 0;
 
-    if (trace > 0) {
-      S = Math.sqrt(trace + 1.0) * 2;
-      out[3] = 0.25 * S;
-      out[0] = (mat[6] - mat[9]) / S;
-      out[1] = (mat[8] - mat[2]) / S;
-      out[2] = (mat[1] - mat[4]) / S;
-    } else if (mat[0] > mat[5] && mat[0] > mat[10]) {
-      S = Math.sqrt(1.0 + mat[0] - mat[5] - mat[10]) * 2;
-      out[3] = (mat[6] - mat[9]) / S;
-      out[0] = 0.25 * S;
-      out[1] = (mat[1] + mat[4]) / S;
-      out[2] = (mat[8] + mat[2]) / S;
-    } else if (mat[5] > mat[10]) {
-      S = Math.sqrt(1.0 + mat[5] - mat[0] - mat[10]) * 2;
-      out[3] = (mat[8] - mat[2]) / S;
-      out[0] = (mat[1] + mat[4]) / S;
-      out[1] = 0.25 * S;
-      out[2] = (mat[6] + mat[9]) / S;
-    } else {
-      S = Math.sqrt(1.0 + mat[10] - mat[0] - mat[5]) * 2;
-      out[3] = (mat[1] - mat[4]) / S;
-      out[0] = (mat[8] + mat[2]) / S;
-      out[1] = (mat[6] + mat[9]) / S;
-      out[2] = 0.25 * S;
-    }
+      if (trace > 0) {
+        S = Math.sqrt(trace + 1.0) * 2;
+        out[3] = 0.25 * S;
+        out[0] = (sm23 - sm32) / S;
+        out[1] = (sm31 - sm13) / S;
+        out[2] = (sm12 - sm21) / S;
+      } else if (sm11 > sm22 && sm11 > sm33) {
+        S = Math.sqrt(1.0 + sm11 - sm22 - sm33) * 2;
+        out[3] = (sm23 - sm32) / S;
+        out[0] = 0.25 * S;
+        out[1] = (sm12 + sm21) / S;
+        out[2] = (sm31 + sm13) / S;
+      } else if (sm22 > sm33) {
+        S = Math.sqrt(1.0 + sm22 - sm11 - sm33) * 2;
+        out[3] = (sm31 - sm13) / S;
+        out[0] = (sm12 + sm21) / S;
+        out[1] = 0.25 * S;
+        out[2] = (sm23 + sm32) / S;
+      } else {
+        S = Math.sqrt(1.0 + sm33 - sm11 - sm22) * 2;
+        out[3] = (sm12 - sm21) / S;
+        out[0] = (sm31 + sm13) / S;
+        out[1] = (sm23 + sm32) / S;
+        out[2] = 0.25 * S;
+      }
 
-    return out;
-  }
+      return out;
+    };
+  }();
   /**
    * Creates a matrix from a quaternion rotation, vector translation and vector scale
    * This is equivalent to (but much faster than):
@@ -3493,6 +3505,7 @@
       // If no position attribute, treat as frustumCulled false
       if (!node.geometry.attributes.position) return true;
       if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();
+      if (!node.geometry.bounds) return true;
       const center = tempVec3a;
       center.copy(node.geometry.bounds.center);
       center.applyMatrix4(node.worldMatrix);
@@ -5226,7 +5239,8 @@
   function NormalProgram(gl) {
     return new Program(gl, {
       vertex: vertex,
-      fragment: fragment
+      fragment: fragment,
+      cullFace: null
     });
   }
 

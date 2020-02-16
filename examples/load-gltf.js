@@ -4070,424 +4070,1139 @@
 
   }
 
-  // TODO: facilitate Compressed Textures
-  // TODO: delete texture
-  // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
-  // TODO: use texSubImage2D for updates
-  // TODO: need? encoding = linearEncoding
-  // TODO: support non-compressed mipmaps uploads
-  const emptyPixel = new Uint8Array(4);
+  /**
+   * Copy the values from one vec2 to another
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the source vector
+   * @returns {vec2} out
+   */
 
-  function isPowerOf2(value) {
-    return (value & value - 1) === 0;
+  function copy$5(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    return out;
+  }
+  /**
+   * Set the components of a vec2 to the given values
+   *
+   * @param {vec2} out the receiving vector
+   * @param {Number} x X component
+   * @param {Number} y Y component
+   * @returns {vec2} out
+   */
+
+  function set$5(out, x, y) {
+    out[0] = x;
+    out[1] = y;
+    return out;
+  }
+  /**
+   * Adds two vec2's
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {vec2} out
+   */
+
+  function add$1(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    return out;
+  }
+  /**
+   * Subtracts vector b from vector a
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {vec2} out
+   */
+
+  function subtract$1(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    return out;
+  }
+  /**
+   * Multiplies two vec2's
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {vec2} out
+   */
+
+  function multiply$4(out, a, b) {
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    return out;
+  }
+  /**
+   * Divides two vec2's
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {vec2} out
+   */
+
+  function divide$1(out, a, b) {
+    out[0] = a[0] / b[0];
+    out[1] = a[1] / b[1];
+    return out;
+  }
+  /**
+   * Scales a vec2 by a scalar number
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the vector to scale
+   * @param {Number} b amount to scale the vector by
+   * @returns {vec2} out
+   */
+
+  function scale$3(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    return out;
+  }
+  /**
+   * Calculates the euclidian distance between two vec2's
+   *
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {Number} distance between a and b
+   */
+
+  function distance$1(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1];
+    return Math.sqrt(x * x + y * y);
+  }
+  /**
+   * Calculates the squared euclidian distance between two vec2's
+   *
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {Number} squared distance between a and b
+   */
+
+  function squaredDistance$1(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1];
+    return x * x + y * y;
+  }
+  /**
+   * Calculates the length of a vec2
+   *
+   * @param {vec2} a vector to calculate length of
+   * @returns {Number} length of a
+   */
+
+  function length$1(a) {
+    var x = a[0],
+        y = a[1];
+    return Math.sqrt(x * x + y * y);
+  }
+  /**
+   * Calculates the squared length of a vec2
+   *
+   * @param {vec2} a vector to calculate squared length of
+   * @returns {Number} squared length of a
+   */
+
+  function squaredLength$1(a) {
+    var x = a[0],
+        y = a[1];
+    return x * x + y * y;
+  }
+  /**
+   * Negates the components of a vec2
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a vector to negate
+   * @returns {vec2} out
+   */
+
+  function negate$1(out, a) {
+    out[0] = -a[0];
+    out[1] = -a[1];
+    return out;
+  }
+  /**
+   * Returns the inverse of the components of a vec2
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a vector to invert
+   * @returns {vec2} out
+   */
+
+  function inverse$1(out, a) {
+    out[0] = 1.0 / a[0];
+    out[1] = 1.0 / a[1];
+    return out;
+  }
+  /**
+   * Normalize a vec2
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a vector to normalize
+   * @returns {vec2} out
+   */
+
+  function normalize$3(out, a) {
+    var x = a[0],
+        y = a[1];
+    var len = x * x + y * y;
+
+    if (len > 0) {
+      //TODO: evaluate use of glm_invsqrt here?
+      len = 1 / Math.sqrt(len);
+    }
+
+    out[0] = a[0] * len;
+    out[1] = a[1] * len;
+    return out;
+  }
+  /**
+   * Calculates the dot product of two vec2's
+   *
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {Number} dot product of a and b
+   */
+
+  function dot$3(a, b) {
+    return a[0] * b[0] + a[1] * b[1];
+  }
+  /**
+   * Computes the cross product of two vec2's
+   * Note that the cross product returns a scalar
+   *
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @returns {Number} cross product of a and b
+   */
+
+  function cross$1(a, b) {
+    return a[0] * b[1] - a[1] * b[0];
+  }
+  /**
+   * Performs a linear interpolation between two vec2's
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the first operand
+   * @param {vec2} b the second operand
+   * @param {Number} t interpolation amount between the two inputs
+   * @returns {vec2} out
+   */
+
+  function lerp$1(out, a, b, t) {
+    var ax = a[0],
+        ay = a[1];
+    out[0] = ax + t * (b[0] - ax);
+    out[1] = ay + t * (b[1] - ay);
+    return out;
+  }
+  /**
+   * Transforms the vec2 with a mat3
+   * 3rd vector component is implicitly '1'
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the vector to transform
+   * @param {mat3} m matrix to transform with
+   * @returns {vec2} out
+   */
+
+  function transformMat3(out, a, m) {
+    var x = a[0],
+        y = a[1];
+    out[0] = m[0] * x + m[3] * y + m[6];
+    out[1] = m[1] * x + m[4] * y + m[7];
+    return out;
+  }
+  /**
+   * Transforms the vec2 with a mat4
+   * 3rd vector component is implicitly '0'
+   * 4th vector component is implicitly '1'
+   *
+   * @param {vec2} out the receiving vector
+   * @param {vec2} a the vector to transform
+   * @param {mat4} m matrix to transform with
+   * @returns {vec2} out
+   */
+
+  function transformMat4$1(out, a, m) {
+    let x = a[0];
+    let y = a[1];
+    out[0] = m[0] * x + m[4] * y + m[12];
+    out[1] = m[1] * x + m[5] * y + m[13];
+    return out;
+  }
+  /**
+   * Returns whether or not the vectors exactly have the same elements in the same position (when compared with ===)
+   *
+   * @param {vec2} a The first vector.
+   * @param {vec2} b The second vector.
+   * @returns {Boolean} True if the vectors are equal, false otherwise.
+   */
+
+  function exactEquals$1(a, b) {
+    return a[0] === b[0] && a[1] === b[1];
   }
 
-  let ID$3 = 1;
-
-  const isCompressedImage = image => image.isCompressedTexture === true;
-
-  class Texture {
-    // options
-    // gl.TEXTURE_2D
-    // gl.UNSIGNED_BYTE,
-    // gl.RGBA,
-    constructor(gl, {
-      image,
-      target = gl.TEXTURE_2D,
-      type = gl.UNSIGNED_BYTE,
-      format = gl.RGBA,
-      internalFormat = format,
-      wrapS = gl.CLAMP_TO_EDGE,
-      wrapT = gl.CLAMP_TO_EDGE,
-      generateMipmaps = true,
-      minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-      magFilter = gl.LINEAR,
-      premultiplyAlpha = false,
-      unpackAlignment = 4,
-      flipY = target == gl.TEXTURE_2D ? true : false,
-      anisotropy = 0,
-      level = 0,
-      width,
-      // used for RenderTargets or Data Textures
-      height = width
-    } = {}) {
-      _defineProperty(this, "gl", void 0);
-
-      _defineProperty(this, "id", void 0);
-
-      _defineProperty(this, "image", void 0);
-
-      _defineProperty(this, "target", void 0);
-
-      _defineProperty(this, "type", void 0);
-
-      _defineProperty(this, "format", void 0);
-
-      _defineProperty(this, "internalFormat", void 0);
-
-      _defineProperty(this, "wrapS", void 0);
-
-      _defineProperty(this, "wrapT", void 0);
-
-      _defineProperty(this, "generateMipmaps", void 0);
-
-      _defineProperty(this, "minFilter", void 0);
-
-      _defineProperty(this, "magFilter", void 0);
-
-      _defineProperty(this, "premultiplyAlpha", void 0);
-
-      _defineProperty(this, "unpackAlignment", void 0);
-
-      _defineProperty(this, "flipY", void 0);
-
-      _defineProperty(this, "level", void 0);
-
-      _defineProperty(this, "width", void 0);
-
-      _defineProperty(this, "height", void 0);
-
-      _defineProperty(this, "anisotropy", void 0);
-
-      _defineProperty(this, "texture", void 0);
-
-      _defineProperty(this, "store", void 0);
-
-      _defineProperty(this, "glState", void 0);
-
-      _defineProperty(this, "state", void 0);
-
-      _defineProperty(this, "needsUpdate", void 0);
-
-      _defineProperty(this, "onUpdate", void 0);
-
-      this.gl = gl;
-      this.id = ID$3++;
-      this.image = image;
-      this.target = target;
-      this.type = type;
-      this.format = format;
-      this.internalFormat = internalFormat;
-      this.minFilter = minFilter;
-      this.magFilter = magFilter;
-      this.wrapS = wrapS;
-      this.wrapT = wrapT;
-      this.generateMipmaps = generateMipmaps;
-      this.premultiplyAlpha = premultiplyAlpha;
-      this.unpackAlignment = unpackAlignment;
-      this.flipY = flipY;
-      this.anisotropy = Math.min(anisotropy, this.gl.renderer.parameters.maxAnisotropy);
-      this.level = level;
-      this.width = width;
-      this.height = height;
-      this.texture = this.gl.createTexture();
-      this.store = {
-        image: null
-      }; // Alias for state store to avoid redundant calls for global state
-
-      this.glState = this.gl.renderer.state; // State store to avoid redundant calls for per-texture state
-
-      this.state = {
-        minFilter: this.gl.NEAREST_MIPMAP_LINEAR,
-        magFilter: this.gl.LINEAR,
-        wrapS: this.gl.REPEAT,
-        wrapT: this.gl.REPEAT,
-        anisotropy: 0
-      };
+  class Vec2 extends Array {
+    constructor(x = 0, y = x) {
+      super(x, y);
+      return this;
     }
 
-    bind() {
-      // Already bound to active texture unit
-      if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
-      this.gl.bindTexture(this.target, this.texture);
-      this.glState.textureUnits[this.glState.activeTextureUnit] = this.id;
+    get x() {
+      return this[0];
     }
 
-    update(textureUnit = 0) {
-      const needsUpdate = !(this.image === this.store.image && !this.needsUpdate); // Make sure that texture is bound to its texture unit
+    set x(v) {
+      this[0] = v;
+    }
 
-      if (needsUpdate || this.glState.textureUnits[textureUnit] !== this.id) {
-        // set active texture unit to perform texture functions
-        this.gl.renderer.activeTexture(textureUnit);
-        this.bind();
-      }
+    get y() {
+      return this[1];
+    }
 
-      if (!needsUpdate) return;
-      this.needsUpdate = false;
+    set y(v) {
+      this[1] = v;
+    }
 
-      if (this.flipY !== this.glState.flipY) {
-        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-        this.glState.flipY = this.flipY;
-      }
+    set(x, y = x) {
+      if (x.length) return this.copy(x);
+      set$5(this, x, y);
+      return this;
+    }
 
-      if (this.premultiplyAlpha !== this.glState.premultiplyAlpha) {
-        this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-        this.glState.premultiplyAlpha = this.premultiplyAlpha;
-      }
+    copy(v) {
+      copy$5(this, v);
+      return this;
+    }
 
-      if (this.unpackAlignment !== this.glState.unpackAlignment) {
-        this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, this.unpackAlignment);
-        this.glState.unpackAlignment = this.unpackAlignment;
-      }
+    add(va, vb) {
+      if (vb) add$1(this, va, vb);else add$1(this, this, va);
+      return this;
+    }
 
-      if (this.minFilter !== this.state.minFilter) {
-        this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-        this.state.minFilter = this.minFilter;
-      }
+    sub(va, vb) {
+      if (vb) subtract$1(this, va, vb);else subtract$1(this, this, va);
+      return this;
+    }
 
-      if (this.magFilter !== this.state.magFilter) {
-        this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-        this.state.magFilter = this.magFilter;
-      }
+    multiply(v) {
+      if (v.length) multiply$4(this, this, v);else scale$3(this, this, v);
+      return this;
+    }
 
-      if (this.wrapS !== this.state.wrapS) {
-        this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.wrapS);
-        this.state.wrapS = this.wrapS;
-      }
+    divide(v) {
+      if (v.length) divide$1(this, this, v);else scale$3(this, this, 1 / v);
+      return this;
+    }
 
-      if (this.wrapT !== this.state.wrapT) {
-        this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
-        this.state.wrapT = this.wrapT;
-      }
-
-      if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
-        this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
-        this.state.anisotropy = this.anisotropy;
-      }
-
-      if (this.image) {
-        if (this.image.width) {
-          this.width = this.image.width;
-          this.height = this.image.height;
-        }
-
-        if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-          // For cube maps
-          for (let i = 0; i < 6; i++) {
-            this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
-          }
-        } else if (ArrayBuffer.isView(this.image)) {
-          // Data texture
-          this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
-        } else if (isCompressedImage(this.image)) {
-          // Compressed texture
-          let m;
-
-          for (let level = 0; level < this.image.mipmaps.length; level++) {
-            m = this.image.mipmaps[level];
-            this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
-          }
-        } else {
-          // Regular texture
-          this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
-        }
-
-        if (this.generateMipmaps) {
-          // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
-          if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
-            this.generateMipmaps = false;
-            this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
-            this.minFilter = this.gl.LINEAR;
-          } else {
-            this.gl.generateMipmap(this.target);
-          }
-        } // Callback for when data is pushed to GPU
+    inverse(v = this) {
+      inverse$1(this, v);
+      return this;
+    } // Can't use 'length' as Array.prototype uses it
 
 
-        this.onUpdate && this.onUpdate();
-      } else {
-        if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-          // Upload empty pixel for each side while no image to avoid errors while image or video loading
-          for (let i = 0; i < 6; i++) {
-            this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-          }
-        } else if (this.width) {
-          // image intentionally left null for RenderTarget
-          this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
-        } else {
-          // Upload empty pixel if no image to avoid errors while image or video loading
-          this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-        }
-      }
+    len() {
+      return length$1(this);
+    }
 
-      this.store.image = this.image;
+    distance(v) {
+      if (v) return distance$1(this, v);else return length$1(this);
+    }
+
+    squaredLen() {
+      return this.squaredDistance();
+    }
+
+    squaredDistance(v) {
+      if (v) return squaredDistance$1(this, v);else return squaredLength$1(this);
+    }
+
+    negate(v = this) {
+      negate$1(this, v);
+      return this;
+    }
+
+    cross(va, vb) {
+      return cross$1(va, vb);
+    }
+
+    scale(v) {
+      scale$3(this, this, v);
+      return this;
+    }
+
+    normalize() {
+      normalize$3(this, this);
+      return this;
+    }
+
+    dot(v) {
+      return dot$3(this, v);
+    }
+
+    equals(v) {
+      return exactEquals$1(this, v);
+    }
+
+    applyMatrix3(mat3) {
+      transformMat3(this, this, mat3);
+      return this;
+    }
+
+    applyMatrix4(mat4) {
+      transformMat4$1(this, this, mat4);
+      return this;
+    }
+
+    lerp(v, a) {
+      lerp$1(this, this, v, a);
+    }
+
+    clone() {
+      return new Vec2(this[0], this[1]);
+    }
+
+    fromArray(a, o = 0) {
+      this[0] = a[o];
+      this[1] = a[o + 1];
+      return this;
+    }
+
+    toArray(a = [], o = 0) {
+      a[o] = this[0];
+      a[o + 1] = this[1];
+      return a;
     }
 
   }
 
-  class Plane extends Geometry {
-    constructor(gl, {
-      width = 1,
-      height = 1,
-      widthSegments = 1,
-      heightSegments = 1,
-      attributes = {}
-    } = {}) {
-      const wSegs = widthSegments;
-      const hSegs = heightSegments; // Determine length of arrays
+  // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
+  const STATE = {
+    NONE: -1,
+    ROTATE: 0,
+    DOLLY: 1,
+    PAN: 2,
+    DOLLY_PAN: 3
+  };
+  const tempVec3$2 = new Vec3();
+  const tempVec2a = new Vec2();
+  const tempVec2b = new Vec2();
+  function Orbit(object, {
+    element = document.body,
+    enabled = true,
+    target = new Vec3(),
+    ease = 0.25,
+    inertia = 0.85,
+    enableRotate = true,
+    rotateSpeed = 0.1,
+    enableZoom = true,
+    zoomSpeed = 1,
+    enablePan = true,
+    panSpeed = 0.1,
+    minPolarAngle = 0,
+    maxPolarAngle = Math.PI,
+    minAzimuthAngle = -Infinity,
+    maxAzimuthAngle = Infinity,
+    minDistance = 0,
+    maxDistance = Infinity
+  } = {}) {
+    this.enabled = enabled;
+    this.target = target; // Catch attempts to disable - set to 1 so has no effect
 
-      const num = (wSegs + 1) * (hSegs + 1);
-      const numIndices = wSegs * hSegs * 6; // Generate empty arrays once
+    ease = ease || 1;
+    inertia = inertia || 1;
+    this.minDistance = minDistance;
+    this.maxDistance = maxDistance; // current position in sphericalTarget coordinates
 
-      const position = new Float32Array(num * 3);
-      const normal = new Float32Array(num * 3);
-      const uv = new Float32Array(num * 2);
-      const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-      Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
-      Object.assign(attributes, {
-        position: {
-          size: 3,
-          data: position
-        },
-        normal: {
-          size: 3,
-          data: normal
-        },
-        uv: {
-          size: 2,
-          data: uv
-        },
-        index: {
-          data: index
-        }
+    const sphericalDelta = {
+      radius: 1,
+      phi: 0,
+      theta: 0
+    };
+    const sphericalTarget = {
+      radius: 1,
+      phi: 0,
+      theta: 0
+    };
+    const spherical = {
+      radius: 1,
+      phi: 0,
+      theta: 0
+    };
+    const panDelta = new Vec3(); // Grab initial position values
+
+    const offset = new Vec3();
+    offset.copy(object.position).sub(this.target);
+    spherical.radius = sphericalTarget.radius = offset.distance();
+    spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
+    spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
+
+    this.update = () => {
+      // apply delta
+      sphericalTarget.radius *= sphericalDelta.radius;
+      sphericalTarget.theta += sphericalDelta.theta;
+      sphericalTarget.phi += sphericalDelta.phi; // apply boundaries
+
+      sphericalTarget.theta = Math.max(minAzimuthAngle, Math.min(maxAzimuthAngle, sphericalTarget.theta));
+      sphericalTarget.phi = Math.max(minPolarAngle, Math.min(maxPolarAngle, sphericalTarget.phi));
+      sphericalTarget.radius = Math.max(this.minDistance, Math.min(this.maxDistance, sphericalTarget.radius)); // ease values
+
+      spherical.phi += (sphericalTarget.phi - spherical.phi) * ease;
+      spherical.theta += (sphericalTarget.theta - spherical.theta) * ease;
+      spherical.radius += (sphericalTarget.radius - spherical.radius) * ease; // apply pan to target. As offset is relative to target, it also shifts
+
+      this.target.add(panDelta); // apply rotation to offset
+
+      let sinPhiRadius = spherical.radius * Math.sin(Math.max(0.000001, spherical.phi));
+      offset.x = sinPhiRadius * Math.sin(spherical.theta);
+      offset.y = spherical.radius * Math.cos(spherical.phi);
+      offset.z = sinPhiRadius * Math.cos(spherical.theta); // Apply updated values to object
+
+      object.position.copy(this.target).add(offset);
+      object.lookAt(this.target); // Apply inertia to values
+
+      sphericalDelta.theta *= inertia;
+      sphericalDelta.phi *= inertia;
+      panDelta.multiply(inertia); // Reset scale every frame to avoid applying scale multiple times
+
+      sphericalDelta.radius = 1;
+    }; // Everything below here just updates panDelta and sphericalDelta
+    // Using those two objects' values, the orbit is calculated
+
+
+    const rotateStart = new Vec2();
+    const panStart = new Vec2();
+    const dollyStart = new Vec2();
+    let state = STATE.NONE;
+    this.mouseButtons = {
+      ORBIT: 0,
+      ZOOM: 1,
+      PAN: 2
+    };
+
+    function getZoomScale() {
+      return Math.pow(0.95, zoomSpeed);
+    }
+
+    function panLeft(distance, m) {
+      tempVec3$2.set(m[0], m[1], m[2]);
+      tempVec3$2.multiply(-distance);
+      panDelta.add(tempVec3$2);
+    }
+
+    function panUp(distance, m) {
+      tempVec3$2.set(m[4], m[5], m[6]);
+      tempVec3$2.multiply(distance);
+      panDelta.add(tempVec3$2);
+    }
+
+    const pan = (deltaX, deltaY) => {
+      // let el = element === document ? document.body : element;
+      tempVec3$2.copy(object.position).sub(this.target);
+      let targetDistance = tempVec3$2.distance();
+      targetDistance *= Math.tan((object.fov || 45) / 2 * Math.PI / 180.0);
+      panLeft(2 * deltaX * targetDistance / element.clientHeight, object.matrix);
+      panUp(2 * deltaY * targetDistance / element.clientHeight, object.matrix);
+    };
+
+    function dolly(dollyScale) {
+      sphericalDelta.radius /= dollyScale;
+    }
+
+    function handleMoveRotate(x, y) {
+      tempVec2a.set(x, y);
+      tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed); // let el = element === document ? document.body : element;
+
+      sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / element.clientHeight;
+      sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / element.clientHeight;
+      rotateStart.copy(tempVec2a);
+    }
+
+    function handleMouseMoveDolly(e) {
+      tempVec2a.set(e.clientX, e.clientY);
+      tempVec2b.sub(tempVec2a, dollyStart);
+
+      if (tempVec2b.y > 0) {
+        dolly(getZoomScale());
+      } else if (tempVec2b.y < 0) {
+        dolly(1 / getZoomScale());
+      }
+
+      dollyStart.copy(tempVec2a);
+    }
+
+    function handleMovePan(x, y) {
+      tempVec2a.set(x, y);
+      tempVec2b.sub(tempVec2a, panStart).multiply(panSpeed);
+      pan(tempVec2b.x, tempVec2b.y);
+      panStart.copy(tempVec2a);
+    }
+
+    function handleTouchStartDollyPan(e) {
+      if (enableZoom) {
+        let dx = e.touches[0].pageX - e.touches[1].pageX;
+        let dy = e.touches[0].pageY - e.touches[1].pageY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        dollyStart.set(0, distance);
+      }
+
+      if (enablePan) {
+        let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+        let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+        panStart.set(x, y);
+      }
+    }
+
+    function handleTouchMoveDollyPan(e) {
+      if (enableZoom) {
+        let dx = e.touches[0].pageX - e.touches[1].pageX;
+        let dy = e.touches[0].pageY - e.touches[1].pageY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        tempVec2a.set(0, distance);
+        tempVec2b.set(0, Math.pow(tempVec2a.y / dollyStart.y, zoomSpeed));
+        dolly(tempVec2b.y);
+        dollyStart.copy(tempVec2a);
+      }
+
+      if (enablePan) {
+        let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+        let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+        handleMovePan(x, y);
+      }
+    }
+
+    const onMouseDown = e => {
+      if (!this.enabled) return;
+
+      switch (e.button) {
+        case this.mouseButtons.ORBIT:
+          if (enableRotate === false) return;
+          rotateStart.set(e.clientX, e.clientY);
+          state = STATE.ROTATE;
+          break;
+
+        case this.mouseButtons.ZOOM:
+          if (enableZoom === false) return;
+          dollyStart.set(e.clientX, e.clientY);
+          state = STATE.DOLLY;
+          break;
+
+        case this.mouseButtons.PAN:
+          if (enablePan === false) return;
+          panStart.set(e.clientX, e.clientY);
+          state = STATE.PAN;
+          break;
+      }
+
+      if (state !== STATE.NONE) {
+        window.addEventListener('mousemove', onMouseMove, false);
+        window.addEventListener('mouseup', onMouseUp, false);
+      }
+    };
+
+    const onMouseMove = e => {
+      if (!this.enabled) return;
+
+      switch (state) {
+        case STATE.ROTATE:
+          if (enableRotate === false) return;
+          handleMoveRotate(e.clientX, e.clientY);
+          break;
+
+        case STATE.DOLLY:
+          if (enableZoom === false) return;
+          handleMouseMoveDolly(e);
+          break;
+
+        case STATE.PAN:
+          if (enablePan === false) return;
+          handleMovePan(e.clientX, e.clientY);
+          break;
+      }
+    };
+
+    const onMouseUp = () => {
+      if (!this.enabled) return;
+      document.removeEventListener('mousemove', onMouseMove, false);
+      document.removeEventListener('mouseup', onMouseUp, false);
+      state = STATE.NONE;
+    };
+
+    const onMouseWheel = e => {
+      if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      if (e.deltaY < 0) {
+        dolly(1 / getZoomScale());
+      } else if (e.deltaY > 0) {
+        dolly(getZoomScale());
+      }
+    };
+
+    const onTouchStart = e => {
+      if (!this.enabled) return;
+      e.preventDefault();
+
+      switch (e.touches.length) {
+        case 1:
+          if (enableRotate === false) return;
+          rotateStart.set(e.touches[0].pageX, e.touches[0].pageY);
+          state = STATE.ROTATE;
+          break;
+
+        case 2:
+          if (enableZoom === false && enablePan === false) return;
+          handleTouchStartDollyPan(e);
+          state = STATE.DOLLY_PAN;
+          break;
+
+        default:
+          state = STATE.NONE;
+      }
+    };
+
+    const onTouchMove = e => {
+      if (!this.enabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      switch (e.touches.length) {
+        case 1:
+          if (enableRotate === false) return;
+          handleMoveRotate(e.touches[0].pageX, e.touches[0].pageY);
+          break;
+
+        case 2:
+          if (enableZoom === false && enablePan === false) return;
+          handleTouchMoveDollyPan(e);
+          break;
+
+        default:
+          state = STATE.NONE;
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!this.enabled) return;
+      state = STATE.NONE;
+    };
+
+    const onContextMenu = e => {
+      if (!this.enabled) return;
+      e.preventDefault();
+    };
+
+    function addHandlers() {
+      element.addEventListener('contextmenu', onContextMenu, false);
+      element.addEventListener('mousedown', onMouseDown, false);
+      element.addEventListener('wheel', onMouseWheel, {
+        passive: false
       });
-      super(gl, attributes);
-    }
-
-    static buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs, u = 0, v = 1, w = 2, uDir = 1, vDir = -1, i = 0, ii = 0) {
-      const io = i;
-      const segW = width / wSegs;
-      const segH = height / hSegs;
-
-      for (let iy = 0; iy <= hSegs; iy++) {
-        let y = iy * segH - height / 2;
-
-        for (let ix = 0; ix <= wSegs; ix++, i++) {
-          let x = ix * segW - width / 2;
-          position[i * 3 + u] = x * uDir;
-          position[i * 3 + v] = y * vDir;
-          position[i * 3 + w] = depth / 2;
-          normal[i * 3 + u] = 0;
-          normal[i * 3 + v] = 0;
-          normal[i * 3 + w] = depth >= 0 ? 1 : -1;
-          uv[i * 2] = ix / wSegs;
-          uv[i * 2 + 1] = 1 - iy / hSegs;
-          if (iy === hSegs || ix === wSegs) continue;
-          let a = io + ix + iy * (wSegs + 1);
-          let b = io + ix + (iy + 1) * (wSegs + 1);
-          let c = io + ix + (iy + 1) * (wSegs + 1) + 1;
-          let d = io + ix + iy * (wSegs + 1) + 1;
-          index[ii * 6] = a;
-          index[ii * 6 + 1] = b;
-          index[ii * 6 + 2] = d;
-          index[ii * 6 + 3] = b;
-          index[ii * 6 + 4] = c;
-          index[ii * 6 + 5] = d;
-          ii++;
-        }
-      }
-    }
-
-  }
-
-  class Box extends Geometry {
-    constructor(gl, {
-      width = 1,
-      height = 1,
-      depth = 1,
-      widthSegments = 1,
-      heightSegments = 1,
-      depthSegments = 1,
-      attributes = {}
-    } = {}) {
-      const wSegs = widthSegments;
-      const hSegs = heightSegments;
-      const dSegs = depthSegments;
-      const num = (wSegs + 1) * (hSegs + 1) * 2 + (wSegs + 1) * (dSegs + 1) * 2 + (hSegs + 1) * (dSegs + 1) * 2;
-      const numIndices = (wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2) * 6;
-      const position = new Float32Array(num * 3);
-      const normal = new Float32Array(num * 3);
-      const uv = new Float32Array(num * 2);
-      const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-      let i = 0;
-      let ii = 0; // left, right
-
-      Plane.buildPlane(position, normal, uv, index, depth, height, width, dSegs, hSegs, 2, 1, 0, -1, -1, i, ii);
-      Plane.buildPlane(position, normal, uv, index, depth, height, -width, dSegs, hSegs, 2, 1, 0, 1, -1, i += (dSegs + 1) * (hSegs + 1), ii += dSegs * hSegs); // top, bottom
-
-      Plane.buildPlane(position, normal, uv, index, width, depth, height, dSegs, hSegs, 0, 2, 1, 1, 1, i += (dSegs + 1) * (hSegs + 1), ii += dSegs * hSegs);
-      Plane.buildPlane(position, normal, uv, index, width, depth, -height, dSegs, hSegs, 0, 2, 1, 1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs); // front, back
-
-      Plane.buildPlane(position, normal, uv, index, width, height, -depth, wSegs, hSegs, 0, 1, 2, -1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
-      Plane.buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs, 0, 1, 2, 1, -1, i += (wSegs + 1) * (hSegs + 1), ii += wSegs * hSegs);
-      Object.assign(attributes, {
-        position: {
-          size: 3,
-          data: position
-        },
-        normal: {
-          size: 3,
-          data: normal
-        },
-        uv: {
-          size: 2,
-          data: uv
-        },
-        index: {
-          data: index
-        }
+      element.addEventListener('touchstart', onTouchStart, {
+        passive: false
       });
-      super(gl, attributes);
+      element.addEventListener('touchend', onTouchEnd, false);
+      element.addEventListener('touchmove', onTouchMove, {
+        passive: false
+      });
     }
 
+    this.remove = function () {
+      element.removeEventListener('contextmenu', onContextMenu);
+      element.removeEventListener('mousedown', onMouseDown);
+      element.removeEventListener('wheel', onMouseWheel);
+      element.removeEventListener('touchstart', onTouchStart);
+      element.removeEventListener('touchend', onTouchEnd);
+      element.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    addHandlers();
   }
 
   const vertex =
   /* glsl */
 `
-            precision highp float;
-            precision highp int;
+    precision highp float;
+    precision highp int;
 
-            attribute vec2 uv;
-            attribute vec3 position;
-            attribute vec3 normal;
+    attribute vec3 position;
+    attribute vec3 normal;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
+    uniform mat3 normalMatrix;
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
+    varying vec3 vNormal;
 
-            void main() {
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `  ;
+    void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`  ;
   const fragment =
   /* glsl */
 `
-            precision highp float;
-            precision highp int;
+    precision highp float;
+    precision highp int;
 
-            uniform sampler2D tMap;
+    varying vec3 vNormal;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
+    void main() {
+        gl_FragColor.rgb = normalize(vNormal);
+        gl_FragColor.a = 1.0;
+    }
+`  ;
+  function NormalProgram(gl) {
+    return new Program(gl, {
+      vertex: vertex,
+      fragment: fragment,
+      cullFace: null
+    });
+  }
 
-            void main() {
-                vec3 normal = normalize(vNormal);
-                vec3 tex = texture2D(tMap, vUv).rgb;
-                
-                vec3 light = normalize(vec3(0.5, 1.0, -0.3));
-                float shading = dot(normal, light) * 0.15;
-                
-                gl_FragColor.rgb = tex + shading;
-                gl_FragColor.a = 1.0;
-            }
-        `  ;
+  // Supports
+  // [x] Geometry
+  // [x] Nodes and Hierarchy
+  // [ ] Morph Targets
+  // [ ] Skins
+  // [ ] Materials
+  // [ ] Textures
+  // [ ] Animation
+  // [ ] Cameras
+  // [ ] Extensions
+  // TODO: only push attribute bufferViews to the GPU
+  // TODO: Sparse accessor packing? what for?
+  // TODO: init accessor missing bufferView with 0s
+  // TODO: is there ever more than one component type per buffer view? surely not...
+  const TYPE_ARRAY = {
+    5121: Uint8Array,
+    5122: Int16Array,
+    5123: Uint16Array,
+    5125: Uint32Array,
+    5126: Float32Array
+  };
+  const TYPE_SIZE = {
+    SCALAR: 1,
+    VEC2: 2,
+    VEC3: 3,
+    VEC4: 4,
+    MAT2: 4,
+    MAT3: 9,
+    MAT4: 16
+  };
+  const ATTRIBUTES = {
+    POSITION: 'position',
+    NORMAL: 'normal',
+    TANGENT: 'tangent',
+    TEXCOORD_0: 'uv',
+    TEXCOORD_1: 'uv2',
+    COLOR_0: 'color',
+    WEIGHTS_0: 'skinWeight',
+    JOINTS_0: 'skinIndex'
+  };
+  class GLTFLoader {
+    static async load(gl, src) {
+      const dir = src.split('/').slice(0, -1).join('/') + '/'; // load main description json
+
+      const desc = await fetch(src).then(res => res.json());
+      if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.'); // Load buffers async
+
+      const buffers = await this.loadBuffers(desc, dir); // Create gl buffers from bufferViews
+
+      const bufferViews = this.parseBufferViews(gl, desc, buffers); // Create geometries for each mesh primitive
+
+      const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+
+      const nodes = this.parseNodes(gl, desc, meshes); // Get top level nodes for each scene
+
+      const scenes = this.parseScenes(desc, nodes);
+      const scene = scenes[desc.scene];
+      return {
+        json: desc,
+        buffers,
+        bufferViews,
+        meshes,
+        nodes,
+        scenes,
+        scene
+      };
+    } // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
+
+
+    static resolveURI(uri, dir) {
+      // Invalid URI
+      if (typeof uri !== 'string' || uri === '') return ''; // Host Relative URI
+
+      if (/^https?:\/\//i.test(dir) && /^\//.test(uri)) {
+        dir = dir.replace(/(^https?:\/\/[^\/]+).*/i, '$1');
+      } // Absolute URI http://, https://, //
+
+
+      if (/^(https?:)?\/\//i.test(uri)) return uri; // Data URI
+
+      if (/^data:.*,.*$/i.test(uri)) return uri; // Blob URI
+
+      if (/^blob:.*$/i.test(uri)) return uri; // Relative URI
+
+      return dir + uri;
+    }
+
+    static async loadBuffers(desc, dir) {
+      return await Promise.all(desc.buffers.map(buffer => {
+        const uri = this.resolveURI(buffer.uri, dir);
+        return fetch(uri).then(res => res.arrayBuffer());
+      }));
+    }
+
+    static parseBufferViews(gl, desc, buffers) {
+      // Clone to leave desc pure
+      const bufferViews = desc.bufferViews.map(o => Object.assign({}, o)); // Work out which bufferViews are for indices to determine whether
+      // target is gl.ELEMENT_ARRAY_BUFFER or gl.ARRAY_BUFFER;
+
+      desc.meshes.forEach(({
+        primitives
+      }) => {
+        primitives.forEach(({
+          indices
+        }) => {
+          if (indices === undefined) return;
+          bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+        });
+      }); // Get componentType of each bufferView from the accessors
+
+      desc.accessors.forEach(({
+        bufferView: i,
+        componentType
+      }) => {
+        bufferViews[i].componentType = componentType;
+      }); // Push each bufferView to the GPU as a separate buffer
+      // TODO: only push attribute bufferViews to the GPU
+
+      bufferViews.forEach(({
+        buffer: bufferIndex,
+        // required
+        byteOffset = 0,
+        // optional
+        byteLength,
+        // required
+        byteStride,
+        // optional
+        target = gl.ARRAY_BUFFER,
+        // optional, added above for elements
+        name,
+        // optional
+        extensions,
+        // optional
+        extras,
+        // optional
+        componentType // required, added from accessor above
+
+      }, i) => {
+        const TypeArray = TYPE_ARRAY[componentType];
+        const elementBytes = TypeArray.BYTES_PER_ELEMENT; // Create gl buffers for the bufferView, pushing it to the GPU
+
+        const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(target, buffer);
+        gl.renderer.state.boundBuffer = buffer;
+        gl.bufferData(target, data, gl.STATIC_DRAW);
+        bufferViews[i].buffer = buffer;
+        bufferViews[i].data = data;
+      });
+      return bufferViews;
+    }
+
+    static parseMeshes(gl, desc, bufferViews) {
+      return desc.meshes.map(({
+        primitives,
+        // required
+        weights,
+        // optional
+        name,
+        // optional
+        extensions,
+        // optional
+        extras // optional
+
+      }) => {
+        return {
+          primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+          weights,
+          name
+        };
+      });
+    }
+
+    static parsePrimitives(gl, primitives, desc, bufferViews) {
+      return primitives.map(({
+        attributes,
+        // required
+        indices,
+        // optional
+        material,
+        // optional
+        mode = 4,
+        // optional
+        targets // optional
+        // extensions, // optional
+        // extras, // optional
+
+      }) => {
+        const geometry = new Geometry(gl); // Add each attribute found in primitive
+
+        for (const attr in attributes) {
+          geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+        } // Add index attribute if found
+
+
+        if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews)); // TODO: materials
+
+        const program = NormalProgram(gl);
+        return {
+          geometry,
+          program,
+          mode
+        };
+      });
+    }
+
+    static parseAccessor(index, desc, bufferViews) {
+      // TODO: init missing bufferView with 0s
+      // TODO: support sparse
+      const {
+        bufferView: bufferViewIndex,
+        // optional
+        byteOffset = 0,
+        // optional
+        componentType,
+        // required
+        normalized = false,
+        // optional
+        count,
+        // required
+        type,
+        // required
+        min,
+        // optional
+        max,
+        // optional
+        sparse // optional
+        // name, // optional
+        // extensions, // optional
+        // extras, // optional
+
+      } = desc.accessors[index];
+      const {
+        data,
+        // attached in parseBufferViews
+        buffer,
+        // replaced to be the actual GL buffer
+        byteOffset: bufferViewByteOffset = 0,
+        byteLength,
+        byteStride = 0,
+        target // name,
+        // extensions,
+        // extras,
+
+      } = bufferViews[bufferViewIndex];
+      const size = TYPE_SIZE[type]; // Return attribute data
+
+      return {
+        data,
+        // Optional. Used for computing bounds if no min/max
+        size,
+        type: componentType,
+        normalized,
+        buffer,
+        stride: byteStride,
+        offset: byteOffset,
+        count,
+        min,
+        max
+      };
+    }
+
+    static parseNodes(gl, desc, meshes) {
+      const nodes = desc.nodes.map(({
+        // Everything is optional
+        camera,
+        children,
+        skin,
+        matrix,
+        mesh: meshIndex,
+        rotation,
+        scale,
+        translation,
+        weights,
+        name,
+        extensions,
+        extras
+      }) => {
+        const node = new Transform();
+
+        if (matrix) {
+          node.matrix.copy(matrix);
+          node.decompose();
+        } else {
+          if (rotation) node.quaternion.copy(rotation);
+          if (scale) node.scale.copy(scale);
+          if (translation) node.position.copy(translation);
+        }
+
+        if (meshIndex !== undefined) {
+          meshes[meshIndex].primitives.forEach(({
+            geometry,
+            program,
+            mode
+          }) => {
+            const mesh = new Mesh(gl, {
+              geometry,
+              program,
+              mode
+            });
+            mesh.setParent(node);
+          });
+        }
+
+        return node;
+      }); // Set hierarchy now all nodes created
+
+      desc.nodes.forEach(({
+        children = []
+      }, i) => {
+        children.forEach(childIndex => {
+          nodes[childIndex].setParent(nodes[i]);
+        });
+      });
+      return nodes;
+    }
+
+    static parseScenes(desc, nodes) {
+      return desc.scenes.map(({
+        nodes: nodesIndices = [],
+        name,
+        extensions,
+        extras
+      }) => {
+        return nodesIndices.map(i => nodes[i]);
+      });
+    }
+
+  }
+
   const renderer = new Renderer({
     dpr: 2
   });
@@ -4495,10 +5210,13 @@
   document.body.appendChild(gl.canvas);
   gl.clearColor(1, 1, 1, 1);
   const camera = new Camera(gl, {
-    fov: 45
+    near: 1,
+    far: 1000
   });
-  camera.position.set(3, 1.5, 4);
-  camera.lookAt([1, 0.2, 0]);
+  camera.position.set(281, 127, 217); // window.CAMERA = camera;
+
+  const controls = new Orbit(camera);
+  controls.target.y = 50;
 
   function resize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -4509,111 +5227,28 @@
 
   window.addEventListener('resize', resize, false);
   resize();
-  const scene = new Transform(); // Upload empty texture while source loading
+  const scene = new Transform();
 
-  const texture = new Texture(gl);
-  const img = new Image(); // update image value with source once loaded
+  (async function () {
+    const gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
+    console.log(gltf);
+    gltf.scene.forEach(node => node.setParent(scene));
+  })();
 
-  img.onload = () => texture.image = img;
-
-  img.src = 'assets/saddle.jpg';
-  const program = new Program(gl, {
-    vertex,
-    fragment,
-    uniforms: {
-      tMap: {
-        value: texture
-      }
-    }
-  });
-  let mesh;
-  loadModel();
-
-  async function loadModel() {
-    const data = await (await fetch(`assets/saddle.json`)).json();
-    const geometry = new Geometry(gl, {
-      position: {
-        size: 3,
-        data: new Float32Array(data.position)
-      },
-      uv: {
-        size: 2,
-        data: new Float32Array(data.uv)
-      },
-      normal: {
-        size: 3,
-        data: new Float32Array(data.normal)
-      }
-    });
-    mesh = new Mesh(gl, {
-      geometry,
-      program
-    });
-    mesh.position.set(0, 0, 0);
-    mesh.setParent(scene);
-  }
-
-  const videoGeometry = new Box(gl, {
-    width: 1.78,
-    height: 1,
-    depth: 1.78
-  }); // Init empty texture while source loading
-
-  const videoTexture = new Texture(gl, {
-    generateMipmaps: false,
-    width: 1024,
-    height: 512
-  }); // Create video with attributes that let it autoplay
-  // Check update loop to see when video is attached to texture
-
-  let video = document.createElement('video');
-  video.src = 'assets/laputa.mp4'; // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
-  // The best approach is to never assume that it will work, and therefore prepare for a fallback.
-  // Tested on mac: Chrome, Safari, Firefox; android: chrome
-
-  video.loop = true;
-  video.muted = true;
-  video.play(); // TODO: test ios. Possible add following
-  // video.setAttribute('crossorigin', 'anonymous');
-  // video.setAttribute('webkit-playsinline', true);
-  // video.setAttribute('playsinline', true);
-
-  const videoProgram = new Program(gl, {
-    vertex,
-    fragment,
-    uniforms: {
-      tMap: {
-        value: videoTexture
-      }
-    },
-    cullFace: null
-  });
-  const videoMesh = new Mesh(gl, {
-    geometry: videoGeometry,
-    program: videoProgram
-  });
-  videoMesh.position.set(0, 0.5, -4);
-  videoMesh.scale.set(1.5);
-  videoMesh.setParent(scene);
   requestAnimationFrame(update);
 
-  function update(t) {
-    requestAnimationFrame(update); // Attach video and/or update texture when video is ready
-
-    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-      if (!videoTexture.image) videoTexture.image = video;
-      videoTexture.needsUpdate = true;
-    }
-
-    if (mesh) mesh.rotation.y -= 0.005;
-    videoMesh.rotation.y += 0.003;
+  function update() {
+    requestAnimationFrame(update);
+    controls.update();
     renderer.render({
       scene,
-      camera
+      camera,
+      sort: false,
+      frustumCull: false
     });
   }
 
-  document.getElementsByClassName('Info')[0].innerHTML = 'Textures. Model by Google Poly. Film by Studio Ghibli.';
-  document.title = 'OGL • Textures';
+  document.getElementsByClassName('Info')[0].innerHTML = 'Load GLTF (Graphics Language Transmission Format). Model by <a href="https://sketchfab.com/3d-models/old-scooter-5e9b5072b2224ba982366490ad5f31d9" target="_blank">Nadia Ribitis</a>';
+  document.title = 'OGL • Load GLTF';
 
 }());

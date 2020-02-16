@@ -7,7 +7,6 @@ const extensions = [
 ];
 
 export default [
-    buildExample('load-gltf'),
 
     // Geometry
     buildExample('triangle-screen-shader'),
@@ -19,6 +18,7 @@ export default [
     buildExample('particles'),
     buildExample('instancing'),
     buildExample('polylines'),
+    buildExample('load-gltf'),
 
     // Scenes
     buildExample('scene-graph'),

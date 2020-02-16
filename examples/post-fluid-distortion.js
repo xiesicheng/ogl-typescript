@@ -4394,7 +4394,7 @@
   }
   function parseColor(color = null) {
     // Empty
-    if (color === undefined) return [0, 0, 0]; // Decimal
+    if (!color) return [0, 0, 0]; // Decimal
 
     if (arguments.length === 3) return arguments; // Number
 
@@ -4417,7 +4417,7 @@
   // new Color('red') - Color name string (short list in ColorFunc.js)
 
   class Color extends Array {
-    constructor(color) {
+    constructor(color = null) {
       if (Array.isArray(color)) {
         super(...color);
       } else {
@@ -5590,7 +5590,7 @@
   }; // Get supported formats and types for FBOs
 
   let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
-  const halfFloat = gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
+  const halfFloat = gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES;
   const filtering = supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
   let rgba, rg, r;
 

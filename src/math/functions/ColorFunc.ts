@@ -33,7 +33,7 @@ export function numberToRGB(num) {
 export function parseColor(color: any = null) {
 
     // Empty
-    if (color === undefined) return [0, 0, 0];
+    if (!color) return [0, 0, 0];
 
     // Decimal
     if (arguments.length === 3) return arguments;

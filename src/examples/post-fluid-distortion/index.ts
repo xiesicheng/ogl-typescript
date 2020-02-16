@@ -322,8 +322,7 @@ const texelSize = { value: new Vec2(1 / simRes) };
 // Get supported formats and types for FBOs
 let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
 const halfFloat = gl.renderer.isWebgl2 ? (gl as WebGL2RenderingContext).HALF_FLOAT :
-    gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES :
-        gl.UNSIGNED_BYTE;
+    gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES;
 
 const filtering = supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
 let rgba, rg, r;
@@ -535,7 +534,7 @@ if (isTouchCapable) {
     window.addEventListener('mousemove', updateMouse, false);
 }
 
-const lastMouse: Vec2 & { isInit?: boolean } = new Vec2();
+const lastMouse: Vec2 & { isInit?: boolean; } = new Vec2();
 function updateMouse(e) {
     if (e.changedTouches && e.changedTouches.length) {
         e.x = e.changedTouches[0].pageX;

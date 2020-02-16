@@ -5363,7 +5363,7 @@
     color: 2,
     // Number of render targets
     // Use half float to get accurate position values
-    type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : gl.UNSIGNED_BYTE,
+    type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
     internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
     minFilter: supportLinearFiltering ? gl.LINEAR : gl.NEAREST
   }); // Mesh to render to canvas

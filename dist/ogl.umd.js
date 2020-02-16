@@ -4397,7 +4397,7 @@
   }
   function parseColor(color = null) {
     // Empty
-    if (color === undefined) return [0, 0, 0]; // Decimal
+    if (!color) return [0, 0, 0]; // Decimal
 
     if (arguments.length === 3) return arguments; // Number
 
@@ -4420,7 +4420,7 @@
   // new Color('red') - Color name string (short list in ColorFunc.js)
 
   class Color extends Array {
-    constructor(color) {
+    constructor(color = null) {
       if (Array.isArray(color)) {
         super(...color);
       } else {

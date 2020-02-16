@@ -5418,9 +5418,9 @@
   }); // A console warning will show when no supported format was supplied
   // `loaded` property is a promise resolved when the file is loaded and processed
   // texture.loaded.then(() => console.log('loaded'));
-  // You can check which format was applied using the `format` property
+  // You can check which format was applied using the `ext` property
 
-  document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.format}'.`; // For direct use of the KTXTexture class, you first need to activate the extensions
+  document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.ext}'.`; // For direct use of the KTXTexture class, you first need to activate the extensions
   // TextureLoader.getSupportedExtensions();
   // Then create an empty texture
   // const texture = new KTXTexture(gl);

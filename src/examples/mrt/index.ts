@@ -202,8 +202,8 @@ const target = new RenderTarget(gl, {
 
     // Use half float to get accurate position values
     type: gl.renderer.isWebgl2 ? (gl as WebGL2RenderingContext).HALF_FLOAT :
-        gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES :
-            gl.UNSIGNED_BYTE,
+        gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
+
     internalFormat: gl.renderer.isWebgl2 ? (gl as WebGL2RenderingContext).RGBA16F : gl.RGBA,
     minFilter: supportLinearFiltering ? gl.LINEAR : gl.NEAREST,
 });

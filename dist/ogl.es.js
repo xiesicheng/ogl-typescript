@@ -6410,7 +6410,9 @@ class Flowmap {
     // size of the stamp, percentage of the size
     alpha = 1,
     // opacity of the stamp
-    dissipation = 0.98 // affects the speed that the stamp fades. Closer to 1 is slower
+    dissipation = 0.98,
+    // affects the speed that the stamp fades. Closer to 1 is slower
+    type // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
 
   } = {}) {
     _defineProperty(this, "gl", void 0);
@@ -6454,14 +6456,22 @@ class Flowmap {
     }
 
     function createFBOs() {
-      let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
+      // Requested type not supported, fall back to half float
+      if (!type) type = gl.HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES;
+
+      let minFilter = (() => {
+        if (gl.renderer.isWebgl2) return gl.LINEAR;
+        if (gl.renderer.extensions[`OES_texture_${type === gl.FLOAT ? '' : 'half_'}float_linear`]) return gl.LINEAR;
+        return gl.NEAREST;
+      })();
+
       const options = {
         width: size,
         height: size,
-        type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : gl.UNSIGNED_BYTE,
+        type: type,
         format: gl.RGBA,
-        internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
-        minFilter: supportLinearFiltering ? gl.LINEAR : gl.NEAREST,
+        internalFormat: gl.renderer.isWebgl2 ? type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F : gl.RGBA,
+        minFilter,
         depth: false
       };
       _this.mask.read = new RenderTarget(gl, options);
@@ -6565,7 +6575,9 @@ class GPGPU {
   constructor(gl, {
     // Always pass in array of vec4s (RGBA values within texture)
     data = new Float32Array(16),
-    geometry = new Triangle(gl)
+    geometry = new Triangle(gl),
+    type // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
+
   }) {
     _defineProperty(this, "gl", void 0);
 
@@ -6633,9 +6645,9 @@ class GPGPU {
     const options = {
       width: this.size,
       height: this.size,
-      type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : gl.UNSIGNED_BYTE,
+      type: type || gl.HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
       format: gl.RGBA,
-      internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
+      internalFormat: gl.renderer.isWebgl2 ? type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F : gl.RGBA,
       minFilter: gl.NEAREST,
       depth: false,
       unpackAlignment: 1

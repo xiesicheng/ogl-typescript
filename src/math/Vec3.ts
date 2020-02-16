@@ -12,20 +12,20 @@ export class Vec3 extends Array<number>{
         return this[0];
     }
 
-    set x(v) {
-        this[0] = v;
-    }
-
     get y() {
         return this[1];
     }
 
-    set y(v) {
-        this[1] = v;
-    }
-
     get z() {
         return this[2];
+    }
+
+    set x(v) {
+        this[0] = v;
+    }
+
+    set y(v) {
+        this[1] = v;
     }
 
     set z(v) {
@@ -83,7 +83,7 @@ export class Vec3 extends Array<number>{
     }
 
     squaredLen() {
-        return this.squaredDistance();
+        return Vec3Func.squaredLength(this);
     }
 
     squaredDistance(v?: Vec3) {

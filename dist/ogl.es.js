@@ -384,20 +384,20 @@ class Vec3 extends Array {
     return this[0];
   }
 
-  set x(v) {
-    this[0] = v;
-  }
-
   get y() {
     return this[1];
   }
 
-  set y(v) {
-    this[1] = v;
-  }
-
   get z() {
     return this[2];
+  }
+
+  set x(v) {
+    this[0] = v;
+  }
+
+  set y(v) {
+    this[1] = v;
   }
 
   set z(v) {
@@ -450,7 +450,7 @@ class Vec3 extends Array {
   }
 
   squaredLen() {
-    return this.squaredDistance();
+    return squaredLength(this);
   }
 
   squaredDistance(v) {
@@ -543,6 +543,8 @@ let ATTR_ID = 1; // export interface Attributes {
 //     index: { data: index },
 // }
 
+// To stop inifinite warnings
+let isBoundsWarned = false;
 class Geometry {
   constructor(gl, attributes = {}) {
     _defineProperty(this, "gl", void 0);
@@ -589,18 +591,25 @@ class Geometry {
   addAttribute(key, attr) {
     this.attributes[key] = attr; // Set options
 
-    attr.id = ATTR_ID++;
+    attr.id = ATTR_ID++; // TODO: currently unused, remove?
+
     attr.size = attr.size || 1;
     attr.type = attr.type || (attr.data.constructor === Float32Array ? this.gl.FLOAT : attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : this.gl.UNSIGNED_INT); // Uint32Array
 
     attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
-    attr.normalize = attr.normalize || false;
-    attr.buffer = this.gl.createBuffer();
-    attr.count = attr.data.length / attr.size;
+    attr.normalized = attr.normalized || false;
+    attr.stride = attr.stride || 0;
+    attr.offset = attr.offset || 0;
+    attr.count = attr.count || attr.data.length / attr.size;
     attr.divisor = attr.instanced || 0;
-    attr.needsUpdate = false; // Push data to buffer
+    attr.needsUpdate = false;
 
-    this.updateAttribute(attr); // Update geometry counts. If indexed, ignore regular attributes
+    if (!attr.buffer) {
+      attr.buffer = this.gl.createBuffer(); // Push data to buffer
+
+      this.updateAttribute(attr);
+    } // Update geometry counts. If indexed, ignore regular attributes
+
 
     if (attr.divisor) {
       this.isInstanced = true;
@@ -619,10 +628,9 @@ class Geometry {
   }
 
   updateAttribute(attr) {
-    // Already bound, prevent gl command
-    if (this.glState.boundBuffer !== attr.id) {
+    if (this.glState.boundBuffer !== attr.buffer) {
       this.gl.bindBuffer(attr.target, attr.buffer);
-      this.glState.boundBuffer = attr.id;
+      this.glState.boundBuffer = attr.buffer;
     }
 
     this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
@@ -659,10 +667,8 @@ class Geometry {
 
       const attr = this.attributes[name];
       this.gl.bindBuffer(attr.target, attr.buffer);
-      this.glState.boundBuffer = attr.id;
-      this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalize, 0, // stride
-      0 // offset
-      );
+      this.glState.boundBuffer = attr.buffer;
+      this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalized, attr.stride, attr.offset);
       this.gl.enableVertexAttribArray(location); // For instanced attributes, divisor needs to be set.
       // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
 
@@ -696,17 +702,25 @@ class Geometry {
       }
     } else {
       if (this.attributes.index) {
-        this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start);
+        this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2);
       } else {
         this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
       }
     }
   }
 
-  computeBoundingBox(array) {
-    // Use position buffer if available
-    if (!array && this.attributes.position) array = this.attributes.position.data;
-    if (!array) console.warn('No position buffer found to compute bounds');
+  getPositionArray() {
+    // Use position buffer, or min/max if available
+    const attr = this.attributes.position;
+    if (attr.min) return [attr.min, attr.max];
+    if (attr.data) return attr.data;
+    if (isBoundsWarned) return;
+    console.warn('No position buffer data found to compute bounds');
+    return isBoundsWarned = true;
+  }
+
+  computeBoundingBox(array = null) {
+    if (!array) array = this.getPositionArray();
 
     if (!this.bounds) {
       this.bounds = {
@@ -723,7 +737,7 @@ class Geometry {
     const center = this.bounds.center;
     const scale = this.bounds.scale;
     min.set(+Infinity);
-    max.set(-Infinity);
+    max.set(-Infinity); // TODO: use offset/stride if exists
 
     for (let i = 0, l = array.length; i < l; i += 3) {
       const x = array[i];
@@ -741,10 +755,8 @@ class Geometry {
     center.add(min, max).divide(2);
   }
 
-  computeBoundingSphere(array) {
-    // Use position buffer if available
-    if (!array && this.attributes.position) array = this.attributes.position.data;
-    if (!array) console.warn('No position buffer found to compute bounds');
+  computeBoundingSphere(array = null) {
+    if (!array) array = this.getPositionArray();
     if (!this.bounds) this.computeBoundingBox(array);
     let maxRadiusSq = 0;
 
@@ -1491,9 +1503,9 @@ class Renderer {
     } // updates all scene graph matrices
 
 
-    if (update) scene.updateMatrixWorld(); // Update camera separately if not in scene graph
+    if (update) scene.updateMatrixWorld(); // Update camera separately, in case not in scene graph
 
-    if (camera && camera.parent === null) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
+    if (camera) camera.updateMatrixWorld(); // Get render list - entails culling and sorting
 
     const renderList = this.getRenderList({
       scene,
@@ -1510,6 +1522,7 @@ class Renderer {
 
 }
 
+const EPSILON = 0.000001;
 /**
  * Copy the values from one mat4 to another
  *
@@ -1541,22 +1554,6 @@ function copy$1(out, a) {
  * Set the components of a mat4 to the given values
  *
  * @param {mat4} out the receiving matrix
- * @param {Number} m00 Component in column 0, row 0 position (index 0)
- * @param {Number} m01 Component in column 0, row 1 position (index 1)
- * @param {Number} m02 Component in column 0, row 2 position (index 2)
- * @param {Number} m03 Component in column 0, row 3 position (index 3)
- * @param {Number} m10 Component in column 1, row 0 position (index 4)
- * @param {Number} m11 Component in column 1, row 1 position (index 5)
- * @param {Number} m12 Component in column 1, row 2 position (index 6)
- * @param {Number} m13 Component in column 1, row 3 position (index 7)
- * @param {Number} m20 Component in column 2, row 0 position (index 8)
- * @param {Number} m21 Component in column 2, row 1 position (index 9)
- * @param {Number} m22 Component in column 2, row 2 position (index 10)
- * @param {Number} m23 Component in column 2, row 3 position (index 11)
- * @param {Number} m30 Component in column 3, row 0 position (index 12)
- * @param {Number} m31 Component in column 3, row 1 position (index 13)
- * @param {Number} m32 Component in column 3, row 2 position (index 14)
- * @param {Number} m33 Component in column 3, row 3 position (index 15)
  * @returns {mat4} out
  */
 
@@ -1855,135 +1852,83 @@ function scale$1(out, a, v) {
   return out;
 }
 /**
- * Rotates a matrix by the given angle around the X axis
+ * Rotates a mat4 by the given angle around the given axis
  *
  * @param {mat4} out the receiving matrix
  * @param {mat4} a the matrix to rotate
  * @param {Number} rad the angle to rotate the matrix by
+ * @param {vec3} axis the axis to rotate around
  * @returns {mat4} out
  */
 
-function rotateX(out, a, rad) {
-  let s = Math.sin(rad);
-  let c = Math.cos(rad);
-  let a10 = a[4];
-  let a11 = a[5];
-  let a12 = a[6];
-  let a13 = a[7];
-  let a20 = a[8];
-  let a21 = a[9];
-  let a22 = a[10];
-  let a23 = a[11];
+function rotate(out, a, rad, axis) {
+  let x = axis[0],
+      y = axis[1],
+      z = axis[2];
+  let len = Math.hypot(x, y, z);
+  let s, c, t;
+  let a00, a01, a02, a03;
+  let a10, a11, a12, a13;
+  let a20, a21, a22, a23;
+  let b00, b01, b02;
+  let b10, b11, b12;
+  let b20, b21, b22;
 
-  if (a !== out) {
-    // If the source and destination differ, copy the unchanged rows
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    out[3] = a[3];
-    out[12] = a[12];
-    out[13] = a[13];
-    out[14] = a[14];
-    out[15] = a[15];
-  } // Perform axis-specific matrix multiplication
+  if (Math.abs(len) < EPSILON) {
+    return null;
+  }
 
+  len = 1 / len;
+  x *= len;
+  y *= len;
+  z *= len;
+  s = Math.sin(rad);
+  c = Math.cos(rad);
+  t = 1 - c;
+  a00 = a[0];
+  a01 = a[1];
+  a02 = a[2];
+  a03 = a[3];
+  a10 = a[4];
+  a11 = a[5];
+  a12 = a[6];
+  a13 = a[7];
+  a20 = a[8];
+  a21 = a[9];
+  a22 = a[10];
+  a23 = a[11]; // Construct the elements of the rotation matrix
 
-  out[4] = a10 * c + a20 * s;
-  out[5] = a11 * c + a21 * s;
-  out[6] = a12 * c + a22 * s;
-  out[7] = a13 * c + a23 * s;
-  out[8] = a20 * c - a10 * s;
-  out[9] = a21 * c - a11 * s;
-  out[10] = a22 * c - a12 * s;
-  out[11] = a23 * c - a13 * s;
-  return out;
-}
-/**
- * Rotates a matrix by the given angle around the Y axis
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat4} out
- */
+  b00 = x * x * t + c;
+  b01 = y * x * t + z * s;
+  b02 = z * x * t - y * s;
+  b10 = x * y * t - z * s;
+  b11 = y * y * t + c;
+  b12 = z * y * t + x * s;
+  b20 = x * z * t + y * s;
+  b21 = y * z * t - x * s;
+  b22 = z * z * t + c; // Perform rotation-specific matrix multiplication
 
-function rotateY(out, a, rad) {
-  let s = Math.sin(rad);
-  let c = Math.cos(rad);
-  let a00 = a[0];
-  let a01 = a[1];
-  let a02 = a[2];
-  let a03 = a[3];
-  let a20 = a[8];
-  let a21 = a[9];
-  let a22 = a[10];
-  let a23 = a[11];
-
-  if (a !== out) {
-    // If the source and destination differ, copy the unchanged rows
-    out[4] = a[4];
-    out[5] = a[5];
-    out[6] = a[6];
-    out[7] = a[7];
-    out[12] = a[12];
-    out[13] = a[13];
-    out[14] = a[14];
-    out[15] = a[15];
-  } // Perform axis-specific matrix multiplication
-
-
-  out[0] = a00 * c - a20 * s;
-  out[1] = a01 * c - a21 * s;
-  out[2] = a02 * c - a22 * s;
-  out[3] = a03 * c - a23 * s;
-  out[8] = a00 * s + a20 * c;
-  out[9] = a01 * s + a21 * c;
-  out[10] = a02 * s + a22 * c;
-  out[11] = a03 * s + a23 * c;
-  return out;
-}
-/**
- * Rotates a matrix by the given angle around the Z axis
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat4} out
- */
-
-function rotateZ(out, a, rad) {
-  let s = Math.sin(rad);
-  let c = Math.cos(rad);
-  let a00 = a[0];
-  let a01 = a[1];
-  let a02 = a[2];
-  let a03 = a[3];
-  let a10 = a[4];
-  let a11 = a[5];
-  let a12 = a[6];
-  let a13 = a[7];
+  out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+  out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+  out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+  out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+  out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+  out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+  out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+  out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+  out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+  out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+  out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+  out[11] = a03 * b20 + a13 * b21 + a23 * b22;
 
   if (a !== out) {
     // If the source and destination differ, copy the unchanged last row
-    out[8] = a[8];
-    out[9] = a[9];
-    out[10] = a[10];
-    out[11] = a[11];
     out[12] = a[12];
     out[13] = a[13];
     out[14] = a[14];
     out[15] = a[15];
-  } // Perform axis-specific matrix multiplication
+  }
 
-
-  out[0] = a00 * c + a10 * s;
-  out[1] = a01 * c + a11 * s;
-  out[2] = a02 * c + a12 * s;
-  out[3] = a03 * c + a13 * s;
-  out[4] = a10 * c - a00 * s;
-  out[5] = a11 * c - a01 * s;
-  out[6] = a12 * c - a02 * s;
-  out[7] = a13 * c - a03 * s;
   return out;
 }
 /**
@@ -2023,9 +1968,9 @@ function getScaling(out, mat) {
   let m31 = mat[8];
   let m32 = mat[9];
   let m33 = mat[10];
-  out[0] = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-  out[1] = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-  out[2] = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
+  out[0] = Math.hypot(m11, m12, m13);
+  out[1] = Math.hypot(m21, m22, m23);
+  out[2] = Math.hypot(m31, m32, m33);
   return out;
 }
 function getMaxScaleOnAxis(mat) {
@@ -2053,39 +1998,55 @@ function getMaxScaleOnAxis(mat) {
  * @return {quat} out
  */
 
-function getRotation(out, mat) {
-  // Algorithm taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-  let trace = mat[0] + mat[5] + mat[10];
-  let S = 0;
+const getRotation = function () {
+  const temp = [0, 0, 0];
+  return function (out, mat) {
+    let scaling = temp;
+    getScaling(scaling, mat);
+    let is1 = 1 / scaling[0];
+    let is2 = 1 / scaling[1];
+    let is3 = 1 / scaling[2];
+    let sm11 = mat[0] * is1;
+    let sm12 = mat[1] * is2;
+    let sm13 = mat[2] * is3;
+    let sm21 = mat[4] * is1;
+    let sm22 = mat[5] * is2;
+    let sm23 = mat[6] * is3;
+    let sm31 = mat[8] * is1;
+    let sm32 = mat[9] * is2;
+    let sm33 = mat[10] * is3;
+    let trace = sm11 + sm22 + sm33;
+    let S = 0;
 
-  if (trace > 0) {
-    S = Math.sqrt(trace + 1.0) * 2;
-    out[3] = 0.25 * S;
-    out[0] = (mat[6] - mat[9]) / S;
-    out[1] = (mat[8] - mat[2]) / S;
-    out[2] = (mat[1] - mat[4]) / S;
-  } else if (mat[0] > mat[5] && mat[0] > mat[10]) {
-    S = Math.sqrt(1.0 + mat[0] - mat[5] - mat[10]) * 2;
-    out[3] = (mat[6] - mat[9]) / S;
-    out[0] = 0.25 * S;
-    out[1] = (mat[1] + mat[4]) / S;
-    out[2] = (mat[8] + mat[2]) / S;
-  } else if (mat[5] > mat[10]) {
-    S = Math.sqrt(1.0 + mat[5] - mat[0] - mat[10]) * 2;
-    out[3] = (mat[8] - mat[2]) / S;
-    out[0] = (mat[1] + mat[4]) / S;
-    out[1] = 0.25 * S;
-    out[2] = (mat[6] + mat[9]) / S;
-  } else {
-    S = Math.sqrt(1.0 + mat[10] - mat[0] - mat[5]) * 2;
-    out[3] = (mat[1] - mat[4]) / S;
-    out[0] = (mat[8] + mat[2]) / S;
-    out[1] = (mat[6] + mat[9]) / S;
-    out[2] = 0.25 * S;
-  }
+    if (trace > 0) {
+      S = Math.sqrt(trace + 1.0) * 2;
+      out[3] = 0.25 * S;
+      out[0] = (sm23 - sm32) / S;
+      out[1] = (sm31 - sm13) / S;
+      out[2] = (sm12 - sm21) / S;
+    } else if (sm11 > sm22 && sm11 > sm33) {
+      S = Math.sqrt(1.0 + sm11 - sm22 - sm33) * 2;
+      out[3] = (sm23 - sm32) / S;
+      out[0] = 0.25 * S;
+      out[1] = (sm12 + sm21) / S;
+      out[2] = (sm31 + sm13) / S;
+    } else if (sm22 > sm33) {
+      S = Math.sqrt(1.0 + sm22 - sm11 - sm33) * 2;
+      out[3] = (sm31 - sm13) / S;
+      out[0] = (sm12 + sm21) / S;
+      out[1] = 0.25 * S;
+      out[2] = (sm23 + sm32) / S;
+    } else {
+      S = Math.sqrt(1.0 + sm33 - sm11 - sm22) * 2;
+      out[3] = (sm12 - sm21) / S;
+      out[0] = (sm31 + sm13) / S;
+      out[1] = (sm23 + sm32) / S;
+      out[2] = 0.25 * S;
+    }
 
-  return out;
-}
+    return out;
+  };
+}();
 /**
  * Creates a matrix from a quaternion rotation, vector translation and vector scale
  * This is equivalent to (but much faster than):
@@ -2321,36 +2282,36 @@ class Mat4 extends Array {
     return this;
   }
 
-  set x(v) {
-    this[12] = v;
-  }
-
   get x() {
     return this[12];
-  }
-
-  set y(v) {
-    this[13] = v;
   }
 
   get y() {
     return this[13];
   }
 
-  set z(v) {
-    this[14] = v;
-  }
-
   get z() {
     return this[14];
   }
 
-  set w(v) {
-    this[15] = v;
-  }
-
   get w() {
     return this[15];
+  }
+
+  set x(v) {
+    this[12] = v;
+  }
+
+  set y(v) {
+    this[13] = v;
+  }
+
+  set z(v) {
+    this[14] = v;
+  }
+
+  set w(v) {
+    this[15] = v;
   }
 
   set(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
@@ -2364,18 +2325,8 @@ class Mat4 extends Array {
     return this;
   }
 
-  rotateX(v, m = this) {
-    rotateX(this, m, v);
-    return this;
-  }
-
-  rotateY(v, m = this) {
-    rotateY(this, m, v);
-    return this;
-  }
-
-  rotateZ(v, m = this) {
-    rotateZ(this, m, v);
+  rotate(v, axis, m = this) {
+    rotate(out, m, v, axis);
     return this;
   }
 
@@ -2614,7 +2565,7 @@ function multiply$2(out, a, b) {
  * @returns {quat} out
  */
 
-function rotateX$1(out, a, rad) {
+function rotateX(out, a, rad) {
   rad *= 0.5;
   let ax = a[0],
       ay = a[1],
@@ -2637,7 +2588,7 @@ function rotateX$1(out, a, rad) {
  * @returns {quat} out
  */
 
-function rotateY$1(out, a, rad) {
+function rotateY(out, a, rad) {
   rad *= 0.5;
   let ax = a[0],
       ay = a[1],
@@ -2660,7 +2611,7 @@ function rotateY$1(out, a, rad) {
  * @returns {quat} out
  */
 
-function rotateZ$1(out, a, rad) {
+function rotateZ(out, a, rad) {
   rad *= 0.5;
   let ax = a[0],
       ay = a[1],
@@ -2922,13 +2873,21 @@ class Quat extends Array {
     return this[0];
   }
 
+  get y() {
+    return this[1];
+  }
+
+  get z() {
+    return this[2];
+  }
+
+  get w() {
+    return this[3];
+  }
+
   set x(v) {
     this[0] = v;
     this.onChange();
-  }
-
-  get y() {
-    return this[1];
   }
 
   set y(v) {
@@ -2936,17 +2895,9 @@ class Quat extends Array {
     this.onChange();
   }
 
-  get z() {
-    return this[2];
-  }
-
   set z(v) {
     this[2] = v;
     this.onChange();
-  }
-
-  get w() {
-    return this[3];
   }
 
   set w(v) {
@@ -2968,19 +2919,19 @@ class Quat extends Array {
   }
 
   rotateX(a) {
-    rotateX$1(this, this, a);
+    rotateX(this, this, a);
     this.onChange();
     return this;
   }
 
   rotateY(a) {
-    rotateY$1(this, this, a);
+    rotateY(this, this, a);
     this.onChange();
     return this;
   }
 
   rotateZ(a) {
-    rotateZ$1(this, this, a);
+    rotateZ(this, this, a);
     this.onChange();
     return this;
   }
@@ -3150,22 +3101,22 @@ class Euler extends Array {
     return this[0];
   }
 
+  get y() {
+    return this[1];
+  }
+
+  get z() {
+    return this[2];
+  }
+
   set x(v) {
     this[0] = v;
     this.onChange();
   }
 
-  get y() {
-    return this[1];
-  }
-
   set y(v) {
     this[1] = v;
     this.onChange();
-  }
-
-  get z() {
-    return this[2];
   }
 
   set z(v) {
@@ -3322,7 +3273,8 @@ class Camera extends Transform {
     left,
     right,
     bottom,
-    top
+    top,
+    zoom = 1
   } = {}) {
     super();
 
@@ -3333,6 +3285,16 @@ class Camera extends Transform {
     _defineProperty(this, "fov", void 0);
 
     _defineProperty(this, "aspect", void 0);
+
+    _defineProperty(this, "left", void 0);
+
+    _defineProperty(this, "right", void 0);
+
+    _defineProperty(this, "bottom", void 0);
+
+    _defineProperty(this, "top", void 0);
+
+    _defineProperty(this, "zoom", void 0);
 
     _defineProperty(this, "projectionMatrix", void 0);
 
@@ -3346,21 +3308,24 @@ class Camera extends Transform {
 
     _defineProperty(this, "frustum", void 0);
 
-    this.near = near;
-    this.far = far;
-    this.fov = fov;
-    this.aspect = aspect;
-    this.projectionMatrix = new Mat4();
-    this.viewMatrix = new Mat4();
-    this.projectionViewMatrix = new Mat4();
-    this.worldPosition = new Vec3(); // Use orthographic if values set, else default to perspective camera
-
-    if (left || right) this.orthographic({
+    Object.assign(this, {
+      near,
+      far,
+      fov,
+      aspect,
       left,
       right,
       bottom,
-      top
-    });else this.perspective();
+      top,
+      zoom
+    });
+    this.projectionMatrix = new Mat4();
+    this.viewMatrix = new Mat4();
+    this.projectionViewMatrix = new Mat4();
+    this.worldPosition = new Vec3(); // Use orthographic if left/right set, else default to perspective camera
+
+    this.type = left || right ? 'orthographic' : 'perspective';
+    if (this.type === 'orthographic') this.orthographic();else this.perspective();
   }
 
   perspective({
@@ -3369,6 +3334,12 @@ class Camera extends Transform {
     fov = this.fov,
     aspect = this.aspect
   } = {}) {
+    Object.assign(this, {
+      near,
+      far,
+      fov,
+      aspect
+    });
     this.projectionMatrix.fromPerspective({
       fov: fov * (Math.PI / 180),
       aspect,
@@ -3382,11 +3353,25 @@ class Camera extends Transform {
   orthographic({
     near = this.near,
     far = this.far,
-    left = -1,
-    right = 1,
-    bottom = -1,
-    top = 1
+    left = this.left,
+    right = this.right,
+    bottom = this.bottom,
+    top = this.top,
+    zoom = this.zoom
   } = {}) {
+    Object.assign(this, {
+      near,
+      far,
+      left,
+      right,
+      bottom,
+      top,
+      zoom
+    });
+    left /= zoom;
+    right /= zoom;
+    bottom /= zoom;
+    top /= zoom;
     this.projectionMatrix.fromOrthogonal({
       left,
       right,
@@ -3456,6 +3441,7 @@ class Camera extends Transform {
     // If no position attribute, treat as frustumCulled false
     if (!node.geometry.attributes.position) return true;
     if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();
+    if (!node.geometry.bounds) return true;
     const center = tempVec3a;
     center.copy(node.geometry.bounds.center);
     center.applyMatrix4(node.worldMatrix);
@@ -3498,6 +3484,43 @@ function fromMat4(out, a) {
   return out;
 }
 /**
+ * Calculates a 3x3 matrix from the given quaternion
+ *
+ * @param {mat3} out mat3 receiving operation result
+ * @param {quat} q Quaternion to create matrix from
+ *
+ * @returns {mat3} out
+ */
+
+function fromQuat$1(out, q) {
+  let x = q[0],
+      y = q[1],
+      z = q[2],
+      w = q[3];
+  let x2 = x + x;
+  let y2 = y + y;
+  let z2 = z + z;
+  let xx = x * x2;
+  let yx = y * x2;
+  let yy = y * y2;
+  let zx = z * x2;
+  let zy = z * y2;
+  let zz = z * z2;
+  let wx = w * x2;
+  let wy = w * y2;
+  let wz = w * z2;
+  out[0] = 1 - yy - zz;
+  out[3] = yx - wz;
+  out[6] = zx + wy;
+  out[1] = yx + wz;
+  out[4] = 1 - xx - zz;
+  out[7] = zy - wx;
+  out[2] = zx - wy;
+  out[5] = zy + wx;
+  out[8] = 1 - xx - yy;
+  return out;
+}
+/**
  * Copy the values from one mat3 to another
  *
  * @param {mat3} out the receiving matrix
@@ -3521,15 +3544,6 @@ function copy$4(out, a) {
  * Set the components of a mat3 to the given values
  *
  * @param {mat3} out the receiving matrix
- * @param {Number} m00 Component in column 0, row 0 position (index 0)
- * @param {Number} m01 Component in column 0, row 1 position (index 1)
- * @param {Number} m02 Component in column 0, row 2 position (index 2)
- * @param {Number} m10 Component in column 1, row 0 position (index 3)
- * @param {Number} m11 Component in column 1, row 1 position (index 4)
- * @param {Number} m12 Component in column 1, row 2 position (index 5)
- * @param {Number} m20 Component in column 2, row 0 position (index 6)
- * @param {Number} m21 Component in column 2, row 1 position (index 7)
- * @param {Number} m22 Component in column 2, row 2 position (index 8)
  * @returns {mat3} out
  */
 
@@ -3684,7 +3698,7 @@ function translate$1(out, a, v) {
  * @returns {mat3} out
  */
 
-function rotate(out, a, rad) {
+function rotate$1(out, a, rad) {
   let a00 = a[0],
       a01 = a[1],
       a02 = a[2],
@@ -3728,43 +3742,6 @@ function scale$2(out, a, v) {
   out[6] = a[6];
   out[7] = a[7];
   out[8] = a[8];
-  return out;
-}
-/**
- * Calculates a 3x3 matrix from the given quaternion
- *
- * @param {mat3} out mat3 receiving operation result
- * @param {quat} q Quaternion to create matrix from
- *
- * @returns {mat3} out
- */
-
-function fromQuat$1(out, q) {
-  let x = q[0],
-      y = q[1],
-      z = q[2],
-      w = q[3];
-  let x2 = x + x;
-  let y2 = y + y;
-  let z2 = z + z;
-  let xx = x * x2;
-  let yx = y * x2;
-  let yy = y * y2;
-  let zx = z * x2;
-  let zy = z * y2;
-  let zz = z * z2;
-  let wx = w * x2;
-  let wy = w * y2;
-  let wz = w * z2;
-  out[0] = 1 - yy - zz;
-  out[3] = yx - wz;
-  out[6] = zx + wy;
-  out[1] = yx + wz;
-  out[4] = 1 - xx - zz;
-  out[7] = zy - wx;
-  out[2] = zx - wy;
-  out[5] = zy + wx;
-  out[8] = 1 - xx - yy;
   return out;
 }
 /**
@@ -3843,7 +3820,7 @@ class Mat3 extends Array {
   }
 
   rotate(v, m = this) {
-    rotate(this, m, v);
+    rotate$1(this, m, v);
     return this;
   }
 
@@ -4241,7 +4218,10 @@ class Texture {
         } else {
           this.gl.generateMipmap(this.target);
         }
-      }
+      } // Callback for when data is pushed to GPU
+
+
+      this.onUpdate && this.onUpdate();
     } else {
       if (this.target === this.gl.TEXTURE_CUBE_MAP) {
         // Upload empty pixel for each side while no image to avoid errors while image or video loading
@@ -4258,7 +4238,6 @@ class Texture {
     }
 
     this.store.image = this.image;
-    this.onUpdate && this.onUpdate();
   }
 
 }
@@ -4389,52 +4368,87 @@ class RenderTarget {
 
 }
 
+const NAMES = {
+  "black": "#000000",
+  "white": "#ffffff",
+  "red": "#ff0000",
+  "green": "#00ff00",
+  "blue": "#0000ff",
+  "fuchsia": "#ff00ff",
+  "cyan": "#00ffff",
+  "yellow": "#ffff00",
+  "orange": "#ff8000"
+};
 function hexToRGB(hex) {
   if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
-  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!r) console.warn(`Unable to convert hex string ${hex} to rgb values`);
-  return [parseInt(r[1], 16) / 255, parseInt(r[2], 16) / 255, parseInt(r[3], 16) / 255];
+  const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!rgb) console.warn(`Unable to convert hex string ${hex} to rgb values`);
+  return [parseInt(rgb[1], 16) / 255, parseInt(rgb[2], 16) / 255, parseInt(rgb[3], 16) / 255];
+}
+function numberToRGB(num) {
+  num = parseInt(num);
+  return [(num >> 16 & 255) / 255, (num >> 8 & 255) / 255, (num & 255) / 255];
+}
+function parseColor(color = null) {
+  // Empty
+  if (color === undefined) return [0, 0, 0]; // Decimal
+
+  if (arguments.length === 3) return arguments; // Number
+
+  if (!isNaN(color)) return numberToRGB(color); // Hex
+
+  if (color[0] === "#") return hexToRGB(color); // Names
+
+  if (NAMES[color.toLowerCase()]) return hexToRGB(NAMES[color.toLowerCase()]);
+  console.warn('Color format not recognised');
+  return [0, 0, 0];
 }
 
-// TODO : support more color formats - e.g 0xffffff
+// Constructor and set method accept following formats:
+// new Color() - Empty (defaults to black)
+// new Color([0.2, 0.4, 1.0]) - Decimal Array (or another Color instance)
+// new Color(0.7, 0.0, 0.1) - Decimal RGB values
+// new Color('#ff0000') - Hex string
+// new Color('#ccc') - Short-hand Hex string
+// new Color(0x4f27e8) - Number
+// new Color('red') - Color name string (short list in ColorFunc.js)
+
 class Color extends Array {
-  constructor(r = 0, g = 0, b = 0) {
-    if (typeof r === 'string') [r, g, b] = hexToRGB(r);
-    super(r, g, b);
-    return this;
+  constructor(color) {
+    if (Array.isArray(color)) {
+      super(...color);
+    } else {
+      super(...parseColor(...arguments));
+    }
   }
 
   get r() {
     return this[0];
   }
 
-  set r(v) {
-    this[0] = v;
-  }
-
   get g() {
     return this[1];
-  }
-
-  set g(v) {
-    this[1] = v;
   }
 
   get b() {
     return this[2];
   }
 
+  set r(v) {
+    this[0] = v;
+  }
+
+  set g(v) {
+    this[1] = v;
+  }
+
   set b(v) {
     this[2] = v;
   }
 
-  set(r, g, b) {
-    if (typeof r === 'string') [r, g, b] = hexToRGB(r);
-    if (r.length) return this.copy(r);
-    this[0] = r;
-    this[1] = g;
-    this[2] = b;
-    return this;
+  set(color) {
+    if (Array.isArray(color)) return this.copy(color);
+    return this.copy(parseColor(...arguments));
   }
 
   copy(v) {
@@ -4738,12 +4752,12 @@ class Vec2 extends Array {
     return this[0];
   }
 
-  set x(v) {
-    this[0] = v;
-  }
-
   get y() {
     return this[1];
+  }
+
+  set x(v) {
+    this[0] = v;
   }
 
   set y(v) {
@@ -4872,28 +4886,28 @@ class Vec4 extends Array {
     return this[0];
   }
 
-  set x(v) {
-    this[0] = v;
-  }
-
   get y() {
     return this[1];
-  }
-
-  set y(v) {
-    this[1] = v;
   }
 
   get z() {
     return this[2];
   }
 
-  set z(v) {
-    this[2] = v;
-  }
-
   get w() {
     return this[3];
+  }
+
+  set x(v) {
+    this[0] = v;
+  }
+
+  set y(v) {
+    this[1] = v;
+  }
+
+  set z(v) {
+    this[2] = v;
   }
 
   set w(v) {
@@ -5290,6 +5304,12 @@ class Triangle extends Geometry {
   constructor(gl, {
     attributes = {}
   } = {}) {
+    //         position                uv
+    //      (-1, 3)                  (0, 2)
+    //         |\                      |\
+    //         |__\(1, 1)              |__\(1, 1)
+    //         |__|_\                  |__|_\
+    //   (-1, -1)   (3, -1)        (0, 0)   (2, 0)
     Object.assign(attributes, {
       position: {
         size: 2,
@@ -5560,6 +5580,7 @@ function Orbit(object, {
   const onMouseWheel = e => {
     if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
     e.stopPropagation();
+    e.preventDefault();
 
     if (e.deltaY < 0) {
       dolly(1 / getZoomScale());
@@ -5624,7 +5645,9 @@ function Orbit(object, {
   function addHandlers() {
     element.addEventListener('contextmenu', onContextMenu, false);
     element.addEventListener('mousedown', onMouseDown, false);
-    window.addEventListener('wheel', onMouseWheel, false);
+    element.addEventListener('wheel', onMouseWheel, {
+      passive: false
+    });
     element.addEventListener('touchstart', onTouchStart, {
       passive: false
     });
@@ -5635,14 +5658,14 @@ function Orbit(object, {
   }
 
   this.remove = function () {
-    element.removeEventListener('contextmenu', onContextMenu, false);
-    element.removeEventListener('mousedown', onMouseDown, false);
-    window.removeEventListener('wheel', onMouseWheel, false);
-    element.removeEventListener('touchstart', onTouchStart, false);
-    element.removeEventListener('touchend', onTouchEnd, false);
-    element.removeEventListener('touchmove', onTouchMove, false);
-    window.removeEventListener('mousemove', onMouseMove, false);
-    window.removeEventListener('mouseup', onMouseUp, false);
+    element.removeEventListener('contextmenu', onContextMenu);
+    element.removeEventListener('mousedown', onMouseDown);
+    element.removeEventListener('wheel', onMouseWheel);
+    element.removeEventListener('touchstart', onTouchStart);
+    element.removeEventListener('touchend', onTouchEnd);
+    element.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
   };
 
   addHandlers();
@@ -5667,12 +5690,33 @@ class Raycast {
 
 
   castMouse(camera, mouse = [0, 0]) {
-    // Set origin
-    camera.worldMatrix.getTranslation(this.origin); // Set direction
+    if (camera.type === 'orthographic') {
+      // Set origin
+      // Since camera is orthographic, origin is not the camera position
+      const {
+        left,
+        right,
+        bottom,
+        top,
+        zoom
+      } = camera;
+      const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
+      const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
+      this.origin.set(x, y, 0);
+      this.origin.applyMatrix4(camera.worldMatrix); // Set direction
+      // https://community.khronos.org/t/get-direction-from-transformation-matrix-or-quat/65502/2
 
-    this.direction.set(mouse[0], mouse[1], 0.5);
-    camera.unproject(this.direction);
-    this.direction.sub(this.origin).normalize();
+      this.direction.x = -camera.worldMatrix[8];
+      this.direction.y = -camera.worldMatrix[9];
+      this.direction.z = -camera.worldMatrix[10];
+    } else {
+      // Set origin
+      camera.worldMatrix.getTranslation(this.origin); // Set direction
+
+      this.direction.set(mouse[0], mouse[1], 0.5);
+      camera.unproject(this.direction);
+      this.direction.sub(this.origin).normalize();
+    }
   }
 
   intersectBounds(meshes) {
@@ -5689,21 +5733,23 @@ class Raycast {
       invWorldMat4.inverse(mesh.worldMatrix);
       origin.copy(this.origin).applyMatrix4(invWorldMat4);
       direction.copy(this.direction).transformDirection(invWorldMat4);
-      let distance = 0;
+      let localDistance = 0;
 
       if (mesh.geometry.raycast === 'sphere') {
-        distance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
+        localDistance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
       } else {
-        distance = this.intersectBox(mesh.geometry.bounds, origin, direction);
+        localDistance = this.intersectBox(mesh.geometry.bounds, origin, direction);
       }
 
-      if (!distance) return; // Create object on mesh to avoid generating lots of objects
+      if (!localDistance) return; // Create object on mesh to avoid generating lots of objects
 
       if (!mesh.hit) mesh.hit = {
         localPoint: new Vec3(),
-        distance: distance
+        point: new Vec3()
       };
-      mesh.hit.localPoint.copy(direction).multiply(distance).add(origin);
+      mesh.hit.localPoint.copy(direction).multiply(localDistance).add(origin);
+      mesh.hit.point.copy(mesh.hit.localPoint).applyMatrix4(mesh.worldMatrix);
+      mesh.hit.distance = mesh.hit.point.distance(this.origin);
       hits.push(mesh);
     });
     hits.sort((a, b) => a.hit.distance - b.hit.distance);
@@ -6351,7 +6397,8 @@ const fragment =
 function NormalProgram(gl) {
   return new Program(gl, {
     vertex: vertex,
-    fragment: fragment
+    fragment: fragment,
+    cullFace: null
   });
 }
 
@@ -7187,7 +7234,7 @@ class TextureLoader {
           wrapT,
           anisotropy
         });
-        TextureLoader.loadKTX(src, texture);
+        texture.loaded = this.loadKTX(src, texture);
         break;
 
       case 'webp':
@@ -7207,7 +7254,7 @@ class TextureLoader {
           unpackAlignment,
           flipY
         });
-        this.loadImage(gl, src, texture);
+        texture.loaded = this.loadImage(gl, src, texture);
         break;
 
       default:
@@ -7240,11 +7287,11 @@ class TextureLoader {
   }
 
   static loadKTX(src, texture) {
-    fetch(src).then(res => res.arrayBuffer()).then(buffer => texture.parseBuffer(buffer));
+    return fetch(src).then(res => res.arrayBuffer()).then(buffer => texture.parseBuffer(buffer));
   }
 
   static loadImage(gl, src, texture) {
-    decodeImage(src).then(imgBmp => {
+    return decodeImage(src).then(imgBmp => {
       // Catch non POT textures and update params to avoid errors
       if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
         if (texture.generateMipmaps) texture.generateMipmaps = false;
@@ -7292,4 +7339,334 @@ function decodeImage(src) {
   });
 }
 
-export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GPGPU, Geometry, KTXTexture, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, TextureLoader, Transform, Triangle, Vec2, Vec3, Vec4 };
+// Supports
+// [x] Geometry
+// [x] Nodes and Hierarchy
+// [ ] Morph Targets
+// [ ] Skins
+// [ ] Materials
+// [ ] Textures
+// [ ] Animation
+// [ ] Cameras
+// [ ] Extensions
+// TODO: only push attribute bufferViews to the GPU
+// TODO: Sparse accessor packing? what for?
+// TODO: init accessor missing bufferView with 0s
+// TODO: is there ever more than one component type per buffer view? surely not...
+const TYPE_ARRAY = {
+  5121: Uint8Array,
+  5122: Int16Array,
+  5123: Uint16Array,
+  5125: Uint32Array,
+  5126: Float32Array
+};
+const TYPE_SIZE = {
+  SCALAR: 1,
+  VEC2: 2,
+  VEC3: 3,
+  VEC4: 4,
+  MAT2: 4,
+  MAT3: 9,
+  MAT4: 16
+};
+const ATTRIBUTES = {
+  POSITION: 'position',
+  NORMAL: 'normal',
+  TANGENT: 'tangent',
+  TEXCOORD_0: 'uv',
+  TEXCOORD_1: 'uv2',
+  COLOR_0: 'color',
+  WEIGHTS_0: 'skinWeight',
+  JOINTS_0: 'skinIndex'
+};
+class GLTFLoader {
+  static async load(gl, src) {
+    const dir = src.split('/').slice(0, -1).join('/') + '/'; // load main description json
+
+    const desc = await fetch(src).then(res => res.json());
+    if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.'); // Load buffers async
+
+    const buffers = await this.loadBuffers(desc, dir); // Create gl buffers from bufferViews
+
+    const bufferViews = this.parseBufferViews(gl, desc, buffers); // Create geometries for each mesh primitive
+
+    const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+
+    const nodes = this.parseNodes(gl, desc, meshes); // Get top level nodes for each scene
+
+    const scenes = this.parseScenes(desc, nodes);
+    const scene = scenes[desc.scene];
+    return {
+      json: desc,
+      buffers,
+      bufferViews,
+      meshes,
+      nodes,
+      scenes,
+      scene
+    };
+  } // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
+
+
+  static resolveURI(uri, dir) {
+    // Invalid URI
+    if (typeof uri !== 'string' || uri === '') return ''; // Host Relative URI
+
+    if (/^https?:\/\//i.test(dir) && /^\//.test(uri)) {
+      dir = dir.replace(/(^https?:\/\/[^\/]+).*/i, '$1');
+    } // Absolute URI http://, https://, //
+
+
+    if (/^(https?:)?\/\//i.test(uri)) return uri; // Data URI
+
+    if (/^data:.*,.*$/i.test(uri)) return uri; // Blob URI
+
+    if (/^blob:.*$/i.test(uri)) return uri; // Relative URI
+
+    return dir + uri;
+  }
+
+  static async loadBuffers(desc, dir) {
+    return await Promise.all(desc.buffers.map(buffer => {
+      const uri = this.resolveURI(buffer.uri, dir);
+      return fetch(uri).then(res => res.arrayBuffer());
+    }));
+  }
+
+  static parseBufferViews(gl, desc, buffers) {
+    // Clone to leave desc pure
+    const bufferViews = desc.bufferViews.map(o => Object.assign({}, o)); // Work out which bufferViews are for indices to determine whether
+    // target is gl.ELEMENT_ARRAY_BUFFER or gl.ARRAY_BUFFER;
+
+    desc.meshes.forEach(({
+      primitives
+    }) => {
+      primitives.forEach(({
+        indices
+      }) => {
+        if (indices === undefined) return;
+        bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+      });
+    }); // Get componentType of each bufferView from the accessors
+
+    desc.accessors.forEach(({
+      bufferView: i,
+      componentType
+    }) => {
+      bufferViews[i].componentType = componentType;
+    }); // Push each bufferView to the GPU as a separate buffer
+    // TODO: only push attribute bufferViews to the GPU
+
+    bufferViews.forEach(({
+      buffer: bufferIndex,
+      // required
+      byteOffset = 0,
+      // optional
+      byteLength,
+      // required
+      byteStride,
+      // optional
+      target = gl.ARRAY_BUFFER,
+      // optional, added above for elements
+      name,
+      // optional
+      extensions,
+      // optional
+      extras,
+      // optional
+      componentType // required, added from accessor above
+
+    }, i) => {
+      const TypeArray = TYPE_ARRAY[componentType];
+      const elementBytes = TypeArray.BYTES_PER_ELEMENT; // Create gl buffers for the bufferView, pushing it to the GPU
+
+      const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(target, buffer);
+      gl.renderer.state.boundBuffer = buffer;
+      gl.bufferData(target, data, gl.STATIC_DRAW);
+      bufferViews[i].buffer = buffer;
+      bufferViews[i].data = data;
+    });
+    return bufferViews;
+  }
+
+  static parseMeshes(gl, desc, bufferViews) {
+    return desc.meshes.map(({
+      primitives,
+      // required
+      weights,
+      // optional
+      name,
+      // optional
+      extensions,
+      // optional
+      extras // optional
+
+    }) => {
+      return {
+        primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+        weights,
+        name
+      };
+    });
+  }
+
+  static parsePrimitives(gl, primitives, desc, bufferViews) {
+    return primitives.map(({
+      attributes,
+      // required
+      indices,
+      // optional
+      material,
+      // optional
+      mode = 4,
+      // optional
+      targets // optional
+      // extensions, // optional
+      // extras, // optional
+
+    }) => {
+      const geometry = new Geometry(gl); // Add each attribute found in primitive
+
+      for (const attr in attributes) {
+        geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+      } // Add index attribute if found
+
+
+      if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews)); // TODO: materials
+
+      const program = NormalProgram(gl);
+      return {
+        geometry,
+        program,
+        mode
+      };
+    });
+  }
+
+  static parseAccessor(index, desc, bufferViews) {
+    // TODO: init missing bufferView with 0s
+    // TODO: support sparse
+    const {
+      bufferView: bufferViewIndex,
+      // optional
+      byteOffset = 0,
+      // optional
+      componentType,
+      // required
+      normalized = false,
+      // optional
+      count,
+      // required
+      type,
+      // required
+      min,
+      // optional
+      max,
+      // optional
+      sparse // optional
+      // name, // optional
+      // extensions, // optional
+      // extras, // optional
+
+    } = desc.accessors[index];
+    const {
+      data,
+      // attached in parseBufferViews
+      buffer,
+      // replaced to be the actual GL buffer
+      byteOffset: bufferViewByteOffset = 0,
+      byteLength,
+      byteStride = 0,
+      target // name,
+      // extensions,
+      // extras,
+
+    } = bufferViews[bufferViewIndex];
+    const size = TYPE_SIZE[type]; // Return attribute data
+
+    return {
+      data,
+      // Optional. Used for computing bounds if no min/max
+      size,
+      type: componentType,
+      normalized,
+      buffer,
+      stride: byteStride,
+      offset: byteOffset,
+      count,
+      min,
+      max
+    };
+  }
+
+  static parseNodes(gl, desc, meshes) {
+    const nodes = desc.nodes.map(({
+      // Everything is optional
+      camera,
+      children,
+      skin,
+      matrix,
+      mesh: meshIndex,
+      rotation,
+      scale,
+      translation,
+      weights,
+      name,
+      extensions,
+      extras
+    }) => {
+      const node = new Transform();
+
+      if (matrix) {
+        node.matrix.copy(matrix);
+        node.decompose();
+      } else {
+        if (rotation) node.quaternion.copy(rotation);
+        if (scale) node.scale.copy(scale);
+        if (translation) node.position.copy(translation);
+      }
+
+      if (meshIndex !== undefined) {
+        meshes[meshIndex].primitives.forEach(({
+          geometry,
+          program,
+          mode
+        }) => {
+          const mesh = new Mesh(gl, {
+            geometry,
+            program,
+            mode
+          });
+          mesh.setParent(node);
+        });
+      }
+
+      return node;
+    }); // Set hierarchy now all nodes created
+
+    desc.nodes.forEach(({
+      children = []
+    }, i) => {
+      children.forEach(childIndex => {
+        nodes[childIndex].setParent(nodes[i]);
+      });
+    });
+    return nodes;
+  }
+
+  static parseScenes(desc, nodes) {
+    return desc.scenes.map(({
+      nodes: nodesIndices = [],
+      name,
+      extensions,
+      extras
+    }) => {
+      return nodesIndices.map(i => nodes[i]);
+    });
+  }
+
+}
+
+export { Animation, Box, Camera, Color, Cylinder, Euler, Flowmap, GLTFLoader, GPGPU, Geometry, KTXTexture, Mat3, Mat4, Mesh, NormalProgram, Orbit, Plane, Polyline, Post, Program, Quat, Raycast, RenderTarget, Renderer, Shadow, Skin, Sphere, Text, Texture, TextureLoader, Transform, Triangle, Vec2, Vec3, Vec4 };

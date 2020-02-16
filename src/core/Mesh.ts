@@ -38,7 +38,7 @@ export class Mesh extends Transform {
     afterRenderCallbacks: Array<any>;
 
     // raycast.ts 
-    hit: { localPoint: Vec3, distance: number } = null;
+    hit: Partial<{ localPoint: Vec3, distance: number, point: Vec3; }> = null;
 
     constructor(gl, {
         geometry,

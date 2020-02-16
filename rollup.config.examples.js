@@ -7,6 +7,7 @@ const extensions = [
 ];
 
 export default [
+    buildExample('load-gltf'),
 
     // Geometry
     buildExample('triangle-screen-shader'),
@@ -32,7 +33,7 @@ export default [
     //Shading
     buildExample('fog'),
     buildExample('textures'),
-    buildExample('anisotropic'), 
+    buildExample('anisotropic'),
 
     buildExample('skydome'),
     buildExample('cube-map'),
@@ -55,11 +56,11 @@ export default [
     buildExample('skinning'),
 
     // Performance
-    buildExample('high-mesh-count','src/examples/high-mesh-count/template.html')
+    buildExample('high-mesh-count', 'src/examples/high-mesh-count/template.html')
 ]
 
 
-function buildExample(example , htmlTemplate = 'src/examples/template.html') {
+function buildExample(example, htmlTemplate = 'src/examples/template.html') {
     return {
         input: `./src/examples/${example}/index.ts`,
         output: {
@@ -74,9 +75,9 @@ function buildExample(example , htmlTemplate = 'src/examples/template.html') {
             }
         },
         plugins: [
-          
+
             template({
-                template: htmlTemplate ,
+                template: htmlTemplate,
                 target: `${example}.html`
             }),
             resolve({ extensions }),

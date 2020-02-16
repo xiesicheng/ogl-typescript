@@ -390,20 +390,20 @@
       return this[0];
     }
 
-    set x(v) {
-      this[0] = v;
-    }
-
     get y() {
       return this[1];
     }
 
-    set y(v) {
-      this[1] = v;
-    }
-
     get z() {
       return this[2];
+    }
+
+    set x(v) {
+      this[0] = v;
+    }
+
+    set y(v) {
+      this[1] = v;
     }
 
     set z(v) {
@@ -456,7 +456,7 @@
     }
 
     squaredLen() {
-      return this.squaredDistance();
+      return squaredLength(this);
     }
 
     squaredDistance(v) {
@@ -549,6 +549,8 @@
   //     index: { data: index },
   // }
 
+  // To stop inifinite warnings
+  let isBoundsWarned = false;
   class Geometry {
     constructor(gl, attributes = {}) {
       _defineProperty(this, "gl", void 0);
@@ -595,18 +597,25 @@
     addAttribute(key, attr) {
       this.attributes[key] = attr; // Set options
 
-      attr.id = ATTR_ID++;
+      attr.id = ATTR_ID++; // TODO: currently unused, remove?
+
       attr.size = attr.size || 1;
       attr.type = attr.type || (attr.data.constructor === Float32Array ? this.gl.FLOAT : attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : this.gl.UNSIGNED_INT); // Uint32Array
 
       attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
-      attr.normalize = attr.normalize || false;
-      attr.buffer = this.gl.createBuffer();
-      attr.count = attr.data.length / attr.size;
+      attr.normalized = attr.normalized || false;
+      attr.stride = attr.stride || 0;
+      attr.offset = attr.offset || 0;
+      attr.count = attr.count || attr.data.length / attr.size;
       attr.divisor = attr.instanced || 0;
-      attr.needsUpdate = false; // Push data to buffer
+      attr.needsUpdate = false;
 
-      this.updateAttribute(attr); // Update geometry counts. If indexed, ignore regular attributes
+      if (!attr.buffer) {
+        attr.buffer = this.gl.createBuffer(); // Push data to buffer
+
+        this.updateAttribute(attr);
+      } // Update geometry counts. If indexed, ignore regular attributes
+
 
       if (attr.divisor) {
         this.isInstanced = true;
@@ -625,10 +634,9 @@
     }
 
     updateAttribute(attr) {
-      // Already bound, prevent gl command
-      if (this.glState.boundBuffer !== attr.id) {
+      if (this.glState.boundBuffer !== attr.buffer) {
         this.gl.bindBuffer(attr.target, attr.buffer);
-        this.glState.boundBuffer = attr.id;
+        this.glState.boundBuffer = attr.buffer;
       }
 
       this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
@@ -665,10 +673,8 @@
 
         const attr = this.attributes[name];
         this.gl.bindBuffer(attr.target, attr.buffer);
-        this.glState.boundBuffer = attr.id;
-        this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalize, 0, // stride
-        0 // offset
-        );
+        this.glState.boundBuffer = attr.buffer;
+        this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalized, attr.stride, attr.offset);
         this.gl.enableVertexAttribArray(location); // For instanced attributes, divisor needs to be set.
         // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
 
@@ -702,17 +708,25 @@
         }
       } else {
         if (this.attributes.index) {
-          this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start);
+          this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2);
         } else {
           this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
         }
       }
     }
 
-    computeBoundingBox(array) {
-      // Use position buffer if available
-      if (!array && this.attributes.position) array = this.attributes.position.data;
-      if (!array) console.warn('No position buffer found to compute bounds');
+    getPositionArray() {
+      // Use position buffer, or min/max if available
+      const attr = this.attributes.position;
+      if (attr.min) return [attr.min, attr.max];
+      if (attr.data) return attr.data;
+      if (isBoundsWarned) return;
+      console.warn('No position buffer data found to compute bounds');
+      return isBoundsWarned = true;
+    }
+
+    computeBoundingBox(array = null) {
+      if (!array) array = this.getPositionArray();
 
       if (!this.bounds) {
         this.bounds = {
@@ -729,7 +743,7 @@
       const center = this.bounds.center;
       const scale = this.bounds.scale;
       min.set(+Infinity);
-      max.set(-Infinity);
+      max.set(-Infinity); // TODO: use offset/stride if exists
 
       for (let i = 0, l = array.length; i < l; i += 3) {
         const x = array[i];
@@ -747,10 +761,8 @@
       center.add(min, max).divide(2);
     }
 
-    computeBoundingSphere(array) {
-      // Use position buffer if available
-      if (!array && this.attributes.position) array = this.attributes.position.data;
-      if (!array) console.warn('No position buffer found to compute bounds');
+    computeBoundingSphere(array = null) {
+      if (!array) array = this.getPositionArray();
       if (!this.bounds) this.computeBoundingBox(array);
       let maxRadiusSq = 0;
 
@@ -1516,6 +1528,7 @@
 
   }
 
+  const EPSILON = 0.000001;
   /**
    * Copy the values from one mat4 to another
    *
@@ -1547,22 +1560,6 @@
    * Set the components of a mat4 to the given values
    *
    * @param {mat4} out the receiving matrix
-   * @param {Number} m00 Component in column 0, row 0 position (index 0)
-   * @param {Number} m01 Component in column 0, row 1 position (index 1)
-   * @param {Number} m02 Component in column 0, row 2 position (index 2)
-   * @param {Number} m03 Component in column 0, row 3 position (index 3)
-   * @param {Number} m10 Component in column 1, row 0 position (index 4)
-   * @param {Number} m11 Component in column 1, row 1 position (index 5)
-   * @param {Number} m12 Component in column 1, row 2 position (index 6)
-   * @param {Number} m13 Component in column 1, row 3 position (index 7)
-   * @param {Number} m20 Component in column 2, row 0 position (index 8)
-   * @param {Number} m21 Component in column 2, row 1 position (index 9)
-   * @param {Number} m22 Component in column 2, row 2 position (index 10)
-   * @param {Number} m23 Component in column 2, row 3 position (index 11)
-   * @param {Number} m30 Component in column 3, row 0 position (index 12)
-   * @param {Number} m31 Component in column 3, row 1 position (index 13)
-   * @param {Number} m32 Component in column 3, row 2 position (index 14)
-   * @param {Number} m33 Component in column 3, row 3 position (index 15)
    * @returns {mat4} out
    */
 
@@ -1861,135 +1858,83 @@
     return out;
   }
   /**
-   * Rotates a matrix by the given angle around the X axis
+   * Rotates a mat4 by the given angle around the given axis
    *
    * @param {mat4} out the receiving matrix
    * @param {mat4} a the matrix to rotate
    * @param {Number} rad the angle to rotate the matrix by
+   * @param {vec3} axis the axis to rotate around
    * @returns {mat4} out
    */
 
-  function rotateX(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a10 = a[4];
-    let a11 = a[5];
-    let a12 = a[6];
-    let a13 = a[7];
-    let a20 = a[8];
-    let a21 = a[9];
-    let a22 = a[10];
-    let a23 = a[11];
+  function rotate(out, a, rad, axis) {
+    let x = axis[0],
+        y = axis[1],
+        z = axis[2];
+    let len = Math.hypot(x, y, z);
+    let s, c, t;
+    let a00, a01, a02, a03;
+    let a10, a11, a12, a13;
+    let a20, a21, a22, a23;
+    let b00, b01, b02;
+    let b10, b11, b12;
+    let b20, b21, b22;
 
-    if (a !== out) {
-      // If the source and destination differ, copy the unchanged rows
-      out[0] = a[0];
-      out[1] = a[1];
-      out[2] = a[2];
-      out[3] = a[3];
-      out[12] = a[12];
-      out[13] = a[13];
-      out[14] = a[14];
-      out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
+    if (Math.abs(len) < EPSILON) {
+      return null;
+    }
 
+    len = 1 / len;
+    x *= len;
+    y *= len;
+    z *= len;
+    s = Math.sin(rad);
+    c = Math.cos(rad);
+    t = 1 - c;
+    a00 = a[0];
+    a01 = a[1];
+    a02 = a[2];
+    a03 = a[3];
+    a10 = a[4];
+    a11 = a[5];
+    a12 = a[6];
+    a13 = a[7];
+    a20 = a[8];
+    a21 = a[9];
+    a22 = a[10];
+    a23 = a[11]; // Construct the elements of the rotation matrix
 
-    out[4] = a10 * c + a20 * s;
-    out[5] = a11 * c + a21 * s;
-    out[6] = a12 * c + a22 * s;
-    out[7] = a13 * c + a23 * s;
-    out[8] = a20 * c - a10 * s;
-    out[9] = a21 * c - a11 * s;
-    out[10] = a22 * c - a12 * s;
-    out[11] = a23 * c - a13 * s;
-    return out;
-  }
-  /**
-   * Rotates a matrix by the given angle around the Y axis
-   *
-   * @param {mat4} out the receiving matrix
-   * @param {mat4} a the matrix to rotate
-   * @param {Number} rad the angle to rotate the matrix by
-   * @returns {mat4} out
-   */
+    b00 = x * x * t + c;
+    b01 = y * x * t + z * s;
+    b02 = z * x * t - y * s;
+    b10 = x * y * t - z * s;
+    b11 = y * y * t + c;
+    b12 = z * y * t + x * s;
+    b20 = x * z * t + y * s;
+    b21 = y * z * t - x * s;
+    b22 = z * z * t + c; // Perform rotation-specific matrix multiplication
 
-  function rotateY(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a00 = a[0];
-    let a01 = a[1];
-    let a02 = a[2];
-    let a03 = a[3];
-    let a20 = a[8];
-    let a21 = a[9];
-    let a22 = a[10];
-    let a23 = a[11];
-
-    if (a !== out) {
-      // If the source and destination differ, copy the unchanged rows
-      out[4] = a[4];
-      out[5] = a[5];
-      out[6] = a[6];
-      out[7] = a[7];
-      out[12] = a[12];
-      out[13] = a[13];
-      out[14] = a[14];
-      out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
-
-
-    out[0] = a00 * c - a20 * s;
-    out[1] = a01 * c - a21 * s;
-    out[2] = a02 * c - a22 * s;
-    out[3] = a03 * c - a23 * s;
-    out[8] = a00 * s + a20 * c;
-    out[9] = a01 * s + a21 * c;
-    out[10] = a02 * s + a22 * c;
-    out[11] = a03 * s + a23 * c;
-    return out;
-  }
-  /**
-   * Rotates a matrix by the given angle around the Z axis
-   *
-   * @param {mat4} out the receiving matrix
-   * @param {mat4} a the matrix to rotate
-   * @param {Number} rad the angle to rotate the matrix by
-   * @returns {mat4} out
-   */
-
-  function rotateZ(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a00 = a[0];
-    let a01 = a[1];
-    let a02 = a[2];
-    let a03 = a[3];
-    let a10 = a[4];
-    let a11 = a[5];
-    let a12 = a[6];
-    let a13 = a[7];
+    out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+    out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+    out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+    out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+    out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+    out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+    out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+    out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+    out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+    out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+    out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+    out[11] = a03 * b20 + a13 * b21 + a23 * b22;
 
     if (a !== out) {
       // If the source and destination differ, copy the unchanged last row
-      out[8] = a[8];
-      out[9] = a[9];
-      out[10] = a[10];
-      out[11] = a[11];
       out[12] = a[12];
       out[13] = a[13];
       out[14] = a[14];
       out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
+    }
 
-
-    out[0] = a00 * c + a10 * s;
-    out[1] = a01 * c + a11 * s;
-    out[2] = a02 * c + a12 * s;
-    out[3] = a03 * c + a13 * s;
-    out[4] = a10 * c - a00 * s;
-    out[5] = a11 * c - a01 * s;
-    out[6] = a12 * c - a02 * s;
-    out[7] = a13 * c - a03 * s;
     return out;
   }
   /**
@@ -2029,9 +1974,9 @@
     let m31 = mat[8];
     let m32 = mat[9];
     let m33 = mat[10];
-    out[0] = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-    out[1] = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-    out[2] = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
+    out[0] = Math.hypot(m11, m12, m13);
+    out[1] = Math.hypot(m21, m22, m23);
+    out[2] = Math.hypot(m31, m32, m33);
     return out;
   }
   function getMaxScaleOnAxis(mat) {
@@ -2059,39 +2004,55 @@
    * @return {quat} out
    */
 
-  function getRotation(out, mat) {
-    // Algorithm taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-    let trace = mat[0] + mat[5] + mat[10];
-    let S = 0;
+  const getRotation = function () {
+    const temp = [0, 0, 0];
+    return function (out, mat) {
+      let scaling = temp;
+      getScaling(scaling, mat);
+      let is1 = 1 / scaling[0];
+      let is2 = 1 / scaling[1];
+      let is3 = 1 / scaling[2];
+      let sm11 = mat[0] * is1;
+      let sm12 = mat[1] * is2;
+      let sm13 = mat[2] * is3;
+      let sm21 = mat[4] * is1;
+      let sm22 = mat[5] * is2;
+      let sm23 = mat[6] * is3;
+      let sm31 = mat[8] * is1;
+      let sm32 = mat[9] * is2;
+      let sm33 = mat[10] * is3;
+      let trace = sm11 + sm22 + sm33;
+      let S = 0;
 
-    if (trace > 0) {
-      S = Math.sqrt(trace + 1.0) * 2;
-      out[3] = 0.25 * S;
-      out[0] = (mat[6] - mat[9]) / S;
-      out[1] = (mat[8] - mat[2]) / S;
-      out[2] = (mat[1] - mat[4]) / S;
-    } else if (mat[0] > mat[5] && mat[0] > mat[10]) {
-      S = Math.sqrt(1.0 + mat[0] - mat[5] - mat[10]) * 2;
-      out[3] = (mat[6] - mat[9]) / S;
-      out[0] = 0.25 * S;
-      out[1] = (mat[1] + mat[4]) / S;
-      out[2] = (mat[8] + mat[2]) / S;
-    } else if (mat[5] > mat[10]) {
-      S = Math.sqrt(1.0 + mat[5] - mat[0] - mat[10]) * 2;
-      out[3] = (mat[8] - mat[2]) / S;
-      out[0] = (mat[1] + mat[4]) / S;
-      out[1] = 0.25 * S;
-      out[2] = (mat[6] + mat[9]) / S;
-    } else {
-      S = Math.sqrt(1.0 + mat[10] - mat[0] - mat[5]) * 2;
-      out[3] = (mat[1] - mat[4]) / S;
-      out[0] = (mat[8] + mat[2]) / S;
-      out[1] = (mat[6] + mat[9]) / S;
-      out[2] = 0.25 * S;
-    }
+      if (trace > 0) {
+        S = Math.sqrt(trace + 1.0) * 2;
+        out[3] = 0.25 * S;
+        out[0] = (sm23 - sm32) / S;
+        out[1] = (sm31 - sm13) / S;
+        out[2] = (sm12 - sm21) / S;
+      } else if (sm11 > sm22 && sm11 > sm33) {
+        S = Math.sqrt(1.0 + sm11 - sm22 - sm33) * 2;
+        out[3] = (sm23 - sm32) / S;
+        out[0] = 0.25 * S;
+        out[1] = (sm12 + sm21) / S;
+        out[2] = (sm31 + sm13) / S;
+      } else if (sm22 > sm33) {
+        S = Math.sqrt(1.0 + sm22 - sm11 - sm33) * 2;
+        out[3] = (sm31 - sm13) / S;
+        out[0] = (sm12 + sm21) / S;
+        out[1] = 0.25 * S;
+        out[2] = (sm23 + sm32) / S;
+      } else {
+        S = Math.sqrt(1.0 + sm33 - sm11 - sm22) * 2;
+        out[3] = (sm12 - sm21) / S;
+        out[0] = (sm31 + sm13) / S;
+        out[1] = (sm23 + sm32) / S;
+        out[2] = 0.25 * S;
+      }
 
-    return out;
-  }
+      return out;
+    };
+  }();
   /**
    * Creates a matrix from a quaternion rotation, vector translation and vector scale
    * This is equivalent to (but much faster than):
@@ -2327,36 +2288,36 @@
       return this;
     }
 
-    set x(v) {
-      this[12] = v;
-    }
-
     get x() {
       return this[12];
-    }
-
-    set y(v) {
-      this[13] = v;
     }
 
     get y() {
       return this[13];
     }
 
-    set z(v) {
-      this[14] = v;
-    }
-
     get z() {
       return this[14];
     }
 
-    set w(v) {
-      this[15] = v;
-    }
-
     get w() {
       return this[15];
+    }
+
+    set x(v) {
+      this[12] = v;
+    }
+
+    set y(v) {
+      this[13] = v;
+    }
+
+    set z(v) {
+      this[14] = v;
+    }
+
+    set w(v) {
+      this[15] = v;
     }
 
     set(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
@@ -2370,18 +2331,8 @@
       return this;
     }
 
-    rotateX(v, m = this) {
-      rotateX(this, m, v);
-      return this;
-    }
-
-    rotateY(v, m = this) {
-      rotateY(this, m, v);
-      return this;
-    }
-
-    rotateZ(v, m = this) {
-      rotateZ(this, m, v);
+    rotate(v, axis, m = this) {
+      rotate(out, m, v, axis);
       return this;
     }
 
@@ -2620,7 +2571,7 @@
    * @returns {quat} out
    */
 
-  function rotateX$1(out, a, rad) {
+  function rotateX(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2643,7 +2594,7 @@
    * @returns {quat} out
    */
 
-  function rotateY$1(out, a, rad) {
+  function rotateY(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2666,7 +2617,7 @@
    * @returns {quat} out
    */
 
-  function rotateZ$1(out, a, rad) {
+  function rotateZ(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2928,13 +2879,21 @@
       return this[0];
     }
 
+    get y() {
+      return this[1];
+    }
+
+    get z() {
+      return this[2];
+    }
+
+    get w() {
+      return this[3];
+    }
+
     set x(v) {
       this[0] = v;
       this.onChange();
-    }
-
-    get y() {
-      return this[1];
     }
 
     set y(v) {
@@ -2942,17 +2901,9 @@
       this.onChange();
     }
 
-    get z() {
-      return this[2];
-    }
-
     set z(v) {
       this[2] = v;
       this.onChange();
-    }
-
-    get w() {
-      return this[3];
     }
 
     set w(v) {
@@ -2974,19 +2925,19 @@
     }
 
     rotateX(a) {
-      rotateX$1(this, this, a);
+      rotateX(this, this, a);
       this.onChange();
       return this;
     }
 
     rotateY(a) {
-      rotateY$1(this, this, a);
+      rotateY(this, this, a);
       this.onChange();
       return this;
     }
 
     rotateZ(a) {
-      rotateZ$1(this, this, a);
+      rotateZ(this, this, a);
       this.onChange();
       return this;
     }
@@ -3156,22 +3107,22 @@
       return this[0];
     }
 
+    get y() {
+      return this[1];
+    }
+
+    get z() {
+      return this[2];
+    }
+
     set x(v) {
       this[0] = v;
       this.onChange();
     }
 
-    get y() {
-      return this[1];
-    }
-
     set y(v) {
       this[1] = v;
       this.onChange();
-    }
-
-    get z() {
-      return this[2];
     }
 
     set z(v) {
@@ -3496,6 +3447,7 @@
       // If no position attribute, treat as frustumCulled false
       if (!node.geometry.attributes.position) return true;
       if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();
+      if (!node.geometry.bounds) return true;
       const center = tempVec3a;
       center.copy(node.geometry.bounds.center);
       center.applyMatrix4(node.worldMatrix);
@@ -3538,6 +3490,43 @@
     return out;
   }
   /**
+   * Calculates a 3x3 matrix from the given quaternion
+   *
+   * @param {mat3} out mat3 receiving operation result
+   * @param {quat} q Quaternion to create matrix from
+   *
+   * @returns {mat3} out
+   */
+
+  function fromQuat$1(out, q) {
+    let x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3];
+    let x2 = x + x;
+    let y2 = y + y;
+    let z2 = z + z;
+    let xx = x * x2;
+    let yx = y * x2;
+    let yy = y * y2;
+    let zx = z * x2;
+    let zy = z * y2;
+    let zz = z * z2;
+    let wx = w * x2;
+    let wy = w * y2;
+    let wz = w * z2;
+    out[0] = 1 - yy - zz;
+    out[3] = yx - wz;
+    out[6] = zx + wy;
+    out[1] = yx + wz;
+    out[4] = 1 - xx - zz;
+    out[7] = zy - wx;
+    out[2] = zx - wy;
+    out[5] = zy + wx;
+    out[8] = 1 - xx - yy;
+    return out;
+  }
+  /**
    * Copy the values from one mat3 to another
    *
    * @param {mat3} out the receiving matrix
@@ -3561,15 +3550,6 @@
    * Set the components of a mat3 to the given values
    *
    * @param {mat3} out the receiving matrix
-   * @param {Number} m00 Component in column 0, row 0 position (index 0)
-   * @param {Number} m01 Component in column 0, row 1 position (index 1)
-   * @param {Number} m02 Component in column 0, row 2 position (index 2)
-   * @param {Number} m10 Component in column 1, row 0 position (index 3)
-   * @param {Number} m11 Component in column 1, row 1 position (index 4)
-   * @param {Number} m12 Component in column 1, row 2 position (index 5)
-   * @param {Number} m20 Component in column 2, row 0 position (index 6)
-   * @param {Number} m21 Component in column 2, row 1 position (index 7)
-   * @param {Number} m22 Component in column 2, row 2 position (index 8)
    * @returns {mat3} out
    */
 
@@ -3724,7 +3704,7 @@
    * @returns {mat3} out
    */
 
-  function rotate(out, a, rad) {
+  function rotate$1(out, a, rad) {
     let a00 = a[0],
         a01 = a[1],
         a02 = a[2],
@@ -3768,43 +3748,6 @@
     out[6] = a[6];
     out[7] = a[7];
     out[8] = a[8];
-    return out;
-  }
-  /**
-   * Calculates a 3x3 matrix from the given quaternion
-   *
-   * @param {mat3} out mat3 receiving operation result
-   * @param {quat} q Quaternion to create matrix from
-   *
-   * @returns {mat3} out
-   */
-
-  function fromQuat$1(out, q) {
-    let x = q[0],
-        y = q[1],
-        z = q[2],
-        w = q[3];
-    let x2 = x + x;
-    let y2 = y + y;
-    let z2 = z + z;
-    let xx = x * x2;
-    let yx = y * x2;
-    let yy = y * y2;
-    let zx = z * x2;
-    let zy = z * y2;
-    let zz = z * z2;
-    let wx = w * x2;
-    let wy = w * y2;
-    let wz = w * z2;
-    out[0] = 1 - yy - zz;
-    out[3] = yx - wz;
-    out[6] = zx + wy;
-    out[1] = yx + wz;
-    out[4] = 1 - xx - zz;
-    out[7] = zy - wx;
-    out[2] = zx - wy;
-    out[5] = zy + wx;
-    out[8] = 1 - xx - yy;
     return out;
   }
   /**
@@ -3883,7 +3826,7 @@
     }
 
     rotate(v, m = this) {
-      rotate(this, m, v);
+      rotate$1(this, m, v);
       return this;
     }
 
@@ -4815,12 +4758,12 @@
       return this[0];
     }
 
-    set x(v) {
-      this[0] = v;
-    }
-
     get y() {
       return this[1];
+    }
+
+    set x(v) {
+      this[0] = v;
     }
 
     set y(v) {
@@ -4949,28 +4892,28 @@
       return this[0];
     }
 
-    set x(v) {
-      this[0] = v;
-    }
-
     get y() {
       return this[1];
-    }
-
-    set y(v) {
-      this[1] = v;
     }
 
     get z() {
       return this[2];
     }
 
-    set z(v) {
-      this[2] = v;
-    }
-
     get w() {
       return this[3];
+    }
+
+    set x(v) {
+      this[0] = v;
+    }
+
+    set y(v) {
+      this[1] = v;
+    }
+
+    set z(v) {
+      this[2] = v;
     }
 
     set w(v) {
@@ -6460,7 +6403,8 @@
   function NormalProgram(gl) {
     return new Program(gl, {
       vertex: vertex,
-      fragment: fragment
+      fragment: fragment,
+      cullFace: null
     });
   }
 
@@ -7401,6 +7345,336 @@
     });
   }
 
+  // Supports
+  // [x] Geometry
+  // [x] Nodes and Hierarchy
+  // [ ] Morph Targets
+  // [ ] Skins
+  // [ ] Materials
+  // [ ] Textures
+  // [ ] Animation
+  // [ ] Cameras
+  // [ ] Extensions
+  // TODO: only push attribute bufferViews to the GPU
+  // TODO: Sparse accessor packing? what for?
+  // TODO: init accessor missing bufferView with 0s
+  // TODO: is there ever more than one component type per buffer view? surely not...
+  const TYPE_ARRAY = {
+    5121: Uint8Array,
+    5122: Int16Array,
+    5123: Uint16Array,
+    5125: Uint32Array,
+    5126: Float32Array
+  };
+  const TYPE_SIZE = {
+    SCALAR: 1,
+    VEC2: 2,
+    VEC3: 3,
+    VEC4: 4,
+    MAT2: 4,
+    MAT3: 9,
+    MAT4: 16
+  };
+  const ATTRIBUTES = {
+    POSITION: 'position',
+    NORMAL: 'normal',
+    TANGENT: 'tangent',
+    TEXCOORD_0: 'uv',
+    TEXCOORD_1: 'uv2',
+    COLOR_0: 'color',
+    WEIGHTS_0: 'skinWeight',
+    JOINTS_0: 'skinIndex'
+  };
+  class GLTFLoader {
+    static async load(gl, src) {
+      const dir = src.split('/').slice(0, -1).join('/') + '/'; // load main description json
+
+      const desc = await fetch(src).then(res => res.json());
+      if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.'); // Load buffers async
+
+      const buffers = await this.loadBuffers(desc, dir); // Create gl buffers from bufferViews
+
+      const bufferViews = this.parseBufferViews(gl, desc, buffers); // Create geometries for each mesh primitive
+
+      const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+
+      const nodes = this.parseNodes(gl, desc, meshes); // Get top level nodes for each scene
+
+      const scenes = this.parseScenes(desc, nodes);
+      const scene = scenes[desc.scene];
+      return {
+        json: desc,
+        buffers,
+        bufferViews,
+        meshes,
+        nodes,
+        scenes,
+        scene
+      };
+    } // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
+
+
+    static resolveURI(uri, dir) {
+      // Invalid URI
+      if (typeof uri !== 'string' || uri === '') return ''; // Host Relative URI
+
+      if (/^https?:\/\//i.test(dir) && /^\//.test(uri)) {
+        dir = dir.replace(/(^https?:\/\/[^\/]+).*/i, '$1');
+      } // Absolute URI http://, https://, //
+
+
+      if (/^(https?:)?\/\//i.test(uri)) return uri; // Data URI
+
+      if (/^data:.*,.*$/i.test(uri)) return uri; // Blob URI
+
+      if (/^blob:.*$/i.test(uri)) return uri; // Relative URI
+
+      return dir + uri;
+    }
+
+    static async loadBuffers(desc, dir) {
+      return await Promise.all(desc.buffers.map(buffer => {
+        const uri = this.resolveURI(buffer.uri, dir);
+        return fetch(uri).then(res => res.arrayBuffer());
+      }));
+    }
+
+    static parseBufferViews(gl, desc, buffers) {
+      // Clone to leave desc pure
+      const bufferViews = desc.bufferViews.map(o => Object.assign({}, o)); // Work out which bufferViews are for indices to determine whether
+      // target is gl.ELEMENT_ARRAY_BUFFER or gl.ARRAY_BUFFER;
+
+      desc.meshes.forEach(({
+        primitives
+      }) => {
+        primitives.forEach(({
+          indices
+        }) => {
+          if (indices === undefined) return;
+          bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+        });
+      }); // Get componentType of each bufferView from the accessors
+
+      desc.accessors.forEach(({
+        bufferView: i,
+        componentType
+      }) => {
+        bufferViews[i].componentType = componentType;
+      }); // Push each bufferView to the GPU as a separate buffer
+      // TODO: only push attribute bufferViews to the GPU
+
+      bufferViews.forEach(({
+        buffer: bufferIndex,
+        // required
+        byteOffset = 0,
+        // optional
+        byteLength,
+        // required
+        byteStride,
+        // optional
+        target = gl.ARRAY_BUFFER,
+        // optional, added above for elements
+        name,
+        // optional
+        extensions,
+        // optional
+        extras,
+        // optional
+        componentType // required, added from accessor above
+
+      }, i) => {
+        const TypeArray = TYPE_ARRAY[componentType];
+        const elementBytes = TypeArray.BYTES_PER_ELEMENT; // Create gl buffers for the bufferView, pushing it to the GPU
+
+        const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(target, buffer);
+        gl.renderer.state.boundBuffer = buffer;
+        gl.bufferData(target, data, gl.STATIC_DRAW);
+        bufferViews[i].buffer = buffer;
+        bufferViews[i].data = data;
+      });
+      return bufferViews;
+    }
+
+    static parseMeshes(gl, desc, bufferViews) {
+      return desc.meshes.map(({
+        primitives,
+        // required
+        weights,
+        // optional
+        name,
+        // optional
+        extensions,
+        // optional
+        extras // optional
+
+      }) => {
+        return {
+          primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+          weights,
+          name
+        };
+      });
+    }
+
+    static parsePrimitives(gl, primitives, desc, bufferViews) {
+      return primitives.map(({
+        attributes,
+        // required
+        indices,
+        // optional
+        material,
+        // optional
+        mode = 4,
+        // optional
+        targets // optional
+        // extensions, // optional
+        // extras, // optional
+
+      }) => {
+        const geometry = new Geometry(gl); // Add each attribute found in primitive
+
+        for (const attr in attributes) {
+          geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+        } // Add index attribute if found
+
+
+        if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews)); // TODO: materials
+
+        const program = NormalProgram(gl);
+        return {
+          geometry,
+          program,
+          mode
+        };
+      });
+    }
+
+    static parseAccessor(index, desc, bufferViews) {
+      // TODO: init missing bufferView with 0s
+      // TODO: support sparse
+      const {
+        bufferView: bufferViewIndex,
+        // optional
+        byteOffset = 0,
+        // optional
+        componentType,
+        // required
+        normalized = false,
+        // optional
+        count,
+        // required
+        type,
+        // required
+        min,
+        // optional
+        max,
+        // optional
+        sparse // optional
+        // name, // optional
+        // extensions, // optional
+        // extras, // optional
+
+      } = desc.accessors[index];
+      const {
+        data,
+        // attached in parseBufferViews
+        buffer,
+        // replaced to be the actual GL buffer
+        byteOffset: bufferViewByteOffset = 0,
+        byteLength,
+        byteStride = 0,
+        target // name,
+        // extensions,
+        // extras,
+
+      } = bufferViews[bufferViewIndex];
+      const size = TYPE_SIZE[type]; // Return attribute data
+
+      return {
+        data,
+        // Optional. Used for computing bounds if no min/max
+        size,
+        type: componentType,
+        normalized,
+        buffer,
+        stride: byteStride,
+        offset: byteOffset,
+        count,
+        min,
+        max
+      };
+    }
+
+    static parseNodes(gl, desc, meshes) {
+      const nodes = desc.nodes.map(({
+        // Everything is optional
+        camera,
+        children,
+        skin,
+        matrix,
+        mesh: meshIndex,
+        rotation,
+        scale,
+        translation,
+        weights,
+        name,
+        extensions,
+        extras
+      }) => {
+        const node = new Transform();
+
+        if (matrix) {
+          node.matrix.copy(matrix);
+          node.decompose();
+        } else {
+          if (rotation) node.quaternion.copy(rotation);
+          if (scale) node.scale.copy(scale);
+          if (translation) node.position.copy(translation);
+        }
+
+        if (meshIndex !== undefined) {
+          meshes[meshIndex].primitives.forEach(({
+            geometry,
+            program,
+            mode
+          }) => {
+            const mesh = new Mesh(gl, {
+              geometry,
+              program,
+              mode
+            });
+            mesh.setParent(node);
+          });
+        }
+
+        return node;
+      }); // Set hierarchy now all nodes created
+
+      desc.nodes.forEach(({
+        children = []
+      }, i) => {
+        children.forEach(childIndex => {
+          nodes[childIndex].setParent(nodes[i]);
+        });
+      });
+      return nodes;
+    }
+
+    static parseScenes(desc, nodes) {
+      return desc.scenes.map(({
+        nodes: nodesIndices = [],
+        name,
+        extensions,
+        extras
+      }) => {
+        return nodesIndices.map(i => nodes[i]);
+      });
+    }
+
+  }
+
   exports.Animation = Animation;
   exports.Box = Box;
   exports.Camera = Camera;
@@ -7408,6 +7682,7 @@
   exports.Cylinder = Cylinder;
   exports.Euler = Euler;
   exports.Flowmap = Flowmap;
+  exports.GLTFLoader = GLTFLoader;
   exports.GPGPU = GPGPU;
   exports.Geometry = Geometry;
   exports.KTXTexture = KTXTexture;

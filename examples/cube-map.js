@@ -387,20 +387,20 @@
       return this[0];
     }
 
-    set x(v) {
-      this[0] = v;
-    }
-
     get y() {
       return this[1];
     }
 
-    set y(v) {
-      this[1] = v;
-    }
-
     get z() {
       return this[2];
+    }
+
+    set x(v) {
+      this[0] = v;
+    }
+
+    set y(v) {
+      this[1] = v;
     }
 
     set z(v) {
@@ -453,7 +453,7 @@
     }
 
     squaredLen() {
-      return this.squaredDistance();
+      return squaredLength(this);
     }
 
     squaredDistance(v) {
@@ -1525,6 +1525,7 @@
 
   }
 
+  const EPSILON = 0.000001;
   /**
    * Copy the values from one mat4 to another
    *
@@ -1854,135 +1855,83 @@
     return out;
   }
   /**
-   * Rotates a matrix by the given angle around the X axis
+   * Rotates a mat4 by the given angle around the given axis
    *
    * @param {mat4} out the receiving matrix
    * @param {mat4} a the matrix to rotate
    * @param {Number} rad the angle to rotate the matrix by
+   * @param {vec3} axis the axis to rotate around
    * @returns {mat4} out
    */
 
-  function rotateX(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a10 = a[4];
-    let a11 = a[5];
-    let a12 = a[6];
-    let a13 = a[7];
-    let a20 = a[8];
-    let a21 = a[9];
-    let a22 = a[10];
-    let a23 = a[11];
+  function rotate(out, a, rad, axis) {
+    let x = axis[0],
+        y = axis[1],
+        z = axis[2];
+    let len = Math.hypot(x, y, z);
+    let s, c, t;
+    let a00, a01, a02, a03;
+    let a10, a11, a12, a13;
+    let a20, a21, a22, a23;
+    let b00, b01, b02;
+    let b10, b11, b12;
+    let b20, b21, b22;
 
-    if (a !== out) {
-      // If the source and destination differ, copy the unchanged rows
-      out[0] = a[0];
-      out[1] = a[1];
-      out[2] = a[2];
-      out[3] = a[3];
-      out[12] = a[12];
-      out[13] = a[13];
-      out[14] = a[14];
-      out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
+    if (Math.abs(len) < EPSILON) {
+      return null;
+    }
 
+    len = 1 / len;
+    x *= len;
+    y *= len;
+    z *= len;
+    s = Math.sin(rad);
+    c = Math.cos(rad);
+    t = 1 - c;
+    a00 = a[0];
+    a01 = a[1];
+    a02 = a[2];
+    a03 = a[3];
+    a10 = a[4];
+    a11 = a[5];
+    a12 = a[6];
+    a13 = a[7];
+    a20 = a[8];
+    a21 = a[9];
+    a22 = a[10];
+    a23 = a[11]; // Construct the elements of the rotation matrix
 
-    out[4] = a10 * c + a20 * s;
-    out[5] = a11 * c + a21 * s;
-    out[6] = a12 * c + a22 * s;
-    out[7] = a13 * c + a23 * s;
-    out[8] = a20 * c - a10 * s;
-    out[9] = a21 * c - a11 * s;
-    out[10] = a22 * c - a12 * s;
-    out[11] = a23 * c - a13 * s;
-    return out;
-  }
-  /**
-   * Rotates a matrix by the given angle around the Y axis
-   *
-   * @param {mat4} out the receiving matrix
-   * @param {mat4} a the matrix to rotate
-   * @param {Number} rad the angle to rotate the matrix by
-   * @returns {mat4} out
-   */
+    b00 = x * x * t + c;
+    b01 = y * x * t + z * s;
+    b02 = z * x * t - y * s;
+    b10 = x * y * t - z * s;
+    b11 = y * y * t + c;
+    b12 = z * y * t + x * s;
+    b20 = x * z * t + y * s;
+    b21 = y * z * t - x * s;
+    b22 = z * z * t + c; // Perform rotation-specific matrix multiplication
 
-  function rotateY(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a00 = a[0];
-    let a01 = a[1];
-    let a02 = a[2];
-    let a03 = a[3];
-    let a20 = a[8];
-    let a21 = a[9];
-    let a22 = a[10];
-    let a23 = a[11];
-
-    if (a !== out) {
-      // If the source and destination differ, copy the unchanged rows
-      out[4] = a[4];
-      out[5] = a[5];
-      out[6] = a[6];
-      out[7] = a[7];
-      out[12] = a[12];
-      out[13] = a[13];
-      out[14] = a[14];
-      out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
-
-
-    out[0] = a00 * c - a20 * s;
-    out[1] = a01 * c - a21 * s;
-    out[2] = a02 * c - a22 * s;
-    out[3] = a03 * c - a23 * s;
-    out[8] = a00 * s + a20 * c;
-    out[9] = a01 * s + a21 * c;
-    out[10] = a02 * s + a22 * c;
-    out[11] = a03 * s + a23 * c;
-    return out;
-  }
-  /**
-   * Rotates a matrix by the given angle around the Z axis
-   *
-   * @param {mat4} out the receiving matrix
-   * @param {mat4} a the matrix to rotate
-   * @param {Number} rad the angle to rotate the matrix by
-   * @returns {mat4} out
-   */
-
-  function rotateZ(out, a, rad) {
-    let s = Math.sin(rad);
-    let c = Math.cos(rad);
-    let a00 = a[0];
-    let a01 = a[1];
-    let a02 = a[2];
-    let a03 = a[3];
-    let a10 = a[4];
-    let a11 = a[5];
-    let a12 = a[6];
-    let a13 = a[7];
+    out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+    out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+    out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+    out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+    out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+    out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+    out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+    out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+    out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+    out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+    out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+    out[11] = a03 * b20 + a13 * b21 + a23 * b22;
 
     if (a !== out) {
       // If the source and destination differ, copy the unchanged last row
-      out[8] = a[8];
-      out[9] = a[9];
-      out[10] = a[10];
-      out[11] = a[11];
       out[12] = a[12];
       out[13] = a[13];
       out[14] = a[14];
       out[15] = a[15];
-    } // Perform axis-specific matrix multiplication
+    }
 
-
-    out[0] = a00 * c + a10 * s;
-    out[1] = a01 * c + a11 * s;
-    out[2] = a02 * c + a12 * s;
-    out[3] = a03 * c + a13 * s;
-    out[4] = a10 * c - a00 * s;
-    out[5] = a11 * c - a01 * s;
-    out[6] = a12 * c - a02 * s;
-    out[7] = a13 * c - a03 * s;
     return out;
   }
   /**
@@ -2336,36 +2285,36 @@
       return this;
     }
 
-    set x(v) {
-      this[12] = v;
-    }
-
     get x() {
       return this[12];
-    }
-
-    set y(v) {
-      this[13] = v;
     }
 
     get y() {
       return this[13];
     }
 
-    set z(v) {
-      this[14] = v;
-    }
-
     get z() {
       return this[14];
     }
 
-    set w(v) {
-      this[15] = v;
-    }
-
     get w() {
       return this[15];
+    }
+
+    set x(v) {
+      this[12] = v;
+    }
+
+    set y(v) {
+      this[13] = v;
+    }
+
+    set z(v) {
+      this[14] = v;
+    }
+
+    set w(v) {
+      this[15] = v;
     }
 
     set(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
@@ -2379,18 +2328,8 @@
       return this;
     }
 
-    rotateX(v, m = this) {
-      rotateX(this, m, v);
-      return this;
-    }
-
-    rotateY(v, m = this) {
-      rotateY(this, m, v);
-      return this;
-    }
-
-    rotateZ(v, m = this) {
-      rotateZ(this, m, v);
+    rotate(v, axis, m = this) {
+      rotate(out, m, v, axis);
       return this;
     }
 
@@ -2629,7 +2568,7 @@
    * @returns {quat} out
    */
 
-  function rotateX$1(out, a, rad) {
+  function rotateX(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2652,7 +2591,7 @@
    * @returns {quat} out
    */
 
-  function rotateY$1(out, a, rad) {
+  function rotateY(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2675,7 +2614,7 @@
    * @returns {quat} out
    */
 
-  function rotateZ$1(out, a, rad) {
+  function rotateZ(out, a, rad) {
     rad *= 0.5;
     let ax = a[0],
         ay = a[1],
@@ -2937,13 +2876,21 @@
       return this[0];
     }
 
+    get y() {
+      return this[1];
+    }
+
+    get z() {
+      return this[2];
+    }
+
+    get w() {
+      return this[3];
+    }
+
     set x(v) {
       this[0] = v;
       this.onChange();
-    }
-
-    get y() {
-      return this[1];
     }
 
     set y(v) {
@@ -2951,17 +2898,9 @@
       this.onChange();
     }
 
-    get z() {
-      return this[2];
-    }
-
     set z(v) {
       this[2] = v;
       this.onChange();
-    }
-
-    get w() {
-      return this[3];
     }
 
     set w(v) {
@@ -2983,19 +2922,19 @@
     }
 
     rotateX(a) {
-      rotateX$1(this, this, a);
+      rotateX(this, this, a);
       this.onChange();
       return this;
     }
 
     rotateY(a) {
-      rotateY$1(this, this, a);
+      rotateY(this, this, a);
       this.onChange();
       return this;
     }
 
     rotateZ(a) {
-      rotateZ$1(this, this, a);
+      rotateZ(this, this, a);
       this.onChange();
       return this;
     }
@@ -3165,22 +3104,22 @@
       return this[0];
     }
 
+    get y() {
+      return this[1];
+    }
+
+    get z() {
+      return this[2];
+    }
+
     set x(v) {
       this[0] = v;
       this.onChange();
     }
 
-    get y() {
-      return this[1];
-    }
-
     set y(v) {
       this[1] = v;
       this.onChange();
-    }
-
-    get z() {
-      return this[2];
     }
 
     set z(v) {
@@ -3548,6 +3487,43 @@
     return out;
   }
   /**
+   * Calculates a 3x3 matrix from the given quaternion
+   *
+   * @param {mat3} out mat3 receiving operation result
+   * @param {quat} q Quaternion to create matrix from
+   *
+   * @returns {mat3} out
+   */
+
+  function fromQuat$1(out, q) {
+    let x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3];
+    let x2 = x + x;
+    let y2 = y + y;
+    let z2 = z + z;
+    let xx = x * x2;
+    let yx = y * x2;
+    let yy = y * y2;
+    let zx = z * x2;
+    let zy = z * y2;
+    let zz = z * z2;
+    let wx = w * x2;
+    let wy = w * y2;
+    let wz = w * z2;
+    out[0] = 1 - yy - zz;
+    out[3] = yx - wz;
+    out[6] = zx + wy;
+    out[1] = yx + wz;
+    out[4] = 1 - xx - zz;
+    out[7] = zy - wx;
+    out[2] = zx - wy;
+    out[5] = zy + wx;
+    out[8] = 1 - xx - yy;
+    return out;
+  }
+  /**
    * Copy the values from one mat3 to another
    *
    * @param {mat3} out the receiving matrix
@@ -3571,15 +3547,6 @@
    * Set the components of a mat3 to the given values
    *
    * @param {mat3} out the receiving matrix
-   * @param {Number} m00 Component in column 0, row 0 position (index 0)
-   * @param {Number} m01 Component in column 0, row 1 position (index 1)
-   * @param {Number} m02 Component in column 0, row 2 position (index 2)
-   * @param {Number} m10 Component in column 1, row 0 position (index 3)
-   * @param {Number} m11 Component in column 1, row 1 position (index 4)
-   * @param {Number} m12 Component in column 1, row 2 position (index 5)
-   * @param {Number} m20 Component in column 2, row 0 position (index 6)
-   * @param {Number} m21 Component in column 2, row 1 position (index 7)
-   * @param {Number} m22 Component in column 2, row 2 position (index 8)
    * @returns {mat3} out
    */
 
@@ -3734,7 +3701,7 @@
    * @returns {mat3} out
    */
 
-  function rotate(out, a, rad) {
+  function rotate$1(out, a, rad) {
     let a00 = a[0],
         a01 = a[1],
         a02 = a[2],
@@ -3778,43 +3745,6 @@
     out[6] = a[6];
     out[7] = a[7];
     out[8] = a[8];
-    return out;
-  }
-  /**
-   * Calculates a 3x3 matrix from the given quaternion
-   *
-   * @param {mat3} out mat3 receiving operation result
-   * @param {quat} q Quaternion to create matrix from
-   *
-   * @returns {mat3} out
-   */
-
-  function fromQuat$1(out, q) {
-    let x = q[0],
-        y = q[1],
-        z = q[2],
-        w = q[3];
-    let x2 = x + x;
-    let y2 = y + y;
-    let z2 = z + z;
-    let xx = x * x2;
-    let yx = y * x2;
-    let yy = y * y2;
-    let zx = z * x2;
-    let zy = z * y2;
-    let zz = z * z2;
-    let wx = w * x2;
-    let wy = w * y2;
-    let wz = w * z2;
-    out[0] = 1 - yy - zz;
-    out[3] = yx - wz;
-    out[6] = zx + wy;
-    out[1] = yx + wz;
-    out[4] = 1 - xx - zz;
-    out[7] = zy - wx;
-    out[2] = zx - wy;
-    out[5] = zy + wx;
-    out[8] = 1 - xx - yy;
     return out;
   }
   /**
@@ -3893,7 +3823,7 @@
     }
 
     rotate(v, m = this) {
-      rotate(this, m, v);
+      rotate$1(this, m, v);
       return this;
     }
 
@@ -4734,12 +4664,12 @@
       return this[0];
     }
 
-    set x(v) {
-      this[0] = v;
-    }
-
     get y() {
       return this[1];
+    }
+
+    set x(v) {
+      this[0] = v;
     }
 
     set y(v) {

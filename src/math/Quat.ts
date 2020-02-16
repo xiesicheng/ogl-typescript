@@ -12,13 +12,21 @@ export class Quat extends Array<number> {
         return this[0];
     }
 
+    get y() {
+        return this[1];
+    }
+
+    get z() {
+        return this[2];
+    }
+
+    get w() {
+        return this[3];
+    }
+
     set x(v) {
         this[0] = v;
         this.onChange();
-    }
-
-    get y() {
-        return this[1];
     }
 
     set y(v) {
@@ -26,17 +34,9 @@ export class Quat extends Array<number> {
         this.onChange();
     }
 
-    get z() {
-        return this[2];
-    }
-
     set z(v) {
         this[2] = v;
         this.onChange();
-    }
-
-    get w() {
-        return this[3];
     }
 
     set w(v) {

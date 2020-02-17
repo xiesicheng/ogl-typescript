@@ -1,6 +1,6 @@
 {
     "name": "ogl-typescript",
-    "version": "0.0.39",
+    "version": "0.0.40",
     "description": "WebGL Library",
     "main": "dist/ogl.es.js",
     "browser": "dist/ogl.js",

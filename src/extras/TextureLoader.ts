@@ -1,7 +1,7 @@
 import { Texture } from '../core/Texture';
 import { KTXTexture } from './KTXTexture';
 
-// TODO: store cache with arguments
+// TODO: store cache with sampler arguments
 
 // For compressed textures, generate using https://github.com/TimvanScherpenzeel/texture-compressor
 

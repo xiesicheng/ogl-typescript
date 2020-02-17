@@ -289,5 +289,5 @@ function update(t) {
     renderer.render({ scene: post });
 }
 
-document.getElementsByClassName('Info')[0].innerHTML = 'MRT';
-document.title = 'OGL • MRT';
+document.getElementsByClassName('Info')[0].innerHTML = 'OGL • MRT (Multiple Render Targets)';
+document.title = 'OGL • MRT (Multiple Render Targets)';

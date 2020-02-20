@@ -50,8 +50,8 @@ export interface Attribute {
     divisor?: number,
     needsUpdate?: boolean;
 
-    min?: number,
-    max?: number,
+    min?: any,
+    max?: any,
 
 }
 

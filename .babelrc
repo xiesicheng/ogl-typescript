@@ -4,7 +4,12 @@
     ],
     "plugins": [
         "@babel/plugin-proposal-numeric-separator",
-        "@babel/proposal-class-properties",
+        [
+            "@babel/plugin-proposal-class-properties",
+            {
+                "loose": true
+            }
+        ],
         "@babel/proposal-object-rest-spread"
     ]
 }

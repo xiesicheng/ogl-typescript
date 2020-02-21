@@ -13,10 +13,8 @@ export default [{
         babel({ extensions, include: ['./src/**/*'] }),
     ],
     output: [
-        { file: pkg.browser, format: 'iife', name: 'window', extend: true, globals: {} },
-        { file: pkg.browserMin, format: 'iife', name: 'window', extend: true, globals: {}, plugins: [terser()] },
-        { file: pkg.module, format: 'es' },
-        { file: pkg.moduleMin, format: 'es', plugins: [terser()] },
+        { file: pkg.browser, format: 'es' },
+        { file: pkg.browserMin, format: 'es', plugins: [terser()] },
         { file: pkg.unpkg, format: 'umd', name: 'ogl' },
     ],
     watch: {

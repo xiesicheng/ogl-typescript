@@ -1,18 +1,3 @@
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-}
-
 /**
  * Calculates the length of a vec3
  *
@@ -374,9 +359,7 @@ class Vec3 extends Array {
   // todo: 放哪？
   constructor(x = 0, y = x, z = x) {
     super(x, y, z);
-
-    _defineProperty(this, "constant", void 0);
-
+    this.constant = void 0;
     return this;
   }
 
@@ -534,6 +517,7 @@ class Vec3 extends Array {
 
 }
 
+// attribute params
 const tempVec3 = new Vec3();
 let ID = 1;
 let ATTR_ID = 1; // export interface Attributes {
@@ -547,26 +531,16 @@ let ATTR_ID = 1; // export interface Attributes {
 let isBoundsWarned = false;
 class Geometry {
   constructor(gl, attributes = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "id", void 0);
-
-    _defineProperty(this, "attributes", void 0);
-
-    _defineProperty(this, "VAOs", void 0);
-
-    _defineProperty(this, "drawRange", void 0);
-
-    _defineProperty(this, "instancedCount", void 0);
-
-    _defineProperty(this, "glState", void 0);
-
-    _defineProperty(this, "isInstanced", void 0);
-
-    _defineProperty(this, "bounds", void 0);
-
-    _defineProperty(this, "raycast", "box");
-
+    this.gl = void 0;
+    this.id = void 0;
+    this.attributes = void 0;
+    this.VAOs = void 0;
+    this.drawRange = void 0;
+    this.instancedCount = void 0;
+    this.glState = void 0;
+    this.isInstanced = void 0;
+    this.bounds = void 0;
+    this.raycast = "box";
     this.gl = gl;
     this.attributes = attributes;
     this.id = ID++; // Store one VAO per program attribute locations order
@@ -796,36 +770,21 @@ class Program {
     depthWrite = true,
     depthFunc = gl.LESS
   } = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "uniforms", void 0);
-
-    _defineProperty(this, "id", void 0);
-
-    _defineProperty(this, "transparent", void 0);
-
-    _defineProperty(this, "cullFace", void 0);
-
-    _defineProperty(this, "frontFace", void 0);
-
-    _defineProperty(this, "depthTest", void 0);
-
-    _defineProperty(this, "depthWrite", void 0);
-
-    _defineProperty(this, "depthFunc", void 0);
-
-    _defineProperty(this, "blendFunc", void 0);
-
-    _defineProperty(this, "blendEquation", void 0);
-
-    _defineProperty(this, "program", void 0);
-
-    _defineProperty(this, "uniformLocations", void 0);
-
-    _defineProperty(this, "attributeLocations", void 0);
-
-    _defineProperty(this, "attributeOrder", void 0);
-
+    this.gl = void 0;
+    this.uniforms = void 0;
+    this.id = void 0;
+    this.transparent = void 0;
+    this.cullFace = void 0;
+    this.frontFace = void 0;
+    this.depthTest = void 0;
+    this.depthWrite = void 0;
+    this.depthFunc = void 0;
+    this.blendFunc = void 0;
+    this.blendEquation = void 0;
+    this.program = void 0;
+    this.uniformLocations = void 0;
+    this.attributeLocations = void 0;
+    this.attributeOrder = void 0;
     this.gl = gl;
     this.uniforms = uniforms;
     this.id = ID$1++;
@@ -1154,52 +1113,29 @@ class Renderer {
     autoClear = true,
     webgl = 2
   } = {}) {
-    _defineProperty(this, "dpr", void 0);
-
-    _defineProperty(this, "alpha", void 0);
-
-    _defineProperty(this, "color", void 0);
-
-    _defineProperty(this, "depth", void 0);
-
-    _defineProperty(this, "stencil", void 0);
-
-    _defineProperty(this, "premultipliedAlpha", void 0);
-
-    _defineProperty(this, "autoClear", void 0);
-
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "isWebgl2", void 0);
-
-    _defineProperty(this, "width", void 0);
-
-    _defineProperty(this, "height", void 0);
-
-    _defineProperty(this, "parameters", void 0);
-
-    _defineProperty(this, "state", void 0);
-
-    _defineProperty(this, "extensions", void 0);
-
-    _defineProperty(this, "vertexAttribDivisor", void 0);
-
-    _defineProperty(this, "drawArraysInstanced", void 0);
-
-    _defineProperty(this, "drawElementsInstanced", void 0);
-
-    _defineProperty(this, "createVertexArray", void 0);
-
-    _defineProperty(this, "bindVertexArray", void 0);
-
-    _defineProperty(this, "deleteVertexArray", void 0);
-
-    _defineProperty(this, "drawBuffers", void 0);
-
-    _defineProperty(this, "currentProgram", void 0);
-
-    _defineProperty(this, "currentGeometry", void 0);
-
+    this.dpr = void 0;
+    this.alpha = void 0;
+    this.color = void 0;
+    this.depth = void 0;
+    this.stencil = void 0;
+    this.premultipliedAlpha = void 0;
+    this.autoClear = void 0;
+    this.gl = void 0;
+    this.isWebgl2 = void 0;
+    this.width = void 0;
+    this.height = void 0;
+    this.parameters = void 0;
+    this.state = void 0;
+    this.extensions = void 0;
+    this.vertexAttribDivisor = void 0;
+    this.drawArraysInstanced = void 0;
+    this.drawElementsInstanced = void 0;
+    this.createVertexArray = void 0;
+    this.bindVertexArray = void 0;
+    this.deleteVertexArray = void 0;
+    this.drawBuffers = void 0;
+    this.currentProgram = void 0;
+    this.currentGeometry = void 0;
     const attributes = {
       alpha,
       depth,
@@ -2326,7 +2262,7 @@ class Mat4 extends Array {
   }
 
   rotate(v, axis, m = this) {
-    rotate(out, m, v, axis);
+    rotate(this, m, v, axis);
     return this;
   }
 
@@ -2861,8 +2797,7 @@ const normalize$2 = normalize$1;
 class Quat extends Array {
   constructor(x = 0, y = 0, z = 0, w = 1) {
     super(x, y, z, w);
-
-    _defineProperty(this, "onChange", void 0);
+    this.onChange = void 0;
 
     this.onChange = () => {};
 
@@ -3085,11 +3020,8 @@ const tmpMat4 = new Mat4();
 class Euler extends Array {
   constructor(x = 0, y = x, z = x, order = 'YXZ') {
     super(x, y, z);
-
-    _defineProperty(this, "onChange", void 0);
-
-    _defineProperty(this, "order", void 0);
-
+    this.onChange = void 0;
+    this.order = void 0;
     this.order = order;
 
     this.onChange = () => {};
@@ -3161,30 +3093,18 @@ class Euler extends Array {
 
 class Transform {
   constructor() {
-    _defineProperty(this, "parent", void 0);
-
-    _defineProperty(this, "children", void 0);
-
-    _defineProperty(this, "visible", void 0);
-
-    _defineProperty(this, "matrix", void 0);
-
-    _defineProperty(this, "worldMatrix", void 0);
-
-    _defineProperty(this, "matrixAutoUpdate", void 0);
-
-    _defineProperty(this, "worldMatrixNeedsUpdate", void 0);
-
-    _defineProperty(this, "position", void 0);
-
-    _defineProperty(this, "scale", void 0);
-
-    _defineProperty(this, "up", void 0);
-
-    _defineProperty(this, "quaternion", void 0);
-
-    _defineProperty(this, "rotation", void 0);
-
+    this.parent = void 0;
+    this.children = void 0;
+    this.visible = void 0;
+    this.matrix = void 0;
+    this.worldMatrix = void 0;
+    this.matrixAutoUpdate = void 0;
+    this.worldMatrixNeedsUpdate = void 0;
+    this.position = void 0;
+    this.scale = void 0;
+    this.up = void 0;
+    this.quaternion = void 0;
+    this.rotation = void 0;
     this.parent = null;
     this.children = [];
     this.visible = true;
@@ -3277,37 +3197,21 @@ class Camera extends Transform {
     zoom = 1
   } = {}) {
     super();
-
-    _defineProperty(this, "near", void 0);
-
-    _defineProperty(this, "far", void 0);
-
-    _defineProperty(this, "fov", void 0);
-
-    _defineProperty(this, "aspect", void 0);
-
-    _defineProperty(this, "left", void 0);
-
-    _defineProperty(this, "right", void 0);
-
-    _defineProperty(this, "bottom", void 0);
-
-    _defineProperty(this, "top", void 0);
-
-    _defineProperty(this, "zoom", void 0);
-
-    _defineProperty(this, "projectionMatrix", void 0);
-
-    _defineProperty(this, "viewMatrix", void 0);
-
-    _defineProperty(this, "projectionViewMatrix", void 0);
-
-    _defineProperty(this, "worldPosition", void 0);
-
-    _defineProperty(this, "type", void 0);
-
-    _defineProperty(this, "frustum", void 0);
-
+    this.near = void 0;
+    this.far = void 0;
+    this.fov = void 0;
+    this.aspect = void 0;
+    this.left = void 0;
+    this.right = void 0;
+    this.bottom = void 0;
+    this.top = void 0;
+    this.zoom = void 0;
+    this.projectionMatrix = void 0;
+    this.viewMatrix = void 0;
+    this.projectionViewMatrix = void 0;
+    this.worldPosition = void 0;
+    this.type = void 0;
+    this.frustum = void 0;
     Object.assign(this, {
       near,
       far,
@@ -3887,31 +3791,18 @@ class Mesh extends Transform {
     renderOrder = 0
   } = {}) {
     super();
-
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "id", void 0);
-
-    _defineProperty(this, "geometry", void 0);
-
-    _defineProperty(this, "program", void 0);
-
-    _defineProperty(this, "mode", void 0);
-
-    _defineProperty(this, "frustumCulled", void 0);
-
-    _defineProperty(this, "renderOrder", void 0);
-
-    _defineProperty(this, "modelViewMatrix", void 0);
-
-    _defineProperty(this, "normalMatrix", void 0);
-
-    _defineProperty(this, "beforeRenderCallbacks", void 0);
-
-    _defineProperty(this, "afterRenderCallbacks", void 0);
-
-    _defineProperty(this, "hit", null);
-
+    this.gl = void 0;
+    this.id = void 0;
+    this.geometry = void 0;
+    this.program = void 0;
+    this.mode = void 0;
+    this.frustumCulled = void 0;
+    this.renderOrder = void 0;
+    this.modelViewMatrix = void 0;
+    this.normalMatrix = void 0;
+    this.beforeRenderCallbacks = void 0;
+    this.afterRenderCallbacks = void 0;
+    this.hit = null;
     this.gl = gl;
     this.id = ID$2++;
     this.geometry = geometry;
@@ -4038,56 +3929,31 @@ class Texture {
     // used for RenderTargets or Data Textures
     height = width
   } = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "id", void 0);
-
-    _defineProperty(this, "image", void 0);
-
-    _defineProperty(this, "target", void 0);
-
-    _defineProperty(this, "type", void 0);
-
-    _defineProperty(this, "format", void 0);
-
-    _defineProperty(this, "internalFormat", void 0);
-
-    _defineProperty(this, "wrapS", void 0);
-
-    _defineProperty(this, "wrapT", void 0);
-
-    _defineProperty(this, "generateMipmaps", void 0);
-
-    _defineProperty(this, "minFilter", void 0);
-
-    _defineProperty(this, "magFilter", void 0);
-
-    _defineProperty(this, "premultiplyAlpha", void 0);
-
-    _defineProperty(this, "unpackAlignment", void 0);
-
-    _defineProperty(this, "flipY", void 0);
-
-    _defineProperty(this, "level", void 0);
-
-    _defineProperty(this, "width", void 0);
-
-    _defineProperty(this, "height", void 0);
-
-    _defineProperty(this, "anisotropy", void 0);
-
-    _defineProperty(this, "texture", void 0);
-
-    _defineProperty(this, "store", void 0);
-
-    _defineProperty(this, "glState", void 0);
-
-    _defineProperty(this, "state", void 0);
-
-    _defineProperty(this, "needsUpdate", void 0);
-
-    _defineProperty(this, "onUpdate", void 0);
-
+    this.gl = void 0;
+    this.id = void 0;
+    this.image = void 0;
+    this.target = void 0;
+    this.type = void 0;
+    this.format = void 0;
+    this.internalFormat = void 0;
+    this.wrapS = void 0;
+    this.wrapT = void 0;
+    this.generateMipmaps = void 0;
+    this.minFilter = void 0;
+    this.magFilter = void 0;
+    this.premultiplyAlpha = void 0;
+    this.unpackAlignment = void 0;
+    this.flipY = void 0;
+    this.level = void 0;
+    this.width = void 0;
+    this.height = void 0;
+    this.anisotropy = void 0;
+    this.texture = void 0;
+    this.store = void 0;
+    this.glState = void 0;
+    this.state = void 0;
+    this.needsUpdate = void 0;
+    this.onUpdate = void 0;
     this.gl = gl;
     this.id = ID$3++;
     this.image = image;
@@ -4242,6 +4108,7 @@ class Texture {
 
 }
 
+// TODO: multi target rendering
 class RenderTarget {
   constructor(gl, {
     width = gl.canvas.width,
@@ -4263,30 +4130,18 @@ class RenderTarget {
     unpackAlignment,
     premultiplyAlpha
   } = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "width", void 0);
-
-    _defineProperty(this, "height", void 0);
-
-    _defineProperty(this, "depth", void 0);
-
-    _defineProperty(this, "buffer", void 0);
-
-    _defineProperty(this, "target", void 0);
-
-    _defineProperty(this, "textures", void 0);
-
-    _defineProperty(this, "texture", void 0);
-
-    _defineProperty(this, "depthTexture", void 0);
-
-    _defineProperty(this, "depthBuffer", void 0);
-
-    _defineProperty(this, "stencilBuffer", void 0);
-
-    _defineProperty(this, "depthStencilBuffer", void 0);
-
+    this.gl = void 0;
+    this.width = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.buffer = void 0;
+    this.target = void 0;
+    this.textures = void 0;
+    this.texture = void 0;
+    this.depthTexture = void 0;
+    this.depthBuffer = void 0;
+    this.stencilBuffer = void 0;
+    this.depthStencilBuffer = void 0;
     this.gl = gl;
     this.width = width;
     this.height = height;
@@ -5671,18 +5526,16 @@ function Orbit(object, {
   addHandlers();
 }
 
+// TODO: add barycentric ?
 const tempVec3a$1 = new Vec3();
 const tempVec3b$1 = new Vec3();
 const tempVec3c = new Vec3();
 const tempMat4$1 = new Mat4();
 class Raycast {
   constructor(gl) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "origin", void 0);
-
-    _defineProperty(this, "direction", void 0);
-
+    this.gl = void 0;
+    this.origin = void 0;
+    this.direction = void 0;
     this.gl = gl;
     this.origin = new Vec3();
     this.direction = new Vec3();
@@ -5797,6 +5650,7 @@ class Raycast {
 
 }
 
+// TODO: Destroy render targets if size changed and exists
 class Post {
   constructor(gl, {
     width,
@@ -5809,26 +5663,16 @@ class Post {
     geometry = new Triangle(gl),
     targetOnly = null
   } = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "options", void 0);
-
-    _defineProperty(this, "passes", void 0);
-
-    _defineProperty(this, "geometry", void 0);
-
-    _defineProperty(this, "uniform", void 0);
-
-    _defineProperty(this, "targetOnly", void 0);
-
-    _defineProperty(this, "fbo", void 0);
-
-    _defineProperty(this, "dpr", void 0);
-
-    _defineProperty(this, "width", void 0);
-
-    _defineProperty(this, "height", void 0);
-
+    this.gl = void 0;
+    this.options = void 0;
+    this.passes = void 0;
+    this.geometry = void 0;
+    this.uniform = void 0;
+    this.targetOnly = void 0;
+    this.fbo = void 0;
+    this.dpr = void 0;
+    this.width = void 0;
+    this.height = void 0;
     this.gl = gl;
     this.options = {
       wrapS,
@@ -5978,16 +5822,11 @@ class Animation {
     objects,
     data
   }) {
-    _defineProperty(this, "objects", void 0);
-
-    _defineProperty(this, "data", void 0);
-
-    _defineProperty(this, "elapsed", void 0);
-
-    _defineProperty(this, "weight", void 0);
-
-    _defineProperty(this, "duration", void 0);
-
+    this.objects = void 0;
+    this.data = void 0;
+    this.elapsed = void 0;
+    this.weight = void 0;
+    this.duration = void 0;
     this.objects = objects;
     this.data = data;
     this.elapsed = 0;
@@ -6033,19 +5872,12 @@ class Skin extends Mesh {
       program,
       mode
     });
-
-    _defineProperty(this, "animations", void 0);
-
-    _defineProperty(this, "boneTexture", void 0);
-
-    _defineProperty(this, "boneTextureSize", void 0);
-
-    _defineProperty(this, "boneMatrices", void 0);
-
-    _defineProperty(this, "root", void 0);
-
-    _defineProperty(this, "bones", void 0);
-
+    this.animations = void 0;
+    this.boneTexture = void 0;
+    this.boneTextureSize = void 0;
+    this.boneMatrices = void 0;
+    this.root = void 0;
+    this.bones = void 0;
     this.createBones(rig);
     this.createBoneTexture();
     this.animations = [];
@@ -6415,19 +6247,13 @@ class Flowmap {
     type // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
 
   } = {}) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "uniform", void 0);
-
-    _defineProperty(this, "mask", void 0);
-
-    _defineProperty(this, "aspect", void 0);
-
-    _defineProperty(this, "mouse", void 0);
-
-    _defineProperty(this, "velocity", void 0);
-
-    _defineProperty(this, "mesh", void 0);
+    this.gl = void 0;
+    this.uniform = void 0;
+    this.mask = void 0;
+    this.aspect = void 0;
+    this.mouse = void 0;
+    this.velocity = void 0;
+    this.mesh = void 0;
 
     const _this = this;
 
@@ -6579,22 +6405,14 @@ class GPGPU {
     type // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
 
   }) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "passes", void 0);
-
-    _defineProperty(this, "geometry", void 0);
-
-    _defineProperty(this, "dataLength", void 0);
-
-    _defineProperty(this, "size", void 0);
-
-    _defineProperty(this, "coords", void 0);
-
-    _defineProperty(this, "uniform", void 0);
-
-    _defineProperty(this, "fbo", void 0);
-
+    this.gl = void 0;
+    this.passes = void 0;
+    this.geometry = void 0;
+    this.dataLength = void 0;
+    this.size = void 0;
+    this.coords = void 0;
+    this.uniform = void 0;
+    this.fbo = void 0;
     this.gl = gl;
     const initialData = data;
     this.passes = [];
@@ -6743,34 +6561,20 @@ class Polyline {
     attributes = {} // For passing in custom attribs
 
   }) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "points", void 0);
-
-    _defineProperty(this, "count", void 0);
-
-    _defineProperty(this, "position", void 0);
-
-    _defineProperty(this, "prev", void 0);
-
-    _defineProperty(this, "next", void 0);
-
-    _defineProperty(this, "geometry", void 0);
-
-    _defineProperty(this, "resolution", void 0);
-
-    _defineProperty(this, "dpr", void 0);
-
-    _defineProperty(this, "thickness", void 0);
-
-    _defineProperty(this, "color", void 0);
-
-    _defineProperty(this, "miter", void 0);
-
-    _defineProperty(this, "program", void 0);
-
-    _defineProperty(this, "mesh", void 0);
-
+    this.gl = void 0;
+    this.points = void 0;
+    this.count = void 0;
+    this.position = void 0;
+    this.prev = void 0;
+    this.next = void 0;
+    this.geometry = void 0;
+    this.resolution = void 0;
+    this.dpr = void 0;
+    this.thickness = void 0;
+    this.color = void 0;
+    this.miter = void 0;
+    this.program = void 0;
+    this.mesh = void 0;
     this.gl = gl;
     this.points = points;
     this.count = points.length; // Create buffers
@@ -6959,16 +6763,11 @@ class Shadow {
     width = 1024,
     height = width
   }) {
-    _defineProperty(this, "gl", void 0);
-
-    _defineProperty(this, "light", void 0);
-
-    _defineProperty(this, "target", void 0);
-
-    _defineProperty(this, "depthProgram", void 0);
-
-    _defineProperty(this, "castMeshes", void 0);
-
+    this.gl = void 0;
+    this.light = void 0;
+    this.target = void 0;
+    this.depthProgram = void 0;
+    this.castMeshes = void 0;
     this.gl = gl;
     this.light = light;
     this.target = new RenderTarget(gl, {
@@ -7123,16 +6922,11 @@ class KTXTexture extends Texture {
 
 class KhronosTextureContainer {
   constructor(buffer) {
-    _defineProperty(this, "glInternalFormat", void 0);
-
-    _defineProperty(this, "numberOfFaces", void 0);
-
-    _defineProperty(this, "numberOfMipmapLevels", void 0);
-
-    _defineProperty(this, "mipmaps", void 0);
-
-    _defineProperty(this, "isCompressedTexture", void 0);
-
+    this.glInternalFormat = void 0;
+    this.numberOfFaces = void 0;
+    this.numberOfMipmapLevels = void 0;
+    this.mipmaps = void 0;
+    this.isCompressedTexture = void 0;
     const idCheck = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x31, 0x31, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
     const id = new Uint8Array(buffer, 0, 12);
 

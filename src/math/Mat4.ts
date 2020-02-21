@@ -56,7 +56,7 @@ export class Mat4 extends Array<number> {
     }
 
     rotate(v, axis, m = this) {
-        Mat4Func.rotate(out, m, v, axis);
+        Mat4Func.rotate(this, m, v, axis);
         return this;
     }
 

@@ -1,28 +1,35 @@
 {
     "name": "ogl-typescript",
-    "version": "0.0.40",
-    "description": "WebGL Library",
-    "main": "dist/ogl.es.js",
-    "browser": "dist/ogl.js",
-    "browserMin": "dist/ogl.min.js",
-    "module": "dist/ogl.es.js",
-    "moduleMin": "dist/ogl.es.min.js",
+    "version": "0.1.0",
+    "description": "TypeScript port of OGL WebGL Library",
+    "module": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "browser": "dist/ogl.es.js",
+    "browserMin": "dist/ogl.es.min.js",
     "unpkg": "dist/ogl.umd.js",
     "sideEffects": false,
     "directories": {
         "example": "examples"
     },
+    "files": [
+        "dist",
+        "lib"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
-        "build": "rimraf dist/* && rollup -c",
+        "build": "npm run build:dist && npm run build:lib",
+        "build:dist": "rimraf dist/* && rollup -c",
+        "build:lib": "rimraf lib/* && tsc",
         "build:examples": "rollup -c rollup.config.examples.js",
         "dev": "rollup -c -w",
         "dev:examples": "rollup -c rollup.config.examples.js -w",
         "serve": "npx http-server examples -o"
-
     },
     "repository": {
         "type": "git",
-        "url": "git+https://gordonnl@github.com/oframe/ogl.git"
+        "url": "git+https://github.com/nshen/ogl-typescript"
     },
     "keywords": [
         "webgl"
@@ -34,22 +41,22 @@
     },
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/oframe/ogl/issues"
+        "url": "https://github.com/nshen/ogl-typescript/issues"
     },
     "devDependencies": {
-        "@babel/cli": "^7.7.0",
-        "@babel/core": "^7.7.2",
-        "@babel/plugin-proposal-class-properties": "^7.7.0",
-        "@babel/plugin-proposal-numeric-separator": "^7.2.0",
-        "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
-        "@babel/preset-typescript": "^7.7.2",
-        "rimraf": "^3.0.0",
+        "@babel/cli": "^7.8.4",
+        "@babel/core": "^7.8.4",
+        "@babel/plugin-proposal-class-properties": "^7.8.3",
+        "@babel/plugin-proposal-numeric-separator": "^7.8.3",
+        "@babel/plugin-proposal-object-rest-spread": "^7.8.3",
+        "@babel/preset-typescript": "^7.8.3",
+        "rimraf": "^3.0.2",
         "rollup-plugin-babel": "^4.3.3",
-        "rollup-plugin-generate-html-template": "^1.6.0",
+        "rollup-plugin-generate-html-template": "^1.6.1",
         "rollup-plugin-node-resolve": "^5.2.0",
-        "rollup-plugin-terser": "^5.1.2",
-        "typescript": "^3.7.2",
-        "rollup": "^1.27.13"
+        "rollup-plugin-terser": "^5.2.0",
+        "typescript": "^3.7.5",
+        "rollup": "^1.31.1"
     },
-    "homepage": "https://github.com/oframe/ogl#readme"
+    "homepage": "https://github.com/nshen/ogl-typescript"
 }

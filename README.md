@@ -25,6 +25,7 @@
 
 OGL-TypeScript is TypeScript port of  [OGL Minimal WebGL library](https://github.com/oframe/ogl) , so it add code completion feature to OGL.
 
+<img src="./code-complete.gif"  width="577px" height="337px" />
 
 ## Install
 

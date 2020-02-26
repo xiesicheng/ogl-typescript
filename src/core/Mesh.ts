@@ -48,6 +48,7 @@ export class Mesh extends Transform {
         renderOrder = 0,
     }: Partial<MeshOptions> = {}) {
         super();
+        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
         this.id = ID++;
 

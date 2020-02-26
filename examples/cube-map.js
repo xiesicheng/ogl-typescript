@@ -449,7 +449,7 @@
       }
 
       cross(va, vb) {
-        cross(this, va, vb);
+        if (vb) cross(this, va, vb);else cross(this, this, va);
         return this;
       }
 
@@ -544,6 +544,7 @@
         this.isInstanced = void 0;
         this.bounds = void 0;
         this.raycast = "box";
+        if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;
         this.id = ID++; // Store one VAO per program attribute locations order
@@ -715,6 +716,7 @@
         const scale = this.bounds.scale;
         min.set(+Infinity);
         max.set(-Infinity); // TODO: use offset/stride if exists
+        // TODO: check size of position (eg triangle with Vec2)
 
         for (let i = 0, l = array.length; i < l; i += 3) {
           const x = array[i];
@@ -788,6 +790,7 @@
         this.uniformLocations = void 0;
         this.attributeLocations = void 0;
         this.attributeOrder = void 0;
+        if (!gl.canvas) console.error('gl not passed as fist argument to Program');
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID$1++;
@@ -2215,8 +2218,7 @@
     }
 
     class Mat4 extends Array {
-      constructor(m00 = 1, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 1, m12 = 0, m13 = 0, m20 = 0, m21 = 0, m22 = 1, m23 = 0, m30 = 0, m31 = 0, m32 = 0, m33 = 1 // m30 x / m31 y / m32 z
-      ) {
+      constructor(m00 = 1, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 1, m12 = 0, m13 = 0, m20 = 0, m21 = 0, m22 = 1, m23 = 0, m30 = 0, m31 = 0, m32 = 0, m33 = 1) {
         super(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33);
         return this;
       }
@@ -3806,6 +3808,7 @@
         this.beforeRenderCallbacks = void 0;
         this.afterRenderCallbacks = void 0;
         this.hit = null;
+        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
         this.id = ID$2++;
         this.geometry = geometry;
@@ -4601,7 +4604,8 @@
       }
 
       cross(va, vb) {
-        return cross$1(va, vb);
+        if (vb) return cross$1(va, vb);
+        return cross$1(this, va);
       }
 
       scale(v) {

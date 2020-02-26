@@ -7,7 +7,7 @@ export { Triangle } from './extras/Triangle';
 
 export { Orbit } from './extras/Orbit';
 export { Raycast } from './extras/Raycast';
-// export {Curve} from './extras/Curve.js';
+export { Curve } from './extras/Curve';
 export { Post } from './extras/Post';
 export { Skin } from './extras/Skin';
 export { Animation } from './extras/Animation';
@@ -20,3 +20,7 @@ export { Shadow } from './extras/Shadow';
 export { KTXTexture } from './extras/KTXTexture';
 export { TextureLoader } from './extras/TextureLoader';
 export { GLTFLoader } from './extras/GLTFLoader';
+export { GLTFAnimation } from './extras/GLTFAnimation';
+
+
+

@@ -449,7 +449,7 @@
       }
 
       cross(va, vb) {
-        cross(this, va, vb);
+        if (vb) cross(this, va, vb);else cross(this, this, va);
         return this;
       }
 
@@ -544,6 +544,7 @@
         this.isInstanced = void 0;
         this.bounds = void 0;
         this.raycast = "box";
+        if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;
         this.id = ID++; // Store one VAO per program attribute locations order
@@ -715,6 +716,7 @@
         const scale = this.bounds.scale;
         min.set(+Infinity);
         max.set(-Infinity); // TODO: use offset/stride if exists
+        // TODO: check size of position (eg triangle with Vec2)
 
         for (let i = 0, l = array.length; i < l; i += 3) {
           const x = array[i];
@@ -788,6 +790,7 @@
         this.uniformLocations = void 0;
         this.attributeLocations = void 0;
         this.attributeOrder = void 0;
+        if (!gl.canvas) console.error('gl not passed as fist argument to Program');
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID$1++;
@@ -2215,8 +2218,7 @@
     }
 
     class Mat4 extends Array {
-      constructor(m00 = 1, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 1, m12 = 0, m13 = 0, m20 = 0, m21 = 0, m22 = 1, m23 = 0, m30 = 0, m31 = 0, m32 = 0, m33 = 1 // m30 x / m31 y / m32 z
-      ) {
+      constructor(m00 = 1, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 1, m12 = 0, m13 = 0, m20 = 0, m21 = 0, m22 = 1, m23 = 0, m30 = 0, m31 = 0, m32 = 0, m33 = 1) {
         super(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33);
         return this;
       }
@@ -3806,6 +3808,7 @@
         this.beforeRenderCallbacks = void 0;
         this.afterRenderCallbacks = void 0;
         this.hit = null;
+        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
         this.id = ID$2++;
         this.geometry = geometry;
@@ -4254,7 +4257,8 @@
       }
 
       cross(va, vb) {
-        return cross$1(va, vb);
+        if (vb) return cross$1(va, vb);
+        return cross$1(this, va);
       }
 
       scale(v) {
@@ -4694,20 +4698,115 @@
       });
     }
 
+    const tmpVec3A = new Vec3();
+    const tmpVec3B = new Vec3();
+    const tmpVec3C = new Vec3();
+    const tmpVec3D = new Vec3();
+    const tmpQuatA = new Quat();
+    const tmpQuatB = new Quat();
+    const tmpQuatC = new Quat();
+    const tmpQuatD = new Quat();
+    class GLTFAnimation {
+      constructor(data, weight = 1) {
+        this.data = void 0;
+        this.elapsed = void 0;
+        this.weight = void 0;
+        this.loop = void 0;
+        this.duration = void 0;
+        this.data = data;
+        this.elapsed = 0;
+        this.weight = weight; // Set to false to not apply modulo to elapsed against duration
+
+        this.loop = true; // Get duration from largest final time in all channels
+
+        this.duration = data.reduce((a, {
+          times
+        }) => Math.max(a, times[times.length - 1]), 0);
+      }
+
+      update(totalWeight = 1, isSet) {
+        const weight = isSet ? 1 : this.weight / totalWeight;
+        const elapsed = this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration);
+        this.data.forEach(({
+          node,
+          transform,
+          interpolation,
+          times,
+          values
+        }) => {
+          // Get index of two time values elapsed is between
+          const prevIndex = Math.max(1, times.findIndex(t => t > elapsed)) - 1;
+          const nextIndex = prevIndex + 1; // Get linear blend/alpha between the two
+
+          let alpha = (elapsed - times[prevIndex]) / (times[nextIndex] - times[prevIndex]);
+          if (interpolation === 'STEP') alpha = 0;
+          let prevVal = tmpVec3A;
+          let prevTan = tmpVec3B;
+          let nextTan = tmpVec3C;
+          let nextVal = tmpVec3D;
+          let size = 3;
+
+          if (transform === 'quaternion') {
+            prevVal = tmpQuatA;
+            prevTan = tmpQuatB;
+            nextTan = tmpQuatC;
+            nextVal = tmpQuatD;
+            size = 4;
+          }
+
+          if (interpolation === 'CUBICSPLINE') {
+            // Get the prev and next values from the indices
+            prevVal.fromArray(values, prevIndex * size * 3 + size * 1);
+            prevTan.fromArray(values, prevIndex * size * 3 + size * 2);
+            nextTan.fromArray(values, nextIndex * size * 3 + size * 0);
+            nextVal.fromArray(values, nextIndex * size * 3 + size * 1); // interpolate for final value
+
+            prevVal = this.cubicSplineInterpolate(alpha, prevVal, prevTan, nextTan, nextVal);
+            if (size === 4) prevVal.normalize();
+          } else {
+            // Get the prev and next values from the indices
+            prevVal.fromArray(values, prevIndex * size);
+            nextVal.fromArray(values, nextIndex * size); // interpolate for final value
+
+            if (size === 4) prevVal.slerp(nextVal, alpha);else prevVal.lerp(nextVal, alpha);
+          } // interpolate between multiple possible animations
+
+
+          if (size === 4) node[transform].slerp(prevVal, weight);else node[transform].lerp(prevVal, weight);
+        });
+      }
+
+      cubicSplineInterpolate(t, prevVal, prevTan, nextTan, nextVal) {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const s2 = 3 * t2 - 2 * t3;
+        const s3 = t3 - t2;
+        const s0 = 1 - s2;
+        const s1 = s3 - t2 + t;
+
+        for (let i = 0; i < prevVal.length; i++) {
+          prevVal[i] = s0 * prevVal[i] + s1 * ((1 - t) * prevTan[i]) + s2 * nextVal[i] + s3 * (t * nextTan[i]);
+        }
+
+        return prevVal;
+      }
+
+    }
+
     // Supports
     // [x] Geometry
+    // [ ] Sparse support
     // [x] Nodes and Hierarchy
     // [ ] Morph Targets
     // [ ] Skins
     // [ ] Materials
     // [ ] Textures
-    // [ ] Animation
+    // [x] Animation
     // [ ] Cameras
     // [ ] Extensions
-    // TODO: only push attribute bufferViews to the GPU
-    // TODO: Sparse accessor packing? what for?
+    // TODO: Sparse accessor packing? For morph targets basically
     // TODO: init accessor missing bufferView with 0s
-    // TODO: is there ever more than one component type per buffer view? surely not...
+    // TODO: morph target animations
     const TYPE_ARRAY = {
       5121: Uint8Array,
       5122: Int16Array,
@@ -4734,6 +4833,11 @@
       WEIGHTS_0: 'skinWeight',
       JOINTS_0: 'skinIndex'
     };
+    const TRANSFORMS = {
+      translation: 'position',
+      rotation: 'quaternion',
+      scale: 'scale'
+    };
     class GLTFLoader {
       static async load(gl, src) {
         const dir = src.split('/').slice(0, -1).join('/') + '/'; // load main description json
@@ -4747,7 +4851,9 @@
 
         const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
 
-        const nodes = this.parseNodes(gl, desc, meshes); // Get top level nodes for each scene
+        const nodes = this.parseNodes(gl, desc, meshes); // Create animation handlers
+
+        const animations = this.parseAnimations(gl, desc, nodes, bufferViews); // Get top level nodes for each scene
 
         const scenes = this.parseScenes(desc, nodes);
         const scene = scenes[desc.scene];
@@ -4757,6 +4863,7 @@
           bufferViews,
           meshes,
           nodes,
+          animations,
           scenes,
           scene
         };
@@ -4789,17 +4896,21 @@
       }
 
       static parseBufferViews(gl, desc, buffers) {
-        // Clone to leave desc pure
-        const bufferViews = desc.bufferViews.map(o => Object.assign({}, o)); // Work out which bufferViews are for indices to determine whether
-        // target is gl.ELEMENT_ARRAY_BUFFER or gl.ARRAY_BUFFER;
-
+        // Clone to leave description pure
+        const bufferViews = desc.bufferViews.map(o => Object.assign({}, o));
         desc.meshes.forEach(({
           primitives
         }) => {
           primitives.forEach(({
+            attributes,
             indices
           }) => {
+            // Flag bufferView as an attribute, so it knows to create a gl buffer
+            for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+
             if (indices === undefined) return;
+            bufferViews[desc.accessors[indices].bufferView].isAttribute = true; // Make sure indices bufferView have a target property for gl buffer binding
+
             bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
           });
         }); // Get componentType of each bufferView from the accessors
@@ -4810,7 +4921,6 @@
         }) => {
           bufferViews[i].componentType = componentType;
         }); // Push each bufferView to the GPU as a separate buffer
-        // TODO: only push attribute bufferViews to the GPU
 
         bufferViews.forEach(({
           buffer: bufferIndex,
@@ -4829,19 +4939,21 @@
           // optional
           extras,
           // optional
-          componentType // required, added from accessor above
-
+          componentType,
+          // required, added from accessor above
+          isAttribute
         }, i) => {
           const TypeArray = TYPE_ARRAY[componentType];
-          const elementBytes = TypeArray.BYTES_PER_ELEMENT; // Create gl buffers for the bufferView, pushing it to the GPU
-
+          const elementBytes = TypeArray.BYTES_PER_ELEMENT;
           const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+          bufferViews[i].data = data; // Create gl buffers for the bufferView, pushing it to the GPU
+
+          if (!isAttribute) return;
           const buffer = gl.createBuffer();
           gl.bindBuffer(target, buffer);
           gl.renderer.state.boundBuffer = buffer;
           gl.bufferData(target, data, gl.STATIC_DRAW);
           bufferViews[i].buffer = buffer;
-          bufferViews[i].data = data;
         });
         return bufferViews;
       }
@@ -4877,14 +4989,16 @@
           // optional
           mode = 4,
           // optional
-          targets // optional
-          // extensions, // optional
-          // extras, // optional
+          targets,
+          // optional
+          extensions,
+          // optional
+          extras // optional
 
         }) => {
           const geometry = new Geometry(gl); // Add each attribute found in primitive
 
-          for (const attr in attributes) {
+          for (let attr in attributes) {
             geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
           } // Add index attribute if found
 
@@ -4931,8 +5045,8 @@
           // attached in parseBufferViews
           buffer,
           // replaced to be the actual GL buffer
-          byteOffset: bufferViewByteOffset = 0,
-          byteLength,
+          // byteOffset = 0, // applied in parseBufferViews
+          // byteLength, // applied in parseBufferViews
           byteStride = 0,
           target // name,
           // extensions,
@@ -4958,7 +5072,6 @@
 
       static parseNodes(gl, desc, meshes) {
         const nodes = desc.nodes.map(({
-          // Everything is optional
           camera,
           children,
           skin,
@@ -5009,6 +5122,64 @@
           });
         });
         return nodes;
+      }
+
+      static parseAnimations(gl, desc, nodes, bufferViews) {
+        if (!desc.animations) return null;
+        return desc.animations.map(({
+          channels,
+          // required
+          samplers,
+          // required
+          name // optional
+          // extensions, // optional
+          // extras,  // optional
+
+        }) => {
+          const data = channels.map(({
+            sampler: samplerIndex,
+            // required
+            target // required
+            // extensions, // optional
+            // extras, // optional
+
+          }) => {
+            const {
+              input: inputIndex,
+              // required
+              interpolation = 'LINEAR',
+              output: outputIndex // required
+              // extensions, // optional
+              // extras, // optional
+
+            } = samplers[samplerIndex];
+            const {
+              node: nodeIndex,
+              // optional - TODO: when is it not included?
+              path // required
+              // extensions, // optional
+              // extras, // optional
+
+            } = target;
+            const node = nodes[nodeIndex];
+            const transform = TRANSFORMS[path];
+            const timesAcc = this.parseAccessor(inputIndex, desc, bufferViews);
+            const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.count * timesAcc.size);
+            const valuesAcc = this.parseAccessor(outputIndex, desc, bufferViews);
+            const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.count * valuesAcc.size);
+            return {
+              node,
+              transform,
+              interpolation,
+              times,
+              values
+            };
+          });
+          return {
+            name,
+            animation: new GLTFAnimation(data)
+          };
+        });
       }
 
       static parseScenes(desc, nodes) {

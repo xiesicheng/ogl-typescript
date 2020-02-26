@@ -11,7 +11,7 @@ const arrayCacheF32 = {};
 export interface ProgramOptions {
     vertex: string;
     fragment: string;
-    uniforms: { [name: string]: any };
+    uniforms: { [name: string]: any; };
 
     transparent: boolean;
     cullFace: GLenum | false;
@@ -43,7 +43,7 @@ export interface UniformInfo extends WebGLActiveInfo {
 export class Program {
 
     gl: OGLRenderingContext;
-    uniforms: { [name: string]: { value: any } };
+    uniforms: { [name: string]: { value: any; }; };
     id: number;
 
     transparent: boolean;
@@ -71,6 +71,7 @@ export class Program {
         depthWrite = true,
         depthFunc = gl.LESS,
     }: Partial<ProgramOptions> = {}) {
+        if (!gl.canvas) console.error('gl not passed as fist argument to Program');
 
         this.gl = gl;
         this.uniforms = uniforms;

@@ -19,6 +19,7 @@ export default [
     buildExample('instancing'),
     buildExample('polylines'),
     buildExample('load-gltf'),
+    buildExample('curves'),
 
     // Scenes
     buildExample('scene-graph'),

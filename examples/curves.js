@@ -3894,390 +3894,1431 @@
 
     }
 
-    // TODO: facilitate Compressed Textures
-    // TODO: delete texture
-    // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
-    // TODO: use texSubImage2D for updates
-    // TODO: need? encoding = linearEncoding
-    // TODO: support non-compressed mipmaps uploads
-    const emptyPixel = new Uint8Array(4);
+    const NAMES = {
+      "black": "#000000",
+      "white": "#ffffff",
+      "red": "#ff0000",
+      "green": "#00ff00",
+      "blue": "#0000ff",
+      "fuchsia": "#ff00ff",
+      "cyan": "#00ffff",
+      "yellow": "#ffff00",
+      "orange": "#ff8000"
+    };
+    function hexToRGB(hex) {
+      if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+      const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      if (!rgb) console.warn(`Unable to convert hex string ${hex} to rgb values`);
+      return [parseInt(rgb[1], 16) / 255, parseInt(rgb[2], 16) / 255, parseInt(rgb[3], 16) / 255];
+    }
+    function numberToRGB(num) {
+      num = parseInt(num);
+      return [(num >> 16 & 255) / 255, (num >> 8 & 255) / 255, (num & 255) / 255];
+    }
+    function parseColor(color = null) {
+      // Empty
+      if (!color) return [0, 0, 0]; // Decimal
 
-    function isPowerOf2(value) {
-      return (value & value - 1) === 0;
+      if (arguments.length === 3) return arguments; // Number
+
+      if (!isNaN(color)) return numberToRGB(color); // Hex
+
+      if (color[0] === "#") return hexToRGB(color); // Names
+
+      if (NAMES[color.toLowerCase()]) return hexToRGB(NAMES[color.toLowerCase()]);
+      console.warn('Color format not recognised');
+      return [0, 0, 0];
     }
 
-    let ID$3 = 1;
+    // Constructor and set method accept following formats:
+    // new Color() - Empty (defaults to black)
+    // new Color([0.2, 0.4, 1.0]) - Decimal Array (or another Color instance)
+    // new Color(0.7, 0.0, 0.1) - Decimal RGB values
+    // new Color('#ff0000') - Hex string
+    // new Color('#ccc') - Short-hand Hex string
+    // new Color(0x4f27e8) - Number
+    // new Color('red') - Color name string (short list in ColorFunc.js)
 
-    const isCompressedImage = image => image.isCompressedTexture === true;
-
-    class Texture {
-      // options
-      // gl.TEXTURE_2D
-      // gl.UNSIGNED_BYTE,
-      // gl.RGBA,
-      constructor(gl, {
-        image,
-        target = gl.TEXTURE_2D,
-        type = gl.UNSIGNED_BYTE,
-        format = gl.RGBA,
-        internalFormat = format,
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        generateMipmaps = true,
-        minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-        magFilter = gl.LINEAR,
-        premultiplyAlpha = false,
-        unpackAlignment = 4,
-        flipY = target == gl.TEXTURE_2D ? true : false,
-        anisotropy = 0,
-        level = 0,
-        width,
-        // used for RenderTargets or Data Textures
-        height = width
-      } = {}) {
-        this.gl = void 0;
-        this.id = void 0;
-        this.image = void 0;
-        this.target = void 0;
-        this.type = void 0;
-        this.format = void 0;
-        this.internalFormat = void 0;
-        this.wrapS = void 0;
-        this.wrapT = void 0;
-        this.generateMipmaps = void 0;
-        this.minFilter = void 0;
-        this.magFilter = void 0;
-        this.premultiplyAlpha = void 0;
-        this.unpackAlignment = void 0;
-        this.flipY = void 0;
-        this.level = void 0;
-        this.width = void 0;
-        this.height = void 0;
-        this.anisotropy = void 0;
-        this.texture = void 0;
-        this.store = void 0;
-        this.glState = void 0;
-        this.state = void 0;
-        this.needsUpdate = void 0;
-        this.onUpdate = void 0;
-        this.gl = gl;
-        this.id = ID$3++;
-        this.image = image;
-        this.target = target;
-        this.type = type;
-        this.format = format;
-        this.internalFormat = internalFormat;
-        this.minFilter = minFilter;
-        this.magFilter = magFilter;
-        this.wrapS = wrapS;
-        this.wrapT = wrapT;
-        this.generateMipmaps = generateMipmaps;
-        this.premultiplyAlpha = premultiplyAlpha;
-        this.unpackAlignment = unpackAlignment;
-        this.flipY = flipY;
-        this.anisotropy = Math.min(anisotropy, this.gl.renderer.parameters.maxAnisotropy);
-        this.level = level;
-        this.width = width;
-        this.height = height;
-        this.texture = this.gl.createTexture();
-        this.store = {
-          image: null
-        }; // Alias for state store to avoid redundant calls for global state
-
-        this.glState = this.gl.renderer.state; // State store to avoid redundant calls for per-texture state
-
-        this.state = {
-          minFilter: this.gl.NEAREST_MIPMAP_LINEAR,
-          magFilter: this.gl.LINEAR,
-          wrapS: this.gl.REPEAT,
-          wrapT: this.gl.REPEAT,
-          anisotropy: 0
-        };
-      }
-
-      bind() {
-        // Already bound to active texture unit
-        if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
-        this.gl.bindTexture(this.target, this.texture);
-        this.glState.textureUnits[this.glState.activeTextureUnit] = this.id;
-      }
-
-      update(textureUnit = 0) {
-        const needsUpdate = !(this.image === this.store.image && !this.needsUpdate); // Make sure that texture is bound to its texture unit
-
-        if (needsUpdate || this.glState.textureUnits[textureUnit] !== this.id) {
-          // set active texture unit to perform texture functions
-          this.gl.renderer.activeTexture(textureUnit);
-          this.bind();
-        }
-
-        if (!needsUpdate) return;
-        this.needsUpdate = false;
-
-        if (this.flipY !== this.glState.flipY) {
-          this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-          this.glState.flipY = this.flipY;
-        }
-
-        if (this.premultiplyAlpha !== this.glState.premultiplyAlpha) {
-          this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-          this.glState.premultiplyAlpha = this.premultiplyAlpha;
-        }
-
-        if (this.unpackAlignment !== this.glState.unpackAlignment) {
-          this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, this.unpackAlignment);
-          this.glState.unpackAlignment = this.unpackAlignment;
-        }
-
-        if (this.minFilter !== this.state.minFilter) {
-          this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-          this.state.minFilter = this.minFilter;
-        }
-
-        if (this.magFilter !== this.state.magFilter) {
-          this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-          this.state.magFilter = this.magFilter;
-        }
-
-        if (this.wrapS !== this.state.wrapS) {
-          this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.wrapS);
-          this.state.wrapS = this.wrapS;
-        }
-
-        if (this.wrapT !== this.state.wrapT) {
-          this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
-          this.state.wrapT = this.wrapT;
-        }
-
-        if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
-          this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
-          this.state.anisotropy = this.anisotropy;
-        }
-
-        if (this.image) {
-          if (this.image.width) {
-            this.width = this.image.width;
-            this.height = this.image.height;
-          }
-
-          if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-            // For cube maps
-            for (let i = 0; i < 6; i++) {
-              this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
-            }
-          } else if (ArrayBuffer.isView(this.image)) {
-            // Data texture
-            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
-          } else if (isCompressedImage(this.image)) {
-            // Compressed texture
-            let m;
-
-            for (let level = 0; level < this.image.mipmaps.length; level++) {
-              m = this.image.mipmaps[level];
-              this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
-            }
-          } else {
-            // Regular texture
-            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
-          }
-
-          if (this.generateMipmaps) {
-            // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
-            if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
-              this.generateMipmaps = false;
-              this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
-              this.minFilter = this.gl.LINEAR;
-            } else {
-              this.gl.generateMipmap(this.target);
-            }
-          } // Callback for when data is pushed to GPU
-
-
-          this.onUpdate && this.onUpdate();
+    class Color extends Array {
+      constructor(color = null) {
+        if (Array.isArray(color)) {
+          super(...color);
         } else {
-          if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-            // Upload empty pixel for each side while no image to avoid errors while image or video loading
-            for (let i = 0; i < 6; i++) {
-              this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-            }
-          } else if (this.width) {
-            // image intentionally left null for RenderTarget
-            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
-          } else {
-            // Upload empty pixel if no image to avoid errors while image or video loading
-            this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-          }
+          super(...parseColor(...arguments));
         }
+      }
 
-        this.store.image = this.image;
+      get r() {
+        return this[0];
+      }
+
+      get g() {
+        return this[1];
+      }
+
+      get b() {
+        return this[2];
+      }
+
+      set r(v) {
+        this[0] = v;
+      }
+
+      set g(v) {
+        this[1] = v;
+      }
+
+      set b(v) {
+        this[2] = v;
+      }
+
+      set(color) {
+        if (Array.isArray(color)) return this.copy(color);
+        return this.copy(parseColor(...arguments));
+      }
+
+      copy(v) {
+        this[0] = v[0];
+        this[1] = v[1];
+        this[2] = v[2];
+        return this;
       }
 
     }
+
+    /**
+     * Copy the values from one vec2 to another
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the source vector
+     * @returns {vec2} out
+     */
+
+    function copy$5(out, a) {
+      out[0] = a[0];
+      out[1] = a[1];
+      return out;
+    }
+    /**
+     * Set the components of a vec2 to the given values
+     *
+     * @param {vec2} out the receiving vector
+     * @param {Number} x X component
+     * @param {Number} y Y component
+     * @returns {vec2} out
+     */
+
+    function set$5(out, x, y) {
+      out[0] = x;
+      out[1] = y;
+      return out;
+    }
+    /**
+     * Adds two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function add$1(out, a, b) {
+      out[0] = a[0] + b[0];
+      out[1] = a[1] + b[1];
+      return out;
+    }
+    /**
+     * Subtracts vector b from vector a
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function subtract$1(out, a, b) {
+      out[0] = a[0] - b[0];
+      out[1] = a[1] - b[1];
+      return out;
+    }
+    /**
+     * Multiplies two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function multiply$4(out, a, b) {
+      out[0] = a[0] * b[0];
+      out[1] = a[1] * b[1];
+      return out;
+    }
+    /**
+     * Divides two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function divide$1(out, a, b) {
+      out[0] = a[0] / b[0];
+      out[1] = a[1] / b[1];
+      return out;
+    }
+    /**
+     * Scales a vec2 by a scalar number
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to scale
+     * @param {Number} b amount to scale the vector by
+     * @returns {vec2} out
+     */
+
+    function scale$3(out, a, b) {
+      out[0] = a[0] * b;
+      out[1] = a[1] * b;
+      return out;
+    }
+    /**
+     * Calculates the euclidian distance between two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} distance between a and b
+     */
+
+    function distance$1(a, b) {
+      var x = b[0] - a[0],
+          y = b[1] - a[1];
+      return Math.sqrt(x * x + y * y);
+    }
+    /**
+     * Calculates the squared euclidian distance between two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} squared distance between a and b
+     */
+
+    function squaredDistance$1(a, b) {
+      var x = b[0] - a[0],
+          y = b[1] - a[1];
+      return x * x + y * y;
+    }
+    /**
+     * Calculates the length of a vec2
+     *
+     * @param {vec2} a vector to calculate length of
+     * @returns {Number} length of a
+     */
+
+    function length$1(a) {
+      var x = a[0],
+          y = a[1];
+      return Math.sqrt(x * x + y * y);
+    }
+    /**
+     * Calculates the squared length of a vec2
+     *
+     * @param {vec2} a vector to calculate squared length of
+     * @returns {Number} squared length of a
+     */
+
+    function squaredLength$1(a) {
+      var x = a[0],
+          y = a[1];
+      return x * x + y * y;
+    }
+    /**
+     * Negates the components of a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to negate
+     * @returns {vec2} out
+     */
+
+    function negate$1(out, a) {
+      out[0] = -a[0];
+      out[1] = -a[1];
+      return out;
+    }
+    /**
+     * Returns the inverse of the components of a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to invert
+     * @returns {vec2} out
+     */
+
+    function inverse$1(out, a) {
+      out[0] = 1.0 / a[0];
+      out[1] = 1.0 / a[1];
+      return out;
+    }
+    /**
+     * Normalize a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to normalize
+     * @returns {vec2} out
+     */
+
+    function normalize$3(out, a) {
+      var x = a[0],
+          y = a[1];
+      var len = x * x + y * y;
+
+      if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len);
+      }
+
+      out[0] = a[0] * len;
+      out[1] = a[1] * len;
+      return out;
+    }
+    /**
+     * Calculates the dot product of two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} dot product of a and b
+     */
+
+    function dot$3(a, b) {
+      return a[0] * b[0] + a[1] * b[1];
+    }
+    /**
+     * Computes the cross product of two vec2's
+     * Note that the cross product returns a scalar
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} cross product of a and b
+     */
+
+    function cross$1(a, b) {
+      return a[0] * b[1] - a[1] * b[0];
+    }
+    /**
+     * Performs a linear interpolation between two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @param {Number} t interpolation amount between the two inputs
+     * @returns {vec2} out
+     */
+
+    function lerp$1(out, a, b, t) {
+      var ax = a[0],
+          ay = a[1];
+      out[0] = ax + t * (b[0] - ax);
+      out[1] = ay + t * (b[1] - ay);
+      return out;
+    }
+    /**
+     * Transforms the vec2 with a mat3
+     * 3rd vector component is implicitly '1'
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to transform
+     * @param {mat3} m matrix to transform with
+     * @returns {vec2} out
+     */
+
+    function transformMat3(out, a, m) {
+      var x = a[0],
+          y = a[1];
+      out[0] = m[0] * x + m[3] * y + m[6];
+      out[1] = m[1] * x + m[4] * y + m[7];
+      return out;
+    }
+    /**
+     * Transforms the vec2 with a mat4
+     * 3rd vector component is implicitly '0'
+     * 4th vector component is implicitly '1'
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to transform
+     * @param {mat4} m matrix to transform with
+     * @returns {vec2} out
+     */
+
+    function transformMat4$1(out, a, m) {
+      let x = a[0];
+      let y = a[1];
+      out[0] = m[0] * x + m[4] * y + m[12];
+      out[1] = m[1] * x + m[5] * y + m[13];
+      return out;
+    }
+    /**
+     * Returns whether or not the vectors exactly have the same elements in the same position (when compared with ===)
+     *
+     * @param {vec2} a The first vector.
+     * @param {vec2} b The second vector.
+     * @returns {Boolean} True if the vectors are equal, false otherwise.
+     */
+
+    function exactEquals$1(a, b) {
+      return a[0] === b[0] && a[1] === b[1];
+    }
+
+    class Vec2 extends Array {
+      constructor(x = 0, y = x) {
+        super(x, y);
+        return this;
+      }
+
+      get x() {
+        return this[0];
+      }
+
+      get y() {
+        return this[1];
+      }
+
+      set x(v) {
+        this[0] = v;
+      }
+
+      set y(v) {
+        this[1] = v;
+      }
+
+      set(x, y = x) {
+        if (x.length) return this.copy(x);
+        set$5(this, x, y);
+        return this;
+      }
+
+      copy(v) {
+        copy$5(this, v);
+        return this;
+      }
+
+      add(va, vb) {
+        if (vb) add$1(this, va, vb);else add$1(this, this, va);
+        return this;
+      }
+
+      sub(va, vb) {
+        if (vb) subtract$1(this, va, vb);else subtract$1(this, this, va);
+        return this;
+      }
+
+      multiply(v) {
+        if (v.length) multiply$4(this, this, v);else scale$3(this, this, v);
+        return this;
+      }
+
+      divide(v) {
+        if (v.length) divide$1(this, this, v);else scale$3(this, this, 1 / v);
+        return this;
+      }
+
+      inverse(v = this) {
+        inverse$1(this, v);
+        return this;
+      } // Can't use 'length' as Array.prototype uses it
+
+
+      len() {
+        return length$1(this);
+      }
+
+      distance(v) {
+        if (v) return distance$1(this, v);else return length$1(this);
+      }
+
+      squaredLen() {
+        return this.squaredDistance();
+      }
+
+      squaredDistance(v) {
+        if (v) return squaredDistance$1(this, v);else return squaredLength$1(this);
+      }
+
+      negate(v = this) {
+        negate$1(this, v);
+        return this;
+      }
+
+      cross(va, vb) {
+        if (vb) return cross$1(va, vb);
+        return cross$1(this, va);
+      }
+
+      scale(v) {
+        scale$3(this, this, v);
+        return this;
+      }
+
+      normalize() {
+        normalize$3(this, this);
+        return this;
+      }
+
+      dot(v) {
+        return dot$3(this, v);
+      }
+
+      equals(v) {
+        return exactEquals$1(this, v);
+      }
+
+      applyMatrix3(mat3) {
+        transformMat3(this, this, mat3);
+        return this;
+      }
+
+      applyMatrix4(mat4) {
+        transformMat4$1(this, this, mat4);
+        return this;
+      }
+
+      lerp(v, a) {
+        lerp$1(this, this, v, a);
+      }
+
+      clone() {
+        return new Vec2(this[0], this[1]);
+      }
+
+      fromArray(a, o = 0) {
+        this[0] = a[o];
+        this[1] = a[o + 1];
+        return this;
+      }
+
+      toArray(a = [], o = 0) {
+        a[o] = this[0];
+        a[o + 1] = this[1];
+        return a;
+      }
+
+    }
+
+    class Sphere extends Geometry {
+      constructor(gl, {
+        radius = 0.5,
+        widthSegments = 16,
+        heightSegments = Math.ceil(widthSegments * 0.5),
+        phiStart = 0,
+        phiLength = Math.PI * 2,
+        thetaStart = 0,
+        thetaLength = Math.PI,
+        attributes = {}
+      } = {}) {
+        const wSegs = widthSegments;
+        const hSegs = heightSegments;
+        const pStart = phiStart;
+        const pLength = phiLength;
+        const tStart = thetaStart;
+        const tLength = thetaLength;
+        const num = (wSegs + 1) * (hSegs + 1);
+        const numIndices = wSegs * hSegs * 6;
+        const position = new Float32Array(num * 3);
+        const normal = new Float32Array(num * 3);
+        const uv = new Float32Array(num * 2);
+        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        let i = 0;
+        let iv = 0;
+        let ii = 0;
+        let te = tStart + tLength;
+        const grid = [];
+        let n = new Vec3();
+
+        for (let iy = 0; iy <= hSegs; iy++) {
+          let vRow = [];
+          let v = iy / hSegs;
+
+          for (let ix = 0; ix <= wSegs; ix++, i++) {
+            let u = ix / wSegs;
+            let x = -radius * Math.cos(pStart + u * pLength) * Math.sin(tStart + v * tLength);
+            let y = radius * Math.cos(tStart + v * tLength);
+            let z = radius * Math.sin(pStart + u * pLength) * Math.sin(tStart + v * tLength);
+            position[i * 3] = x;
+            position[i * 3 + 1] = y;
+            position[i * 3 + 2] = z;
+            n.set(x, y, z).normalize();
+            normal[i * 3] = n.x;
+            normal[i * 3 + 1] = n.y;
+            normal[i * 3 + 2] = n.z;
+            uv[i * 2] = u;
+            uv[i * 2 + 1] = 1 - v;
+            vRow.push(iv++);
+          }
+
+          grid.push(vRow);
+        }
+
+        for (let iy = 0; iy < hSegs; iy++) {
+          for (let ix = 0; ix < wSegs; ix++) {
+            let a = grid[iy][ix + 1];
+            let b = grid[iy][ix];
+            let c = grid[iy + 1][ix];
+            let d = grid[iy + 1][ix + 1];
+
+            if (iy !== 0 || tStart > 0) {
+              index[ii * 3] = a;
+              index[ii * 3 + 1] = b;
+              index[ii * 3 + 2] = d;
+              ii++;
+            }
+
+            if (iy !== hSegs - 1 || te < Math.PI) {
+              index[ii * 3] = b;
+              index[ii * 3 + 1] = c;
+              index[ii * 3 + 2] = d;
+              ii++;
+            }
+          }
+        }
+
+        Object.assign(attributes, {
+          position: {
+            size: 3,
+            data: position
+          },
+          normal: {
+            size: 3,
+            data: normal
+          },
+          uv: {
+            size: 2,
+            data: uv
+          },
+          index: {
+            data: index
+          }
+        });
+        super(gl, attributes);
+      }
+
+    }
+
+    // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
+    const STATE = {
+      NONE: -1,
+      ROTATE: 0,
+      DOLLY: 1,
+      PAN: 2,
+      DOLLY_PAN: 3
+    };
+    const tempVec3$2 = new Vec3();
+    const tempVec2a = new Vec2();
+    const tempVec2b = new Vec2();
+    function Orbit(object, {
+      element = document.body,
+      enabled = true,
+      target = new Vec3(),
+      ease = 0.25,
+      inertia = 0.85,
+      enableRotate = true,
+      rotateSpeed = 0.1,
+      enableZoom = true,
+      zoomSpeed = 1,
+      enablePan = true,
+      panSpeed = 0.1,
+      minPolarAngle = 0,
+      maxPolarAngle = Math.PI,
+      minAzimuthAngle = -Infinity,
+      maxAzimuthAngle = Infinity,
+      minDistance = 0,
+      maxDistance = Infinity
+    } = {}) {
+      this.enabled = enabled;
+      this.target = target; // Catch attempts to disable - set to 1 so has no effect
+
+      ease = ease || 1;
+      inertia = inertia || 1;
+      this.minDistance = minDistance;
+      this.maxDistance = maxDistance; // current position in sphericalTarget coordinates
+
+      const sphericalDelta = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const sphericalTarget = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const spherical = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const panDelta = new Vec3(); // Grab initial position values
+
+      const offset = new Vec3();
+      offset.copy(object.position).sub(this.target);
+      spherical.radius = sphericalTarget.radius = offset.distance();
+      spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
+      spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
+
+      this.update = () => {
+        // apply delta
+        sphericalTarget.radius *= sphericalDelta.radius;
+        sphericalTarget.theta += sphericalDelta.theta;
+        sphericalTarget.phi += sphericalDelta.phi; // apply boundaries
+
+        sphericalTarget.theta = Math.max(minAzimuthAngle, Math.min(maxAzimuthAngle, sphericalTarget.theta));
+        sphericalTarget.phi = Math.max(minPolarAngle, Math.min(maxPolarAngle, sphericalTarget.phi));
+        sphericalTarget.radius = Math.max(this.minDistance, Math.min(this.maxDistance, sphericalTarget.radius)); // ease values
+
+        spherical.phi += (sphericalTarget.phi - spherical.phi) * ease;
+        spherical.theta += (sphericalTarget.theta - spherical.theta) * ease;
+        spherical.radius += (sphericalTarget.radius - spherical.radius) * ease; // apply pan to target. As offset is relative to target, it also shifts
+
+        this.target.add(panDelta); // apply rotation to offset
+
+        let sinPhiRadius = spherical.radius * Math.sin(Math.max(0.000001, spherical.phi));
+        offset.x = sinPhiRadius * Math.sin(spherical.theta);
+        offset.y = spherical.radius * Math.cos(spherical.phi);
+        offset.z = sinPhiRadius * Math.cos(spherical.theta); // Apply updated values to object
+
+        object.position.copy(this.target).add(offset);
+        object.lookAt(this.target); // Apply inertia to values
+
+        sphericalDelta.theta *= inertia;
+        sphericalDelta.phi *= inertia;
+        panDelta.multiply(inertia); // Reset scale every frame to avoid applying scale multiple times
+
+        sphericalDelta.radius = 1;
+      }; // Everything below here just updates panDelta and sphericalDelta
+      // Using those two objects' values, the orbit is calculated
+
+
+      const rotateStart = new Vec2();
+      const panStart = new Vec2();
+      const dollyStart = new Vec2();
+      let state = STATE.NONE;
+      this.mouseButtons = {
+        ORBIT: 0,
+        ZOOM: 1,
+        PAN: 2
+      };
+
+      function getZoomScale() {
+        return Math.pow(0.95, zoomSpeed);
+      }
+
+      function panLeft(distance, m) {
+        tempVec3$2.set(m[0], m[1], m[2]);
+        tempVec3$2.multiply(-distance);
+        panDelta.add(tempVec3$2);
+      }
+
+      function panUp(distance, m) {
+        tempVec3$2.set(m[4], m[5], m[6]);
+        tempVec3$2.multiply(distance);
+        panDelta.add(tempVec3$2);
+      }
+
+      const pan = (deltaX, deltaY) => {
+        // let el = element === document ? document.body : element;
+        tempVec3$2.copy(object.position).sub(this.target);
+        let targetDistance = tempVec3$2.distance();
+        targetDistance *= Math.tan((object.fov || 45) / 2 * Math.PI / 180.0);
+        panLeft(2 * deltaX * targetDistance / element.clientHeight, object.matrix);
+        panUp(2 * deltaY * targetDistance / element.clientHeight, object.matrix);
+      };
+
+      function dolly(dollyScale) {
+        sphericalDelta.radius /= dollyScale;
+      }
+
+      function handleMoveRotate(x, y) {
+        tempVec2a.set(x, y);
+        tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed); // let el = element === document ? document.body : element;
+
+        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / element.clientHeight;
+        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / element.clientHeight;
+        rotateStart.copy(tempVec2a);
+      }
+
+      function handleMouseMoveDolly(e) {
+        tempVec2a.set(e.clientX, e.clientY);
+        tempVec2b.sub(tempVec2a, dollyStart);
+
+        if (tempVec2b.y > 0) {
+          dolly(getZoomScale());
+        } else if (tempVec2b.y < 0) {
+          dolly(1 / getZoomScale());
+        }
+
+        dollyStart.copy(tempVec2a);
+      }
+
+      function handleMovePan(x, y) {
+        tempVec2a.set(x, y);
+        tempVec2b.sub(tempVec2a, panStart).multiply(panSpeed);
+        pan(tempVec2b.x, tempVec2b.y);
+        panStart.copy(tempVec2a);
+      }
+
+      function handleTouchStartDollyPan(e) {
+        if (enableZoom) {
+          let dx = e.touches[0].pageX - e.touches[1].pageX;
+          let dy = e.touches[0].pageY - e.touches[1].pageY;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+          dollyStart.set(0, distance);
+        }
+
+        if (enablePan) {
+          let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+          let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+          panStart.set(x, y);
+        }
+      }
+
+      function handleTouchMoveDollyPan(e) {
+        if (enableZoom) {
+          let dx = e.touches[0].pageX - e.touches[1].pageX;
+          let dy = e.touches[0].pageY - e.touches[1].pageY;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+          tempVec2a.set(0, distance);
+          tempVec2b.set(0, Math.pow(tempVec2a.y / dollyStart.y, zoomSpeed));
+          dolly(tempVec2b.y);
+          dollyStart.copy(tempVec2a);
+        }
+
+        if (enablePan) {
+          let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+          let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+          handleMovePan(x, y);
+        }
+      }
+
+      const onMouseDown = e => {
+        if (!this.enabled) return;
+
+        switch (e.button) {
+          case this.mouseButtons.ORBIT:
+            if (enableRotate === false) return;
+            rotateStart.set(e.clientX, e.clientY);
+            state = STATE.ROTATE;
+            break;
+
+          case this.mouseButtons.ZOOM:
+            if (enableZoom === false) return;
+            dollyStart.set(e.clientX, e.clientY);
+            state = STATE.DOLLY;
+            break;
+
+          case this.mouseButtons.PAN:
+            if (enablePan === false) return;
+            panStart.set(e.clientX, e.clientY);
+            state = STATE.PAN;
+            break;
+        }
+
+        if (state !== STATE.NONE) {
+          window.addEventListener('mousemove', onMouseMove, false);
+          window.addEventListener('mouseup', onMouseUp, false);
+        }
+      };
+
+      const onMouseMove = e => {
+        if (!this.enabled) return;
+
+        switch (state) {
+          case STATE.ROTATE:
+            if (enableRotate === false) return;
+            handleMoveRotate(e.clientX, e.clientY);
+            break;
+
+          case STATE.DOLLY:
+            if (enableZoom === false) return;
+            handleMouseMoveDolly(e);
+            break;
+
+          case STATE.PAN:
+            if (enablePan === false) return;
+            handleMovePan(e.clientX, e.clientY);
+            break;
+        }
+      };
+
+      const onMouseUp = () => {
+        if (!this.enabled) return;
+        document.removeEventListener('mousemove', onMouseMove, false);
+        document.removeEventListener('mouseup', onMouseUp, false);
+        state = STATE.NONE;
+      };
+
+      const onMouseWheel = e => {
+        if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (e.deltaY < 0) {
+          dolly(1 / getZoomScale());
+        } else if (e.deltaY > 0) {
+          dolly(getZoomScale());
+        }
+      };
+
+      const onTouchStart = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+
+        switch (e.touches.length) {
+          case 1:
+            if (enableRotate === false) return;
+            rotateStart.set(e.touches[0].pageX, e.touches[0].pageY);
+            state = STATE.ROTATE;
+            break;
+
+          case 2:
+            if (enableZoom === false && enablePan === false) return;
+            handleTouchStartDollyPan(e);
+            state = STATE.DOLLY_PAN;
+            break;
+
+          default:
+            state = STATE.NONE;
+        }
+      };
+
+      const onTouchMove = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        switch (e.touches.length) {
+          case 1:
+            if (enableRotate === false) return;
+            handleMoveRotate(e.touches[0].pageX, e.touches[0].pageY);
+            break;
+
+          case 2:
+            if (enableZoom === false && enablePan === false) return;
+            handleTouchMoveDollyPan(e);
+            break;
+
+          default:
+            state = STATE.NONE;
+        }
+      };
+
+      const onTouchEnd = () => {
+        if (!this.enabled) return;
+        state = STATE.NONE;
+      };
+
+      const onContextMenu = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+      };
+
+      function addHandlers() {
+        element.addEventListener('contextmenu', onContextMenu, false);
+        element.addEventListener('mousedown', onMouseDown, false);
+        element.addEventListener('wheel', onMouseWheel, {
+          passive: false
+        });
+        element.addEventListener('touchstart', onTouchStart, {
+          passive: false
+        });
+        element.addEventListener('touchend', onTouchEnd, false);
+        element.addEventListener('touchmove', onTouchMove, {
+          passive: false
+        });
+      }
+
+      this.remove = function () {
+        element.removeEventListener('contextmenu', onContextMenu);
+        element.removeEventListener('mousedown', onMouseDown);
+        element.removeEventListener('wheel', onMouseWheel);
+        element.removeEventListener('touchstart', onTouchStart);
+        element.removeEventListener('touchend', onTouchEnd);
+        element.removeEventListener('touchmove', onTouchMove);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      addHandlers();
+    }
+
+    const CATMULLROM = 'catmullrom';
+    const CUBICBEZIER = 'cubicbezier'; // temp
+
+    const _a0 = new Vec3(),
+          _a1 = new Vec3(),
+          _a2 = new Vec3(),
+          _a3 = new Vec3();
+    /**
+     * Get the control points of cubic bezier curve.
+     * @param {*} i
+     * @param {*} a
+     * @param {*} b
+     */
+
+
+    function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
+      if (i < 1) {
+        _a0.sub(points[1], points[0]).scale(a).add(points[0]);
+      } else {
+        _a0.sub(points[i + 1], points[i - 1]).scale(a).add(points[i]);
+      }
+
+      if (i > points.length - 3) {
+        const last = points.length - 1;
+
+        _a1.sub(points[last - 1], points[last]).scale(b).add(points[last]);
+      } else {
+        _a1.sub(points[i], points[i + 2]).scale(b).add(points[i + 1]);
+      }
+
+      return [_a0.clone(), _a1.clone()];
+    }
+
+    function getBezierPoint(t, p0, c0, c1, p1) {
+      const k = 1 - t;
+
+      _a0.copy(p0).scale(k ** 3);
+
+      _a1.copy(c0).scale(3 * k ** 2 * t);
+
+      _a2.copy(c1).scale(3 * k * t ** 2);
+
+      _a3.copy(p1).scale(t ** 3);
+
+      const ret = new Vec3();
+      ret.add(_a0, _a1).add(_a2).add(_a3);
+      return ret;
+    }
+
+    class Curve {
+      constructor({
+        points = [new Vec3(0, 0, 0), new Vec3(0, 1, 0), new Vec3(1, 1, 0), new Vec3(1, 0, 0)],
+        divisions = 12,
+        type = CATMULLROM
+      } = {}) {
+        this.type = void 0;
+        this.points = void 0;
+        this.divisions = void 0;
+        this.points = points;
+        this.divisions = divisions;
+        this.type = type;
+      }
+
+      _getCubicBezierPoints(divisions = this.divisions) {
+        const points = [];
+        const count = this.points.length;
+
+        if (count < 4) {
+          console.warn('Not enough points provided.');
+          return [];
+        }
+
+        let p0 = this.points[0],
+            c0 = this.points[1],
+            c1 = this.points[2],
+            p1 = this.points[3];
+
+        for (let i = 0; i <= divisions; i++) {
+          const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+          points.push(p);
+        }
+
+        let offset = 4;
+
+        while (count - offset > 1) {
+          p0.copy(p1);
+          c0 = p1.scale(2).sub(c1);
+          c1 = this.points[offset];
+          p1 = this.points[offset + 1];
+
+          for (let i = 0; i <= divisions; i++) {
+            const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+            points.push(p);
+          }
+
+          offset += 2;
+        }
+
+        return points;
+      }
+
+      _getCatmullRomPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
+        const points = [];
+        const count = this.points.length;
+
+        if (count <= 2) {
+          return this.points;
+        }
+
+        let p0;
+        this.points.forEach((p, i) => {
+          if (i === 0) {
+            p0 = p;
+          } else {
+            const [c0, c1] = getCtrlPoint(this.points, i - 1, a, b);
+            const c = new Curve({
+              points: [p0, c0, c1, p],
+              type: CUBICBEZIER
+            });
+            points.pop();
+            points.push(...c.getPoints(divisions));
+            p0 = p;
+          }
+        });
+        return points;
+      }
+
+      getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
+        const type = this.type;
+
+        if (type === CUBICBEZIER) {
+          return this._getCubicBezierPoints(divisions);
+        }
+
+        if (type === CATMULLROM) {
+          return this._getCatmullRomPoints(divisions, a, b);
+        }
+
+        return this.points;
+      }
+
+    }
+    Curve.CATMULLROM = CATMULLROM;
+    Curve.CUBICBEZIER = CUBICBEZIER;
+
+    const tmp = new Vec3();
+    class Polyline {
+      // uniforms
+      constructor(gl, {
+        points,
+        // Array of Vec3s
+        vertex = defaultVertex,
+        fragment = defaultFragment,
+        uniforms = {},
+        attributes = {} // For passing in custom attribs
+
+      }) {
+        this.gl = void 0;
+        this.points = void 0;
+        this.count = void 0;
+        this.position = void 0;
+        this.prev = void 0;
+        this.next = void 0;
+        this.geometry = void 0;
+        this.resolution = void 0;
+        this.dpr = void 0;
+        this.thickness = void 0;
+        this.color = void 0;
+        this.miter = void 0;
+        this.program = void 0;
+        this.mesh = void 0;
+        this.gl = gl;
+        this.points = points;
+        this.count = points.length; // Create buffers
+
+        this.position = new Float32Array(this.count * 3 * 2);
+        this.prev = new Float32Array(this.count * 3 * 2);
+        this.next = new Float32Array(this.count * 3 * 2);
+        const side = new Float32Array(this.count * 1 * 2);
+        const uv = new Float32Array(this.count * 2 * 2);
+        const index = new Uint16Array((this.count - 1) * 3 * 2); // Set static buffers
+
+        for (let i = 0; i < this.count; i++) {
+          side.set([-1, 1], i * 2);
+          const v = i / (this.count - 1);
+          uv.set([0, v, 1, v], i * 4);
+          if (i === this.count - 1) continue;
+          const ind = i * 2;
+          index.set([ind + 0, ind + 1, ind + 2], (ind + 0) * 3);
+          index.set([ind + 2, ind + 1, ind + 3], (ind + 1) * 3);
+        }
+
+        const geometry = this.geometry = new Geometry(gl, Object.assign(attributes, {
+          position: {
+            size: 3,
+            data: this.position
+          },
+          prev: {
+            size: 3,
+            data: this.prev
+          },
+          next: {
+            size: 3,
+            data: this.next
+          },
+          side: {
+            size: 1,
+            data: side
+          },
+          uv: {
+            size: 2,
+            data: uv
+          },
+          index: {
+            size: 1,
+            data: index
+          }
+        })); // Populate dynamic buffers
+
+        this.updateGeometry();
+        if (!uniforms.uResolution) this.resolution = uniforms.uResolution = {
+          value: new Vec2()
+        };
+        if (!uniforms.uDPR) this.dpr = uniforms.uDPR = {
+          value: 1
+        };
+        if (!uniforms.uThickness) this.thickness = uniforms.uThickness = {
+          value: 1
+        };
+        if (!uniforms.uColor) this.color = uniforms.uColor = {
+          value: new Color('#000')
+        };
+        if (!uniforms.uMiter) this.miter = uniforms.uMiter = {
+          value: 1
+        }; // Set size uniforms' values
+
+        this.resize();
+        const program = this.program = new Program(gl, {
+          vertex,
+          fragment,
+          uniforms
+        });
+        this.mesh = new Mesh(gl, {
+          geometry,
+          program
+        });
+      }
+
+      updateGeometry() {
+        this.points.forEach((p, i) => {
+          p.toArray(this.position, i * 3 * 2);
+          p.toArray(this.position, i * 3 * 2 + 3);
+
+          if (!i) {
+            // If first point, calculate prev using the distance to 2nd point
+            tmp.copy(p).sub(this.points[i + 1]).add(p);
+            tmp.toArray(this.prev, i * 3 * 2);
+            tmp.toArray(this.prev, i * 3 * 2 + 3);
+          } else {
+            p.toArray(this.next, (i - 1) * 3 * 2);
+            p.toArray(this.next, (i - 1) * 3 * 2 + 3);
+          }
+
+          if (i === this.points.length - 1) {
+            // If last point, calculate next using distance to 2nd last point
+            tmp.copy(p).sub(this.points[i - 1]).add(p);
+            tmp.toArray(this.next, i * 3 * 2);
+            tmp.toArray(this.next, i * 3 * 2 + 3);
+          } else {
+            p.toArray(this.prev, (i + 1) * 3 * 2);
+            p.toArray(this.prev, (i + 1) * 3 * 2 + 3);
+          }
+        });
+        this.geometry.attributes.position.needsUpdate = true;
+        this.geometry.attributes.prev.needsUpdate = true;
+        this.geometry.attributes.next.needsUpdate = true;
+      } // Only need to call if not handling resolution uniforms manually
+
+
+      resize() {
+        // Update automatic uniforms if not overridden
+        if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
+        if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
+      }
+
+    }
+    const defaultVertex =
+    /* glsl */
+`
+    precision highp float;
+
+    attribute vec3 position;
+    attribute vec3 next;
+    attribute vec3 prev;
+    attribute vec2 uv;
+    attribute float side;
+
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+    uniform vec2 uResolution;
+    uniform float uDPR;
+    uniform float uThickness;
+    uniform float uMiter;
+
+    varying vec2 vUv;
+
+    vec4 getPosition() {
+        mat4 mvp = projectionMatrix * modelViewMatrix;
+        vec4 current = mvp * vec4(position, 1);
+        vec4 nextPos = mvp * vec4(next, 1);
+        vec4 prevPos = mvp * vec4(prev, 1);
+
+        vec2 aspect = vec2(uResolution.x / uResolution.y, 1);    
+        vec2 currentScreen = current.xy / current.w * aspect;
+        vec2 nextScreen = nextPos.xy / nextPos.w * aspect;
+        vec2 prevScreen = prevPos.xy / prevPos.w * aspect;
+    
+        vec2 dir1 = normalize(currentScreen - prevScreen);
+        vec2 dir2 = normalize(nextScreen - currentScreen);
+        vec2 dir = normalize(dir1 + dir2);
+    
+        vec2 normal = vec2(-dir.y, dir.x);
+        normal /= mix(1.0, max(0.3, dot(normal, vec2(-dir1.y, dir1.x))), uMiter);
+        normal /= aspect;
+
+        float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
+        float pixelWidth = current.w * pixelWidthRatio;
+        normal *= pixelWidth * uThickness;
+        current.xy -= normal * side;
+    
+        return current;
+    }
+
+    void main() {
+        vUv = uv;
+        gl_Position = getPosition();
+    }
+`    ;
+    const defaultFragment =
+    /* glsl */
+`
+    precision highp float;
+
+    uniform vec3 uColor;
+    
+    varying vec2 vUv;
+
+    void main() {
+        gl_FragColor.rgb = uColor;
+        gl_FragColor.a = 1.0;
+    }
+`    ;
 
     const vertex =
     /* glsl */
 `
-            precision highp float;
-            precision highp int;
+          precision highp float;
+          precision highp int;
 
-            attribute vec2 uv;
-            attribute vec3 position;
+          attribute vec3 position;
+          attribute vec3 normal;
 
-            // Add instanced attributes just like any attribute
-            attribute vec3 offset;
-            attribute vec3 random;
+          uniform mat3 normalMatrix;
+          uniform mat4 modelViewMatrix;
+          uniform mat4 projectionMatrix;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform float uTime;
+          varying vec3 vNormal;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
-
-            void rotate2d(inout vec2 v, float a){
-                mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                v = m * v;
-            }
-
-            void main() {
-                vUv = uv;
-                
-                // copy position so that we can modify the instances
-                vec3 pos = position;
-                
-                // scale first
-                pos *= 0.9 + random.y * 0.2;
-                
-                // rotate around y axis
-                rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
-                
-                // rotate around x axis just to add some extra variation
-                rotate2d(pos.zy, random.z * 0.5 * sin(uTime * random.x + random.z * 3.14));
-                
-                pos += offset;
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);;
-            }
+          void main() {
+              vNormal = normalize(normalMatrix * normal);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
         `    ;
     const fragment =
     /* glsl */
 `
-            precision highp float;
-            precision highp int;
+          precision highp float;
+          precision highp int;
 
-            uniform float uTime;
-            uniform sampler2D tMap;
+          varying vec3 vNormal;
 
-            varying vec2 vUv;
-
-            void main() {
-                vec3 tex = texture2D(tMap, vUv).rgb;
-                
-                gl_FragColor.rgb = tex;
-                gl_FragColor.a = 1.0;
-            }
+          void main() {
+              gl_FragColor.rgb = normalize(vNormal);
+              gl_FragColor.a = 1.0;
+          }
         `    ;
-    const renderer = new Renderer({
-      dpr: 2
-    });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
-    const camera = new Camera(gl, {
-      fov: 15
-    });
-    camera.position.z = 15;
-
-    function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.perspective({
-        aspect: gl.canvas.width / gl.canvas.height
+    {
+      const renderer = new Renderer({
+        dpr: 2
       });
-    }
+      const gl = renderer.gl;
+      document.body.appendChild(gl.canvas);
+      gl.clearColor(1, 1, 1, 1);
+      const camera = new Camera(gl, {
+        fov: 35
+      });
+      camera.position.set(0, 0, 5); // Create controls and pass parameters
 
-    window.addEventListener('resize', resize, false);
-    resize();
-    const scene = new Transform();
-    const texture = new Texture(gl);
-    const img = new Image();
+      const controls = new Orbit(camera, {
+        target: new Vec3(0, 0, 0)
+      });
 
-    img.onload = () => texture.image = img;
-
-    img.src = 'assets/acorn.jpg';
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      uniforms: {
-        uTime: {
-          value: 0
-        },
-        tMap: {
-          value: texture
-        }
-      }
-    });
-    let mesh;
-    loadModel();
-
-    async function loadModel() {
-      const data = await (await fetch(`assets/acorn.json`)).json();
-      const num = 20;
-      let offset = new Float32Array(num * 3);
-      let random = new Float32Array(num * 3);
-
-      for (let i = 0; i < num; i++) {
-        offset.set([Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1], i * 3); // unique random values are always handy for instances.
-        // Here they will be used for rotation, scale and movement.
-
-        random.set([Math.random(), Math.random(), Math.random()], i * 3);
+      function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({
+          aspect: gl.canvas.width / gl.canvas.height
+        });
       }
 
-      const geometry = new Geometry(gl, {
-        position: {
-          size: 3,
-          data: new Float32Array(data.position)
-        },
-        uv: {
-          size: 2,
-          data: new Float32Array(data.uv)
-        },
-        normal: {
-          size: 3,
-          data: new Float32Array(data.normal)
-        },
-        // simply add the 'instanced' property to flag as an instanced attribute.
-        // set the value as the divisor number
-        offset: {
-          instanced: 1,
-          size: 3,
-          data: offset
-        },
-        random: {
-          instanced: 1,
-          size: 3,
-          data: random
-        }
+      window.addEventListener('resize', resize, false);
+      resize();
+      const scene = new Transform();
+      const sphereGeometry = new Sphere(gl);
+      const program = new Program(gl, {
+        vertex,
+        fragment,
+        // Don't cull faces so that plane is double sided - default is gl.BACK
+        cullFace: null
       });
-      mesh = new Mesh(gl, {
-        geometry,
+      const sphere = new Mesh(gl, {
+        geometry: sphereGeometry,
         program
       });
-      mesh.setParent(scene);
-    }
-
-    requestAnimationFrame(update);
-
-    function update(t) {
-      requestAnimationFrame(update);
-      if (mesh) mesh.rotation.y -= 0.005;
-      program.uniforms.uTime.value = t * 0.001;
-      renderer.render({
-        scene,
-        camera
+      sphere.setParent(scene);
+      const curve = new Curve({
+        points: [new Vec3(0, 0.5, 0), new Vec3(0, 1, 1), new Vec3(0, -1, 1), new Vec3(0, -0.5, 0)],
+        type: Curve.CUBICBEZIER
       });
-    }
+      const points = curve.getPoints(20);
+      curve.type = Curve.CATMULLROM;
+      const points2 = curve.getPoints(20);
+      const polyline = new Polyline(gl, {
+        points,
+        uniforms: {
+          uColor: {
+            value: new Color('#f00')
+          }
+        }
+      });
+      const polyline2 = new Polyline(gl, {
+        points: points2,
+        uniforms: {
+          uColor: {
+            value: new Color('#00f')
+          }
+        }
+      });
 
-    document.getElementsByClassName('Info')[0].innerHTML = 'Instancing. Model by Google Poly';
-    document.title = 'OGL • Instancing';
+      for (let i = 0; i <= 50; i++) {
+        const p = i % 2 ? polyline : polyline2;
+        const mesh = new Mesh(gl, {
+          geometry: p.geometry,
+          program: p.program
+        });
+        mesh.setParent(sphere);
+        mesh.rotation.y = i * Math.PI / 50;
+      }
+
+      requestAnimationFrame(update);
+
+      function update() {
+        requestAnimationFrame(update);
+        sphere.rotation.y -= 0.01;
+        controls.update();
+        renderer.render({
+          scene,
+          camera
+        });
+      }
+    }
+    document.getElementsByClassName('Info')[0].innerHTML = 'Curves';
+    document.title = 'OGL • Curves';
 
 }());

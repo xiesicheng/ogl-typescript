@@ -53,8 +53,25 @@ You can find  [ogl-typescript-starter](https://github.com/nshen/ogl-typescript-s
 
 [Show me what you got!](https://nshen.github.io/ogl-typescript/examples) - Explore a comprehensive list of examples, with comments in the source code.
 
+## Build
+
+build library
+
+```bash
+yarn build # npm run build
+```
+
+build examples
+
+```bash
+yarn build:examples # npm run build:examples
+```
+
+
+
+
 ## Versions
 
 | OGL-TypeScript | OGL |
 |---------|--------|
-| 0.1.0   | 0.0.40 | 
+| 0.1.1   | 0.0.40 | 

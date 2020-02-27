@@ -3894,6 +3894,423 @@
 
     }
 
+    /**
+     * Copy the values from one vec2 to another
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the source vector
+     * @returns {vec2} out
+     */
+
+    function copy$5(out, a) {
+      out[0] = a[0];
+      out[1] = a[1];
+      return out;
+    }
+    /**
+     * Set the components of a vec2 to the given values
+     *
+     * @param {vec2} out the receiving vector
+     * @param {Number} x X component
+     * @param {Number} y Y component
+     * @returns {vec2} out
+     */
+
+    function set$5(out, x, y) {
+      out[0] = x;
+      out[1] = y;
+      return out;
+    }
+    /**
+     * Adds two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function add$1(out, a, b) {
+      out[0] = a[0] + b[0];
+      out[1] = a[1] + b[1];
+      return out;
+    }
+    /**
+     * Subtracts vector b from vector a
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function subtract$1(out, a, b) {
+      out[0] = a[0] - b[0];
+      out[1] = a[1] - b[1];
+      return out;
+    }
+    /**
+     * Multiplies two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function multiply$4(out, a, b) {
+      out[0] = a[0] * b[0];
+      out[1] = a[1] * b[1];
+      return out;
+    }
+    /**
+     * Divides two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {vec2} out
+     */
+
+    function divide$1(out, a, b) {
+      out[0] = a[0] / b[0];
+      out[1] = a[1] / b[1];
+      return out;
+    }
+    /**
+     * Scales a vec2 by a scalar number
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to scale
+     * @param {Number} b amount to scale the vector by
+     * @returns {vec2} out
+     */
+
+    function scale$3(out, a, b) {
+      out[0] = a[0] * b;
+      out[1] = a[1] * b;
+      return out;
+    }
+    /**
+     * Calculates the euclidian distance between two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} distance between a and b
+     */
+
+    function distance$1(a, b) {
+      var x = b[0] - a[0],
+          y = b[1] - a[1];
+      return Math.sqrt(x * x + y * y);
+    }
+    /**
+     * Calculates the squared euclidian distance between two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} squared distance between a and b
+     */
+
+    function squaredDistance$1(a, b) {
+      var x = b[0] - a[0],
+          y = b[1] - a[1];
+      return x * x + y * y;
+    }
+    /**
+     * Calculates the length of a vec2
+     *
+     * @param {vec2} a vector to calculate length of
+     * @returns {Number} length of a
+     */
+
+    function length$1(a) {
+      var x = a[0],
+          y = a[1];
+      return Math.sqrt(x * x + y * y);
+    }
+    /**
+     * Calculates the squared length of a vec2
+     *
+     * @param {vec2} a vector to calculate squared length of
+     * @returns {Number} squared length of a
+     */
+
+    function squaredLength$1(a) {
+      var x = a[0],
+          y = a[1];
+      return x * x + y * y;
+    }
+    /**
+     * Negates the components of a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to negate
+     * @returns {vec2} out
+     */
+
+    function negate$1(out, a) {
+      out[0] = -a[0];
+      out[1] = -a[1];
+      return out;
+    }
+    /**
+     * Returns the inverse of the components of a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to invert
+     * @returns {vec2} out
+     */
+
+    function inverse$1(out, a) {
+      out[0] = 1.0 / a[0];
+      out[1] = 1.0 / a[1];
+      return out;
+    }
+    /**
+     * Normalize a vec2
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a vector to normalize
+     * @returns {vec2} out
+     */
+
+    function normalize$3(out, a) {
+      var x = a[0],
+          y = a[1];
+      var len = x * x + y * y;
+
+      if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len);
+      }
+
+      out[0] = a[0] * len;
+      out[1] = a[1] * len;
+      return out;
+    }
+    /**
+     * Calculates the dot product of two vec2's
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} dot product of a and b
+     */
+
+    function dot$3(a, b) {
+      return a[0] * b[0] + a[1] * b[1];
+    }
+    /**
+     * Computes the cross product of two vec2's
+     * Note that the cross product returns a scalar
+     *
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @returns {Number} cross product of a and b
+     */
+
+    function cross$1(a, b) {
+      return a[0] * b[1] - a[1] * b[0];
+    }
+    /**
+     * Performs a linear interpolation between two vec2's
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the first operand
+     * @param {vec2} b the second operand
+     * @param {Number} t interpolation amount between the two inputs
+     * @returns {vec2} out
+     */
+
+    function lerp$1(out, a, b, t) {
+      var ax = a[0],
+          ay = a[1];
+      out[0] = ax + t * (b[0] - ax);
+      out[1] = ay + t * (b[1] - ay);
+      return out;
+    }
+    /**
+     * Transforms the vec2 with a mat3
+     * 3rd vector component is implicitly '1'
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to transform
+     * @param {mat3} m matrix to transform with
+     * @returns {vec2} out
+     */
+
+    function transformMat3(out, a, m) {
+      var x = a[0],
+          y = a[1];
+      out[0] = m[0] * x + m[3] * y + m[6];
+      out[1] = m[1] * x + m[4] * y + m[7];
+      return out;
+    }
+    /**
+     * Transforms the vec2 with a mat4
+     * 3rd vector component is implicitly '0'
+     * 4th vector component is implicitly '1'
+     *
+     * @param {vec2} out the receiving vector
+     * @param {vec2} a the vector to transform
+     * @param {mat4} m matrix to transform with
+     * @returns {vec2} out
+     */
+
+    function transformMat4$1(out, a, m) {
+      let x = a[0];
+      let y = a[1];
+      out[0] = m[0] * x + m[4] * y + m[12];
+      out[1] = m[1] * x + m[5] * y + m[13];
+      return out;
+    }
+    /**
+     * Returns whether or not the vectors exactly have the same elements in the same position (when compared with ===)
+     *
+     * @param {vec2} a The first vector.
+     * @param {vec2} b The second vector.
+     * @returns {Boolean} True if the vectors are equal, false otherwise.
+     */
+
+    function exactEquals$1(a, b) {
+      return a[0] === b[0] && a[1] === b[1];
+    }
+
+    class Vec2 extends Array {
+      constructor(x = 0, y = x) {
+        super(x, y);
+        return this;
+      }
+
+      get x() {
+        return this[0];
+      }
+
+      get y() {
+        return this[1];
+      }
+
+      set x(v) {
+        this[0] = v;
+      }
+
+      set y(v) {
+        this[1] = v;
+      }
+
+      set(x, y = x) {
+        if (x.length) return this.copy(x);
+        set$5(this, x, y);
+        return this;
+      }
+
+      copy(v) {
+        copy$5(this, v);
+        return this;
+      }
+
+      add(va, vb) {
+        if (vb) add$1(this, va, vb);else add$1(this, this, va);
+        return this;
+      }
+
+      sub(va, vb) {
+        if (vb) subtract$1(this, va, vb);else subtract$1(this, this, va);
+        return this;
+      }
+
+      multiply(v) {
+        if (v.length) multiply$4(this, this, v);else scale$3(this, this, v);
+        return this;
+      }
+
+      divide(v) {
+        if (v.length) divide$1(this, this, v);else scale$3(this, this, 1 / v);
+        return this;
+      }
+
+      inverse(v = this) {
+        inverse$1(this, v);
+        return this;
+      } // Can't use 'length' as Array.prototype uses it
+
+
+      len() {
+        return length$1(this);
+      }
+
+      distance(v) {
+        if (v) return distance$1(this, v);else return length$1(this);
+      }
+
+      squaredLen() {
+        return this.squaredDistance();
+      }
+
+      squaredDistance(v) {
+        if (v) return squaredDistance$1(this, v);else return squaredLength$1(this);
+      }
+
+      negate(v = this) {
+        negate$1(this, v);
+        return this;
+      }
+
+      cross(va, vb) {
+        if (vb) return cross$1(va, vb);
+        return cross$1(this, va);
+      }
+
+      scale(v) {
+        scale$3(this, this, v);
+        return this;
+      }
+
+      normalize() {
+        normalize$3(this, this);
+        return this;
+      }
+
+      dot(v) {
+        return dot$3(this, v);
+      }
+
+      equals(v) {
+        return exactEquals$1(this, v);
+      }
+
+      applyMatrix3(mat3) {
+        transformMat3(this, this, mat3);
+        return this;
+      }
+
+      applyMatrix4(mat4) {
+        transformMat4$1(this, this, mat4);
+        return this;
+      }
+
+      lerp(v, a) {
+        lerp$1(this, this, v, a);
+      }
+
+      clone() {
+        return new Vec2(this[0], this[1]);
+      }
+
+      fromArray(a, o = 0) {
+        this[0] = a[o];
+        this[1] = a[o + 1];
+        return this;
+      }
+
+      toArray(a = [], o = 0) {
+        a[o] = this[0];
+        a[o + 1] = this[1];
+        return a;
+      }
+
+    }
+
     class Plane extends Geometry {
       constructor(gl, {
         width = 1,
@@ -4120,6 +4537,478 @@
 
     }
 
+    class Cylinder extends Geometry {
+      constructor(gl, {
+        radiusTop = 0.5,
+        radiusBottom = 0.5,
+        height = 1,
+        radialSegments = 8,
+        heightSegments = 1,
+        openEnded = false,
+        thetaStart = 0,
+        thetaLength = Math.PI * 2,
+        attributes = {}
+      } = {}) {
+        const rSegs = radialSegments;
+        const hSegs = heightSegments;
+        const tStart = thetaStart;
+        const tLength = thetaLength;
+        const numCaps = openEnded ? 0 : radiusBottom && radiusTop ? 2 : 1;
+        const num = (rSegs + 1) * (hSegs + 1 + numCaps) + numCaps;
+        const numIndices = rSegs * hSegs * 6 + numCaps * rSegs * 3;
+        const position = new Float32Array(num * 3);
+        const normal = new Float32Array(num * 3);
+        const uv = new Float32Array(num * 2);
+        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        let i = 0;
+        let ii = 0;
+        const indexArray = [];
+        addHeight();
+
+        if (!openEnded) {
+          if (radiusTop) addCap(true);
+          if (radiusBottom) addCap(false);
+        }
+
+        function addHeight() {
+          let x, y;
+          const n = new Vec3();
+          const slope = (radiusBottom - radiusTop) / height;
+
+          for (y = 0; y <= hSegs; y++) {
+            const indexRow = [];
+            const v = y / hSegs;
+            const r = v * (radiusBottom - radiusTop) + radiusTop;
+
+            for (x = 0; x <= rSegs; x++) {
+              const u = x / rSegs;
+              const theta = u * tLength + tStart;
+              const sinTheta = Math.sin(theta);
+              const cosTheta = Math.cos(theta);
+              position.set([r * sinTheta, (0.5 - v) * height, r * cosTheta], i * 3);
+              n.set(sinTheta, slope, cosTheta).normalize();
+              normal.set([n.x, n.y, n.z], i * 3);
+              uv.set([u, 1 - v], i * 2);
+              indexRow.push(i++);
+            }
+
+            indexArray.push(indexRow);
+          }
+
+          for (x = 0; x < rSegs; x++) {
+            for (y = 0; y < hSegs; y++) {
+              const a = indexArray[y][x];
+              const b = indexArray[y + 1][x];
+              const c = indexArray[y + 1][x + 1];
+              const d = indexArray[y][x + 1];
+              index.set([a, b, d, b, c, d], ii * 3);
+              ii += 2;
+            }
+          }
+        }
+
+        function addCap(isTop) {
+          let x;
+          const r = isTop === true ? radiusTop : radiusBottom;
+          const sign = isTop === true ? 1 : -1;
+          const centerIndex = i;
+          position.set([0, 0.5 * height * sign, 0], i * 3);
+          normal.set([0, sign, 0], i * 3);
+          uv.set([0.5, 0.5], i * 2);
+          i++;
+
+          for (x = 0; x <= rSegs; x++) {
+            const u = x / rSegs;
+            const theta = u * tLength + tStart;
+            const cosTheta = Math.cos(theta);
+            const sinTheta = Math.sin(theta);
+            position.set([r * sinTheta, 0.5 * height * sign, r * cosTheta], i * 3);
+            normal.set([0, sign, 0], i * 3);
+            uv.set([cosTheta * 0.5 + 0.5, sinTheta * 0.5 * sign + 0.5], i * 2);
+            i++;
+          }
+
+          for (x = 0; x < rSegs; x++) {
+            const j = centerIndex + x + 1;
+
+            if (isTop) {
+              index.set([j, j + 1, centerIndex], ii * 3);
+            } else {
+              index.set([j + 1, j, centerIndex], ii * 3);
+            }
+
+            ii++;
+          }
+        }
+
+        Object.assign(attributes, {
+          position: {
+            size: 3,
+            data: position
+          },
+          normal: {
+            size: 3,
+            data: normal
+          },
+          uv: {
+            size: 2,
+            data: uv
+          },
+          index: {
+            data: index
+          }
+        });
+        super(gl, attributes);
+      }
+
+    }
+
+    // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
+    const STATE = {
+      NONE: -1,
+      ROTATE: 0,
+      DOLLY: 1,
+      PAN: 2,
+      DOLLY_PAN: 3
+    };
+    const tempVec3$2 = new Vec3();
+    const tempVec2a = new Vec2();
+    const tempVec2b = new Vec2();
+    function Orbit(object, {
+      element = document.body,
+      enabled = true,
+      target = new Vec3(),
+      ease = 0.25,
+      inertia = 0.85,
+      enableRotate = true,
+      rotateSpeed = 0.1,
+      enableZoom = true,
+      zoomSpeed = 1,
+      enablePan = true,
+      panSpeed = 0.1,
+      minPolarAngle = 0,
+      maxPolarAngle = Math.PI,
+      minAzimuthAngle = -Infinity,
+      maxAzimuthAngle = Infinity,
+      minDistance = 0,
+      maxDistance = Infinity
+    } = {}) {
+      this.enabled = enabled;
+      this.target = target; // Catch attempts to disable - set to 1 so has no effect
+
+      ease = ease || 1;
+      inertia = inertia || 1;
+      this.minDistance = minDistance;
+      this.maxDistance = maxDistance; // current position in sphericalTarget coordinates
+
+      const sphericalDelta = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const sphericalTarget = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const spherical = {
+        radius: 1,
+        phi: 0,
+        theta: 0
+      };
+      const panDelta = new Vec3(); // Grab initial position values
+
+      const offset = new Vec3();
+      offset.copy(object.position).sub(this.target);
+      spherical.radius = sphericalTarget.radius = offset.distance();
+      spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
+      spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
+
+      this.update = () => {
+        // apply delta
+        sphericalTarget.radius *= sphericalDelta.radius;
+        sphericalTarget.theta += sphericalDelta.theta;
+        sphericalTarget.phi += sphericalDelta.phi; // apply boundaries
+
+        sphericalTarget.theta = Math.max(minAzimuthAngle, Math.min(maxAzimuthAngle, sphericalTarget.theta));
+        sphericalTarget.phi = Math.max(minPolarAngle, Math.min(maxPolarAngle, sphericalTarget.phi));
+        sphericalTarget.radius = Math.max(this.minDistance, Math.min(this.maxDistance, sphericalTarget.radius)); // ease values
+
+        spherical.phi += (sphericalTarget.phi - spherical.phi) * ease;
+        spherical.theta += (sphericalTarget.theta - spherical.theta) * ease;
+        spherical.radius += (sphericalTarget.radius - spherical.radius) * ease; // apply pan to target. As offset is relative to target, it also shifts
+
+        this.target.add(panDelta); // apply rotation to offset
+
+        let sinPhiRadius = spherical.radius * Math.sin(Math.max(0.000001, spherical.phi));
+        offset.x = sinPhiRadius * Math.sin(spherical.theta);
+        offset.y = spherical.radius * Math.cos(spherical.phi);
+        offset.z = sinPhiRadius * Math.cos(spherical.theta); // Apply updated values to object
+
+        object.position.copy(this.target).add(offset);
+        object.lookAt(this.target); // Apply inertia to values
+
+        sphericalDelta.theta *= inertia;
+        sphericalDelta.phi *= inertia;
+        panDelta.multiply(inertia); // Reset scale every frame to avoid applying scale multiple times
+
+        sphericalDelta.radius = 1;
+      }; // Everything below here just updates panDelta and sphericalDelta
+      // Using those two objects' values, the orbit is calculated
+
+
+      const rotateStart = new Vec2();
+      const panStart = new Vec2();
+      const dollyStart = new Vec2();
+      let state = STATE.NONE;
+      this.mouseButtons = {
+        ORBIT: 0,
+        ZOOM: 1,
+        PAN: 2
+      };
+
+      function getZoomScale() {
+        return Math.pow(0.95, zoomSpeed);
+      }
+
+      function panLeft(distance, m) {
+        tempVec3$2.set(m[0], m[1], m[2]);
+        tempVec3$2.multiply(-distance);
+        panDelta.add(tempVec3$2);
+      }
+
+      function panUp(distance, m) {
+        tempVec3$2.set(m[4], m[5], m[6]);
+        tempVec3$2.multiply(distance);
+        panDelta.add(tempVec3$2);
+      }
+
+      const pan = (deltaX, deltaY) => {
+        // let el = element === document ? document.body : element;
+        tempVec3$2.copy(object.position).sub(this.target);
+        let targetDistance = tempVec3$2.distance();
+        targetDistance *= Math.tan((object.fov || 45) / 2 * Math.PI / 180.0);
+        panLeft(2 * deltaX * targetDistance / element.clientHeight, object.matrix);
+        panUp(2 * deltaY * targetDistance / element.clientHeight, object.matrix);
+      };
+
+      function dolly(dollyScale) {
+        sphericalDelta.radius /= dollyScale;
+      }
+
+      function handleMoveRotate(x, y) {
+        tempVec2a.set(x, y);
+        tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed); // let el = element === document ? document.body : element;
+
+        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / element.clientHeight;
+        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / element.clientHeight;
+        rotateStart.copy(tempVec2a);
+      }
+
+      function handleMouseMoveDolly(e) {
+        tempVec2a.set(e.clientX, e.clientY);
+        tempVec2b.sub(tempVec2a, dollyStart);
+
+        if (tempVec2b.y > 0) {
+          dolly(getZoomScale());
+        } else if (tempVec2b.y < 0) {
+          dolly(1 / getZoomScale());
+        }
+
+        dollyStart.copy(tempVec2a);
+      }
+
+      function handleMovePan(x, y) {
+        tempVec2a.set(x, y);
+        tempVec2b.sub(tempVec2a, panStart).multiply(panSpeed);
+        pan(tempVec2b.x, tempVec2b.y);
+        panStart.copy(tempVec2a);
+      }
+
+      function handleTouchStartDollyPan(e) {
+        if (enableZoom) {
+          let dx = e.touches[0].pageX - e.touches[1].pageX;
+          let dy = e.touches[0].pageY - e.touches[1].pageY;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+          dollyStart.set(0, distance);
+        }
+
+        if (enablePan) {
+          let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+          let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+          panStart.set(x, y);
+        }
+      }
+
+      function handleTouchMoveDollyPan(e) {
+        if (enableZoom) {
+          let dx = e.touches[0].pageX - e.touches[1].pageX;
+          let dy = e.touches[0].pageY - e.touches[1].pageY;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+          tempVec2a.set(0, distance);
+          tempVec2b.set(0, Math.pow(tempVec2a.y / dollyStart.y, zoomSpeed));
+          dolly(tempVec2b.y);
+          dollyStart.copy(tempVec2a);
+        }
+
+        if (enablePan) {
+          let x = 0.5 * (e.touches[0].pageX + e.touches[1].pageX);
+          let y = 0.5 * (e.touches[0].pageY + e.touches[1].pageY);
+          handleMovePan(x, y);
+        }
+      }
+
+      const onMouseDown = e => {
+        if (!this.enabled) return;
+
+        switch (e.button) {
+          case this.mouseButtons.ORBIT:
+            if (enableRotate === false) return;
+            rotateStart.set(e.clientX, e.clientY);
+            state = STATE.ROTATE;
+            break;
+
+          case this.mouseButtons.ZOOM:
+            if (enableZoom === false) return;
+            dollyStart.set(e.clientX, e.clientY);
+            state = STATE.DOLLY;
+            break;
+
+          case this.mouseButtons.PAN:
+            if (enablePan === false) return;
+            panStart.set(e.clientX, e.clientY);
+            state = STATE.PAN;
+            break;
+        }
+
+        if (state !== STATE.NONE) {
+          window.addEventListener('mousemove', onMouseMove, false);
+          window.addEventListener('mouseup', onMouseUp, false);
+        }
+      };
+
+      const onMouseMove = e => {
+        if (!this.enabled) return;
+
+        switch (state) {
+          case STATE.ROTATE:
+            if (enableRotate === false) return;
+            handleMoveRotate(e.clientX, e.clientY);
+            break;
+
+          case STATE.DOLLY:
+            if (enableZoom === false) return;
+            handleMouseMoveDolly(e);
+            break;
+
+          case STATE.PAN:
+            if (enablePan === false) return;
+            handleMovePan(e.clientX, e.clientY);
+            break;
+        }
+      };
+
+      const onMouseUp = () => {
+        if (!this.enabled) return;
+        document.removeEventListener('mousemove', onMouseMove, false);
+        document.removeEventListener('mouseup', onMouseUp, false);
+        state = STATE.NONE;
+      };
+
+      const onMouseWheel = e => {
+        if (!this.enabled || !enableZoom || state !== STATE.NONE && state !== STATE.ROTATE) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (e.deltaY < 0) {
+          dolly(1 / getZoomScale());
+        } else if (e.deltaY > 0) {
+          dolly(getZoomScale());
+        }
+      };
+
+      const onTouchStart = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+
+        switch (e.touches.length) {
+          case 1:
+            if (enableRotate === false) return;
+            rotateStart.set(e.touches[0].pageX, e.touches[0].pageY);
+            state = STATE.ROTATE;
+            break;
+
+          case 2:
+            if (enableZoom === false && enablePan === false) return;
+            handleTouchStartDollyPan(e);
+            state = STATE.DOLLY_PAN;
+            break;
+
+          default:
+            state = STATE.NONE;
+        }
+      };
+
+      const onTouchMove = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        switch (e.touches.length) {
+          case 1:
+            if (enableRotate === false) return;
+            handleMoveRotate(e.touches[0].pageX, e.touches[0].pageY);
+            break;
+
+          case 2:
+            if (enableZoom === false && enablePan === false) return;
+            handleTouchMoveDollyPan(e);
+            break;
+
+          default:
+            state = STATE.NONE;
+        }
+      };
+
+      const onTouchEnd = () => {
+        if (!this.enabled) return;
+        state = STATE.NONE;
+      };
+
+      const onContextMenu = e => {
+        if (!this.enabled) return;
+        e.preventDefault();
+      };
+
+      function addHandlers() {
+        element.addEventListener('contextmenu', onContextMenu, false);
+        element.addEventListener('mousedown', onMouseDown, false);
+        element.addEventListener('wheel', onMouseWheel, {
+          passive: false
+        });
+        element.addEventListener('touchstart', onTouchStart, {
+          passive: false
+        });
+        element.addEventListener('touchend', onTouchEnd, false);
+        element.addEventListener('touchmove', onTouchMove, {
+          passive: false
+        });
+      }
+
+      this.remove = function () {
+        element.removeEventListener('contextmenu', onContextMenu);
+        element.removeEventListener('mousedown', onMouseDown);
+        element.removeEventListener('wheel', onMouseWheel);
+        element.removeEventListener('touchstart', onTouchStart);
+        element.removeEventListener('touchend', onTouchEnd);
+        element.removeEventListener('touchmove', onTouchMove);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      addHandlers();
+    }
+
     const vertex =
     /* glsl */
 `
@@ -4155,68 +5044,80 @@
                 gl_FragColor.a = 1.0;
             }
         `    ;
-    const renderer = new Renderer({
-      dpr: 2
-    });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
-    const camera = new Camera(gl, {
-      fov: 35
-    });
-    camera.position.set(0, 1, 7);
-    camera.lookAt([0, 0, 0]);
-
-    function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.perspective({
-        aspect: gl.canvas.width / gl.canvas.height
+    {
+      const renderer = new Renderer({
+        dpr: 2
       });
-    }
+      const gl = renderer.gl;
+      document.body.appendChild(gl.canvas);
+      gl.clearColor(1, 1, 1, 1);
+      const camera = new Camera(gl, {
+        fov: 35
+      });
+      camera.position.set(0, 1, 7);
+      camera.lookAt([0, 0, 0]);
+      const controls = new Orbit(camera);
 
-    window.addEventListener('resize', resize, false);
-    resize();
-    const scene = new Transform();
-    const planeGeometry = new Plane(gl);
-    const sphereGeometry = new Sphere(gl);
-    const cubeGeometry = new Box(gl);
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      // Don't cull faces so that plane is double sided - default is gl.BACK
-      cullFace: null
-    });
-    const plane = new Mesh(gl, {
-      geometry: planeGeometry,
-      program
-    });
-    plane.position.set(0, 1.3, 0);
-    plane.setParent(scene);
-    const sphere = new Mesh(gl, {
-      geometry: sphereGeometry,
-      program
-    });
-    sphere.setParent(scene);
-    const cube = new Mesh(gl, {
-      geometry: cubeGeometry,
-      program
-    });
-    cube.position.set(0, -1.3, 0);
-    cube.setParent(scene);
-    requestAnimationFrame(update);
+      function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({
+          aspect: gl.canvas.width / gl.canvas.height
+        });
+      }
 
-    function update() {
+      window.addEventListener('resize', resize, false);
+      resize();
+      const scene = new Transform();
+      const planeGeometry = new Plane(gl);
+      const sphereGeometry = new Sphere(gl);
+      const cubeGeometry = new Box(gl);
+      const cylinderGeometry = new Cylinder(gl);
+      const program = new Program(gl, {
+        vertex,
+        fragment,
+        // Don't cull faces so that plane is double sided - default is gl.BACK
+        cullFace: null
+      });
+      const plane = new Mesh(gl, {
+        geometry: planeGeometry,
+        program
+      });
+      plane.position.set(0, 1.3, 0);
+      plane.setParent(scene);
+      const sphere = new Mesh(gl, {
+        geometry: sphereGeometry,
+        program
+      });
+      sphere.position.set(1.3, 0, 0);
+      sphere.setParent(scene);
+      const cube = new Mesh(gl, {
+        geometry: cubeGeometry,
+        program
+      });
+      cube.position.set(0, -1.3, 0);
+      cube.setParent(scene);
+      const cylinder = new Mesh(gl, {
+        geometry: cylinderGeometry,
+        program
+      });
+      cylinder.position.set(-1.3, 0, 0);
+      cylinder.setParent(scene);
       requestAnimationFrame(update);
-      plane.rotation.y -= 0.02;
-      sphere.rotation.y -= 0.03;
-      cube.rotation.y -= 0.04;
-      renderer.render({
-        scene,
-        camera
-      });
-    }
 
-    document.getElementsByClassName('Info')[0].innerHTML = 'Base Primitives - Plane, Cube, Sphere';
-    document.title = 'OGL • Base Primitives - Plane, Cube, Sphere';
+      function update() {
+        requestAnimationFrame(update);
+        controls.update();
+        plane.rotation.y -= 0.02;
+        sphere.rotation.y -= 0.03;
+        cube.rotation.y -= 0.04;
+        cylinder.rotation.y -= 0.02;
+        renderer.render({
+          scene,
+          camera
+        });
+      }
+    }
+    document.getElementsByClassName('Info')[0].innerHTML = 'Base Primitives - Plane, Cube, Sphere, Cylinder';
+    document.title = 'OGL • Base Primitives - Plane, Cube, Sphere, Cylinder';
 
 }());

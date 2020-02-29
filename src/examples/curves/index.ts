@@ -86,6 +86,7 @@ const fragment = /* glsl */ `
         points,
         uniforms: {
             uColor: { value: new Color('#f00') },
+            uThickness: {value: 3},
         }
     });
 
@@ -93,6 +94,7 @@ const fragment = /* glsl */ `
         points: points2,
         uniforms: {
             uColor: { value: new Color('#00f') },
+            uThickness: {value: 2},
         }
     });
 

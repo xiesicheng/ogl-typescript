@@ -1,8 +1,5 @@
 import { Vec3 } from '../math/Vec3';
 
-const CATMULLROM: 'catmullrom' = 'catmullrom';
-const CUBICBEZIER: 'cubicbezier' = 'cubicbezier';
-
 // temp
 const _a0 = new Vec3(),
   _a1 = new Vec3(),
@@ -49,8 +46,8 @@ export interface CurveOptions {
 
 export class Curve {
 
-  static CATMULLROM = CATMULLROM;
-  static CUBICBEZIER = CUBICBEZIER;
+  static CATMULLROM: 'catmullrom' = 'catmullrom';
+  static CUBICBEZIER: 'cubicbezier' = 'cubicbezier';
   public type: 'catmullrom' | 'cubicbezier';
 
   private points: Vec3[];
@@ -63,7 +60,7 @@ export class Curve {
     new Vec3(1, 0, 0),
     ],
     divisions = 12,
-    type = CATMULLROM,
+    type = Curve.CATMULLROM,
   }: Partial<CurveOptions> = {}) {
     this.points = points;
     this.divisions = divisions;
@@ -121,7 +118,7 @@ export class Curve {
         const [c0, c1] = getCtrlPoint(this.points, i - 1, a, b);
         const c = new Curve({
           points: [p0, c0, c1, p],
-          type: CUBICBEZIER,
+          type: Curve.CUBICBEZIER,
         });
         points.pop();
         points.push(...c.getPoints(divisions));
@@ -135,11 +132,11 @@ export class Curve {
   getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
     const type = this.type;
 
-    if (type === CUBICBEZIER) {
+    if (type === Curve.CUBICBEZIER) {
       return this._getCubicBezierPoints(divisions);
     }
 
-    if (type === CATMULLROM) {
+    if (type === Curve.CATMULLROM) {
       return this._getCatmullRomPoints(divisions, a, b);
     }
 

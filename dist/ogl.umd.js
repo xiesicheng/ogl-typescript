@@ -2165,7 +2165,7 @@
      *
      * @param {mat4} out mat4 frustum matrix will be written into
      * @param {vec3} eye Position of the viewer
-     * @param {vec3} center Point the viewer is looking at
+     * @param {vec3} target Point the viewer is looking at
      * @param {vec3} up vec3 pointing up
      * @returns {mat4} out
      */
@@ -2182,7 +2182,10 @@
           z2 = eyez - target[2];
       let len = z0 * z0 + z1 * z1 + z2 * z2;
 
-      if (len > 0) {
+      if (len === 0) {
+        // eye and target are in the same position
+        z2 = 1;
+      } else {
         len = 1 / Math.sqrt(len);
         z0 *= len;
         z1 *= len;
@@ -2194,13 +2197,24 @@
           x2 = upx * z1 - upy * z0;
       len = x0 * x0 + x1 * x1 + x2 * x2;
 
-      if (len > 0) {
-        len = 1 / Math.sqrt(len);
-        x0 *= len;
-        x1 *= len;
-        x2 *= len;
+      if (len === 0) {
+        // up and z are parallel
+        if (upz) {
+          upx += 1e-6;
+        } else if (upy) {
+          upz += 1e-6;
+        } else {
+          upy += 1e-6;
+        }
+
+        x0 = upy * z2 - upz * z1, x1 = upz * z0 - upx * z2, x2 = upx * z1 - upy * z0;
+        len = x0 * x0 + x1 * x1 + x2 * x2;
       }
 
+      len = 1 / Math.sqrt(len);
+      x0 *= len;
+      x1 *= len;
+      x2 *= len;
       out[0] = x0;
       out[1] = x1;
       out[2] = x2;
@@ -5660,9 +5674,6 @@
 
     }
 
-    const CATMULLROM = 'catmullrom';
-    const CUBICBEZIER = 'cubicbezier'; // temp
-
     const _a0 = new Vec3(),
           _a1 = new Vec3(),
           _a2 = new Vec3(),
@@ -5713,7 +5724,7 @@
       constructor({
         points = [new Vec3(0, 0, 0), new Vec3(0, 1, 0), new Vec3(1, 1, 0), new Vec3(1, 0, 0)],
         divisions = 12,
-        type = CATMULLROM
+        type = Curve.CATMULLROM
       } = {}) {
         this.type = void 0;
         this.points = void 0;
@@ -5777,7 +5788,7 @@
             const [c0, c1] = getCtrlPoint(this.points, i - 1, a, b);
             const c = new Curve({
               points: [p0, c0, c1, p],
-              type: CUBICBEZIER
+              type: Curve.CUBICBEZIER
             });
             points.pop();
             points.push(...c.getPoints(divisions));
@@ -5790,11 +5801,11 @@
       getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
         const type = this.type;
 
-        if (type === CUBICBEZIER) {
+        if (type === Curve.CUBICBEZIER) {
           return this._getCubicBezierPoints(divisions);
         }
 
-        if (type === CATMULLROM) {
+        if (type === Curve.CATMULLROM) {
           return this._getCatmullRomPoints(divisions, a, b);
         }
 
@@ -5802,8 +5813,8 @@
       }
 
     }
-    Curve.CATMULLROM = CATMULLROM;
-    Curve.CUBICBEZIER = CUBICBEZIER;
+    Curve.CATMULLROM = 'catmullrom';
+    Curve.CUBICBEZIER = 'cubicbezier';
 
     // TODO: Destroy render targets if size changed and exists
     class Post {

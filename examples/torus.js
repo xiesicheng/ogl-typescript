@@ -3911,98 +3911,6 @@
 
     }
 
-    const NAMES = {
-      "black": "#000000",
-      "white": "#ffffff",
-      "red": "#ff0000",
-      "green": "#00ff00",
-      "blue": "#0000ff",
-      "fuchsia": "#ff00ff",
-      "cyan": "#00ffff",
-      "yellow": "#ffff00",
-      "orange": "#ff8000"
-    };
-    function hexToRGB(hex) {
-      if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
-      const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      if (!rgb) console.warn(`Unable to convert hex string ${hex} to rgb values`);
-      return [parseInt(rgb[1], 16) / 255, parseInt(rgb[2], 16) / 255, parseInt(rgb[3], 16) / 255];
-    }
-    function numberToRGB(num) {
-      num = parseInt(num);
-      return [(num >> 16 & 255) / 255, (num >> 8 & 255) / 255, (num & 255) / 255];
-    }
-    function parseColor(color = null) {
-      // Empty
-      if (!color) return [0, 0, 0]; // Decimal
-
-      if (arguments.length === 3) return arguments; // Number
-
-      if (!isNaN(color)) return numberToRGB(color); // Hex
-
-      if (color[0] === "#") return hexToRGB(color); // Names
-
-      if (NAMES[color.toLowerCase()]) return hexToRGB(NAMES[color.toLowerCase()]);
-      console.warn('Color format not recognised');
-      return [0, 0, 0];
-    }
-
-    // Constructor and set method accept following formats:
-    // new Color() - Empty (defaults to black)
-    // new Color([0.2, 0.4, 1.0]) - Decimal Array (or another Color instance)
-    // new Color(0.7, 0.0, 0.1) - Decimal RGB values
-    // new Color('#ff0000') - Hex string
-    // new Color('#ccc') - Short-hand Hex string
-    // new Color(0x4f27e8) - Number
-    // new Color('red') - Color name string (short list in ColorFunc.js)
-
-    class Color extends Array {
-      constructor(color = null) {
-        if (Array.isArray(color)) {
-          super(...color);
-        } else {
-          super(...parseColor(...arguments));
-        }
-      }
-
-      get r() {
-        return this[0];
-      }
-
-      get g() {
-        return this[1];
-      }
-
-      get b() {
-        return this[2];
-      }
-
-      set r(v) {
-        this[0] = v;
-      }
-
-      set g(v) {
-        this[1] = v;
-      }
-
-      set b(v) {
-        this[2] = v;
-      }
-
-      set(color) {
-        if (Array.isArray(color)) return this.copy(color);
-        return this.copy(parseColor(...arguments));
-      }
-
-      copy(v) {
-        this[0] = v[0];
-        this[1] = v[1];
-        this[2] = v[2];
-        return this;
-      }
-
-    }
-
     /**
      * Copy the values from one vec2 to another
      *
@@ -4420,98 +4328,77 @@
 
     }
 
-    class Sphere extends Geometry {
+    // https://github.com/mrdoob/three.js/blob/master/src/geometries/TorusGeometry.js
+    class Torus extends Geometry {
       constructor(gl, {
         radius = 0.5,
-        widthSegments = 16,
-        heightSegments = Math.ceil(widthSegments * 0.5),
-        phiStart = 0,
-        phiLength = Math.PI * 2,
-        thetaStart = 0,
-        thetaLength = Math.PI,
+        tube = 0.2,
+        radialSegments = 8,
+        tubularSegments = 6,
+        arc = Math.PI * 2,
         attributes = {}
       } = {}) {
-        const wSegs = widthSegments;
-        const hSegs = heightSegments;
-        const pStart = phiStart;
-        const pLength = phiLength;
-        const tStart = thetaStart;
-        const tLength = thetaLength;
-        const num = (wSegs + 1) * (hSegs + 1);
-        const numIndices = wSegs * hSegs * 6;
-        const position = new Float32Array(num * 3);
-        const normal = new Float32Array(num * 3);
-        const uv = new Float32Array(num * 2);
-        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-        let i = 0;
-        let iv = 0;
-        let ii = 0;
-        let te = tStart + tLength;
-        const grid = [];
-        let n = new Vec3();
+        const num = (radialSegments + 1) * (tubularSegments + 1);
+        const numIndices = radialSegments * tubularSegments * 6;
+        const vertices = new Float32Array(num * 3);
+        const normals = new Float32Array(num * 3);
+        const uvs = new Float32Array(num * 2);
+        const indices = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        const center = new Vec3();
+        const vertex = new Vec3();
+        const normal = new Vec3(); // generate vertices, normals and uvs
 
-        for (let iy = 0; iy <= hSegs; iy++) {
-          let vRow = [];
-          let v = iy / hSegs;
+        let idx = 0;
 
-          for (let ix = 0; ix <= wSegs; ix++, i++) {
-            let u = ix / wSegs;
-            let x = -radius * Math.cos(pStart + u * pLength) * Math.sin(tStart + v * tLength);
-            let y = radius * Math.cos(tStart + v * tLength);
-            let z = radius * Math.sin(pStart + u * pLength) * Math.sin(tStart + v * tLength);
-            position[i * 3] = x;
-            position[i * 3 + 1] = y;
-            position[i * 3 + 2] = z;
-            n.set(x, y, z).normalize();
-            normal[i * 3] = n.x;
-            normal[i * 3 + 1] = n.y;
-            normal[i * 3 + 2] = n.z;
-            uv[i * 2] = u;
-            uv[i * 2 + 1] = 1 - v;
-            vRow.push(iv++);
+        for (let j = 0; j <= radialSegments; j++) {
+          for (let i = 0; i <= tubularSegments; i++, idx++) {
+            const u = i / tubularSegments * arc;
+            const v = j / radialSegments * Math.PI * 2; // vertex
+
+            vertex.x = (radius + tube * Math.cos(v)) * Math.cos(u);
+            vertex.y = (radius + tube * Math.cos(v)) * Math.sin(u);
+            vertex.z = tube * Math.sin(v);
+            vertices.set([vertex.x, vertex.y, vertex.z], idx * 3); // normal
+
+            center.x = radius * Math.cos(u);
+            center.y = radius * Math.sin(u);
+            normal.sub(vertex).sub(center).normalize();
+            normals.set([normal.x, normal.y, normal.z], idx * 3); // uv
+
+            uvs.set([i / tubularSegments, j / radialSegments], idx * 2);
           }
+        } // generate indices
 
-          grid.push(vRow);
-        }
 
-        for (let iy = 0; iy < hSegs; iy++) {
-          for (let ix = 0; ix < wSegs; ix++) {
-            let a = grid[iy][ix + 1];
-            let b = grid[iy][ix];
-            let c = grid[iy + 1][ix];
-            let d = grid[iy + 1][ix + 1];
+        idx = 0;
 
-            if (iy !== 0 || tStart > 0) {
-              index[ii * 3] = a;
-              index[ii * 3 + 1] = b;
-              index[ii * 3 + 2] = d;
-              ii++;
-            }
+        for (let j = 1; j <= radialSegments; j++) {
+          for (let i = 1; i <= tubularSegments; i++, idx++) {
+            // indices
+            const a = (tubularSegments + 1) * j + i - 1;
+            const b = (tubularSegments + 1) * (j - 1) + i - 1;
+            const c = (tubularSegments + 1) * (j - 1) + i;
+            const d = (tubularSegments + 1) * j + i; // faces
 
-            if (iy !== hSegs - 1 || te < Math.PI) {
-              index[ii * 3] = b;
-              index[ii * 3 + 1] = c;
-              index[ii * 3 + 2] = d;
-              ii++;
-            }
+            indices.set([a, b, d, b, c, d], idx * 6);
           }
         }
 
         Object.assign(attributes, {
           position: {
             size: 3,
-            data: position
+            data: vertices
           },
           normal: {
             size: 3,
-            data: normal
+            data: normals
           },
           uv: {
             size: 2,
-            data: uv
+            data: uvs
           },
           index: {
-            data: index
+            data: indices
           }
         });
         super(gl, attributes);
@@ -4875,554 +4762,94 @@
       addHandlers();
     }
 
-    const CATMULLROM = 'catmullrom';
-    const CUBICBEZIER = 'cubicbezier';
-    const QUADRATICBEZIER = 'quadraticbezier'; // temp
-
-    const _a0 = new Vec3(),
-          _a1 = new Vec3(),
-          _a2 = new Vec3(),
-          _a3 = new Vec3();
-    /**
-     * Get the control points of cubic bezier curve.
-     * @param {*} i
-     * @param {*} a
-     * @param {*} b
-     */
-
-
-    function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
-      if (i < 1) {
-        _a0.sub(points[1], points[0]).scale(a).add(points[0]);
-      } else {
-        _a0.sub(points[i + 1], points[i - 1]).scale(a).add(points[i]);
-      }
-
-      if (i > points.length - 3) {
-        const last = points.length - 1;
-
-        _a1.sub(points[last - 1], points[last]).scale(b).add(points[last]);
-      } else {
-        _a1.sub(points[i], points[i + 2]).scale(b).add(points[i + 1]);
-      }
-
-      return [_a0.clone(), _a1.clone()];
-    }
-
-    function getQuadraticBezierPoint(t, p0, c0, p1) {
-      const k = 1 - t;
-
-      _a0.copy(p0).scale(k ** 2);
-
-      _a1.copy(c0).scale(2 * k * t);
-
-      _a2.copy(p1).scale(t ** 2);
-
-      const ret = new Vec3();
-      ret.add(_a0, _a1).add(_a2);
-      return ret;
-    }
-
-    function getCubicBezierPoint(t, p0, c0, c1, p1) {
-      const k = 1 - t;
-
-      _a0.copy(p0).scale(k ** 3);
-
-      _a1.copy(c0).scale(3 * k ** 2 * t);
-
-      _a2.copy(c1).scale(3 * k * t ** 2);
-
-      _a3.copy(p1).scale(t ** 3);
-
-      const ret = new Vec3();
-      ret.add(_a0, _a1).add(_a2).add(_a3);
-      return ret;
-    }
-
-    class Curve {
-      constructor({
-        points = [new Vec3(0, 0, 0), new Vec3(0, 1, 0), new Vec3(1, 1, 0), new Vec3(1, 0, 0)],
-        divisions = 12,
-        type = Curve.CATMULLROM
-      } = {}) {
-        this.type = void 0;
-        this.points = void 0;
-        this.divisions = void 0;
-        this.points = points;
-        this.divisions = divisions;
-        this.type = type;
-      }
-
-      _getQuadraticBezierPoints(divisions = this.divisions) {
-        const points = [];
-        const count = this.points.length;
-
-        if (count < 3) {
-          console.warn('Not enough points provided.');
-          return [];
-        }
-
-        const p0 = this.points[0];
-        let c0 = this.points[1],
-            p1 = this.points[2];
-
-        for (let i = 0; i <= divisions; i++) {
-          const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
-          points.push(p);
-        }
-
-        let offset = 3;
-
-        while (count - offset > 0) {
-          p0.copy(p1);
-          c0 = p1.scale(2).sub(c0);
-          p1 = this.points[offset];
-
-          for (let i = 1; i <= divisions; i++) {
-            const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
-            points.push(p);
-          }
-
-          offset++;
-        }
-
-        return points;
-      }
-
-      _getCubicBezierPoints(divisions = this.divisions) {
-        const points = [];
-        const count = this.points.length;
-
-        if (count < 4) {
-          console.warn('Not enough points provided.');
-          return [];
-        }
-
-        let p0 = this.points[0],
-            c0 = this.points[1],
-            c1 = this.points[2],
-            p1 = this.points[3];
-
-        for (let i = 0; i <= divisions; i++) {
-          const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
-          points.push(p);
-        }
-
-        let offset = 4;
-
-        while (count - offset > 1) {
-          p0.copy(p1);
-          c0 = p1.scale(2).sub(c1);
-          c1 = this.points[offset];
-          p1 = this.points[offset + 1];
-
-          for (let i = 1; i <= divisions; i++) {
-            const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
-            points.push(p);
-          }
-
-          offset += 2;
-        }
-
-        return points;
-      }
-
-      _getCatmullRomPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
-        const points = [];
-        const count = this.points.length;
-
-        if (count <= 2) {
-          return this.points;
-        }
-
-        let p0;
-        this.points.forEach((p, i) => {
-          if (i === 0) {
-            p0 = p;
-          } else {
-            const [c0, c1] = getCtrlPoint(this.points, i - 1, a, b);
-            const c = new Curve({
-              points: [p0, c0, c1, p],
-              type: Curve.CUBICBEZIER
-            });
-            points.pop();
-            points.push(...c.getPoints(divisions));
-            p0 = p;
-          }
-        });
-        return points;
-      }
-
-      getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
-        const type = this.type;
-
-        if (type === QUADRATICBEZIER) {
-          return this._getQuadraticBezierPoints(divisions);
-        }
-
-        if (type === CUBICBEZIER) {
-          return this._getCubicBezierPoints(divisions);
-        }
-
-        if (type === Curve.CATMULLROM) {
-          return this._getCatmullRomPoints(divisions, a, b);
-        }
-
-        return this.points;
-      }
-
-    }
-    Curve.CATMULLROM = 'catmullrom';
-    Curve.CUBICBEZIER = 'cubicbezier';
-    Curve.QUADRATICBEZIER = 'quadraticbezier';
-    Curve.CATMULLROM = CATMULLROM;
-    Curve.CUBICBEZIER = CUBICBEZIER;
-    Curve.QUADRATICBEZIER = QUADRATICBEZIER;
-
-    const tmp = new Vec3();
-    class Polyline {
-      // uniforms
-      constructor(gl, {
-        points,
-        // Array of Vec3s
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        attributes = {} // For passing in custom attribs
-
-      }) {
-        this.gl = void 0;
-        this.points = void 0;
-        this.count = void 0;
-        this.position = void 0;
-        this.prev = void 0;
-        this.next = void 0;
-        this.geometry = void 0;
-        this.resolution = void 0;
-        this.dpr = void 0;
-        this.thickness = void 0;
-        this.color = void 0;
-        this.miter = void 0;
-        this.program = void 0;
-        this.mesh = void 0;
-        this.gl = gl;
-        this.points = points;
-        this.count = points.length; // Create buffers
-
-        this.position = new Float32Array(this.count * 3 * 2);
-        this.prev = new Float32Array(this.count * 3 * 2);
-        this.next = new Float32Array(this.count * 3 * 2);
-        const side = new Float32Array(this.count * 1 * 2);
-        const uv = new Float32Array(this.count * 2 * 2);
-        const index = new Uint16Array((this.count - 1) * 3 * 2); // Set static buffers
-
-        for (let i = 0; i < this.count; i++) {
-          side.set([-1, 1], i * 2);
-          const v = i / (this.count - 1);
-          uv.set([0, v, 1, v], i * 4);
-          if (i === this.count - 1) continue;
-          const ind = i * 2;
-          index.set([ind + 0, ind + 1, ind + 2], (ind + 0) * 3);
-          index.set([ind + 2, ind + 1, ind + 3], (ind + 1) * 3);
-        }
-
-        const geometry = this.geometry = new Geometry(gl, Object.assign(attributes, {
-          position: {
-            size: 3,
-            data: this.position
-          },
-          prev: {
-            size: 3,
-            data: this.prev
-          },
-          next: {
-            size: 3,
-            data: this.next
-          },
-          side: {
-            size: 1,
-            data: side
-          },
-          uv: {
-            size: 2,
-            data: uv
-          },
-          index: {
-            size: 1,
-            data: index
-          }
-        })); // Populate dynamic buffers
-
-        this.updateGeometry();
-        if (!uniforms.uResolution) this.resolution = uniforms.uResolution = {
-          value: new Vec2()
-        };
-        if (!uniforms.uDPR) this.dpr = uniforms.uDPR = {
-          value: 1
-        };
-        if (!uniforms.uThickness) this.thickness = uniforms.uThickness = {
-          value: 1
-        };
-        if (!uniforms.uColor) this.color = uniforms.uColor = {
-          value: new Color('#000')
-        };
-        if (!uniforms.uMiter) this.miter = uniforms.uMiter = {
-          value: 1
-        }; // Set size uniforms' values
-
-        this.resize();
-        const program = this.program = new Program(gl, {
-          vertex,
-          fragment,
-          uniforms
-        });
-        this.mesh = new Mesh(gl, {
-          geometry,
-          program
-        });
-      }
-
-      updateGeometry() {
-        this.points.forEach((p, i) => {
-          p.toArray(this.position, i * 3 * 2);
-          p.toArray(this.position, i * 3 * 2 + 3);
-
-          if (!i) {
-            // If first point, calculate prev using the distance to 2nd point
-            tmp.copy(p).sub(this.points[i + 1]).add(p);
-            tmp.toArray(this.prev, i * 3 * 2);
-            tmp.toArray(this.prev, i * 3 * 2 + 3);
-          } else {
-            p.toArray(this.next, (i - 1) * 3 * 2);
-            p.toArray(this.next, (i - 1) * 3 * 2 + 3);
-          }
-
-          if (i === this.points.length - 1) {
-            // If last point, calculate next using distance to 2nd last point
-            tmp.copy(p).sub(this.points[i - 1]).add(p);
-            tmp.toArray(this.next, i * 3 * 2);
-            tmp.toArray(this.next, i * 3 * 2 + 3);
-          } else {
-            p.toArray(this.prev, (i + 1) * 3 * 2);
-            p.toArray(this.prev, (i + 1) * 3 * 2 + 3);
-          }
-        });
-        this.geometry.attributes.position.needsUpdate = true;
-        this.geometry.attributes.prev.needsUpdate = true;
-        this.geometry.attributes.next.needsUpdate = true;
-      } // Only need to call if not handling resolution uniforms manually
-
-
-      resize() {
-        // Update automatic uniforms if not overridden
-        if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
-        if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
-      }
-
-    }
-    const defaultVertex =
-    /* glsl */
-`
-    precision highp float;
-
-    attribute vec3 position;
-    attribute vec3 next;
-    attribute vec3 prev;
-    attribute vec2 uv;
-    attribute float side;
-
-    uniform mat4 modelViewMatrix;
-    uniform mat4 projectionMatrix;
-    uniform vec2 uResolution;
-    uniform float uDPR;
-    uniform float uThickness;
-    uniform float uMiter;
-
-    varying vec2 vUv;
-
-    vec4 getPosition() {
-        mat4 mvp = projectionMatrix * modelViewMatrix;
-        vec4 current = mvp * vec4(position, 1);
-        vec4 nextPos = mvp * vec4(next, 1);
-        vec4 prevPos = mvp * vec4(prev, 1);
-
-        vec2 aspect = vec2(uResolution.x / uResolution.y, 1);    
-        vec2 currentScreen = current.xy / current.w * aspect;
-        vec2 nextScreen = nextPos.xy / nextPos.w * aspect;
-        vec2 prevScreen = prevPos.xy / prevPos.w * aspect;
-    
-        vec2 dir1 = normalize(currentScreen - prevScreen);
-        vec2 dir2 = normalize(nextScreen - currentScreen);
-        vec2 dir = normalize(dir1 + dir2);
-    
-        vec2 normal = vec2(-dir.y, dir.x);
-        normal /= mix(1.0, max(0.3, dot(normal, vec2(-dir1.y, dir1.x))), uMiter);
-        normal /= aspect;
-
-        float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
-        float pixelWidth = current.w * pixelWidthRatio;
-        normal *= pixelWidth * uThickness;
-        current.xy -= normal * side;
-    
-        return current;
-    }
-
-    void main() {
-        vUv = uv;
-        gl_Position = getPosition();
-    }
-`    ;
-    const defaultFragment =
-    /* glsl */
-`
-    precision highp float;
-
-    uniform vec3 uColor;
-    
-    varying vec2 vUv;
-
-    void main() {
-        gl_FragColor.rgb = uColor;
-        gl_FragColor.a = 1.0;
-    }
-`    ;
-
     const vertex =
     /* glsl */
 `
-          precision highp float;
-          precision highp int;
+            precision highp float;
+            precision highp int;
 
-          attribute vec3 position;
-          attribute vec3 normal;
+            attribute vec3 position;
+            attribute vec3 normal;
 
-          uniform mat3 normalMatrix;
-          uniform mat4 modelViewMatrix;
-          uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
 
-          varying vec3 vNormal;
+            varying vec3 vNormal;
 
-          void main() {
-              vNormal = normalize(normalMatrix * normal);
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
         `    ;
     const fragment =
     /* glsl */
 `
-          precision highp float;
-          precision highp int;
+            precision highp float;
+            precision highp int;
 
-          varying vec3 vNormal;
+            varying vec3 vNormal;
 
-          void main() {
-              gl_FragColor.rgb = normalize(vNormal);
-              gl_FragColor.a = 1.0;
-          }
+            void main() {
+                gl_FragColor.rgb = normalize(vNormal);
+                gl_FragColor.a = 1.0;
+            }
         `    ;
-    const renderer = new Renderer({
-      dpr: 2
-    });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
-    const camera = new Camera(gl, {
-      fov: 35
-    });
-    camera.position.set(0, 0, 5); // Create controls and pass parameters
-
-    const controls = new Orbit(camera, {
-      target: new Vec3(0, 0, 0)
-    });
-
-    function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.perspective({
-        aspect: gl.canvas.width / gl.canvas.height
+    {
+      const renderer = new Renderer({
+        dpr: 2
       });
-    }
-
-    window.addEventListener('resize', resize, false);
-    resize();
-    const scene = new Transform();
-    const sphereGeometry = new Sphere(gl);
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      // Don't cull faces so that plane is double sided - default is gl.BACK
-      cullFace: null
-    });
-    const sphere = new Mesh(gl, {
-      geometry: sphereGeometry,
-      program
-    });
-    sphere.setParent(scene);
-    const curve = new Curve({
-      points: [new Vec3(0, 0.5, 0), new Vec3(0, 1, 1), new Vec3(0, -1, 1), new Vec3(0, -0.5, 0)],
-      type: Curve.CUBICBEZIER
-    });
-    const points = curve.getPoints(20);
-    curve.type = Curve.CATMULLROM;
-    const points2 = curve.getPoints(20);
-    curve.type = Curve.QUADRATICBEZIER;
-    const points3 = curve.getPoints(20);
-    const polyline = new Polyline(gl, {
-      points,
-      uniforms: {
-        uColor: {
-          value: new Color('#f00')
-        },
-        uThickness: {
-          value: 3
-        }
-      }
-    });
-    const polyline2 = new Polyline(gl, {
-      points: points2,
-      uniforms: {
-        uColor: {
-          value: new Color('#00f')
-        },
-        uThickness: {
-          value: 2
-        }
-      }
-    });
-    const polyline3 = new Polyline(gl, {
-      points: points3,
-      uniforms: {
-        uColor: {
-          value: new Color('#0f0')
-        },
-        uThickness: {
-          value: 4
-        }
-      }
-    });
-
-    for (let i = 0; i <= 60; i++) {
-      const p = [polyline, polyline2, polyline3][i % 3];
-      const mesh = new Mesh(gl, {
-        geometry: p.geometry,
-        program: p.program
+      const gl = renderer.gl;
+      document.body.appendChild(gl.canvas);
+      gl.clearColor(1, 1, 1, 1);
+      const camera = new Camera(gl, {
+        fov: 35
       });
-      mesh.setParent(sphere);
-      mesh.rotation.y = i * Math.PI / 60;
-    }
+      camera.position.set(5, 3, 6);
+      camera.lookAt([0, 0, 0]);
 
-    requestAnimationFrame(update);
+      function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({
+          aspect: gl.canvas.width / gl.canvas.height
+        });
+      }
 
-    function update() {
+      window.addEventListener('resize', resize, false);
+      resize();
+      const scene = new Transform();
+      const controls = new Orbit(camera);
+      const program = new Program(gl, {
+        vertex,
+        fragment
+      });
+      const torusGeometry = new Torus(gl, {
+        radius: 1,
+        tube: 0.4,
+        radialSegments: 16,
+        tubularSegments: 32
+      });
+      console.log(torusGeometry);
+      const torus = new Mesh(gl, {
+        geometry: torusGeometry,
+        program
+      });
+      torus.setParent(scene);
       requestAnimationFrame(update);
-      sphere.rotation.y -= 0.01;
-      controls.update();
-      renderer.render({
-        scene,
-        camera
-      });
-    }
 
-    document.getElementsByClassName('Info')[0].innerHTML = 'Curves';
-    document.title = 'OGL • Curves';
+      function update() {
+        requestAnimationFrame(update);
+        torus.rotation.x += 0.001;
+        torus.rotation.y += 0.005;
+        torus.rotation.z += 0.003;
+        controls.update();
+        renderer.render({
+          scene,
+          camera
+        });
+      }
+    }
+    document.getElementsByClassName('Info')[0].innerHTML = 'Torus';
+    document.title = 'OGL • Torus';
 
 }());

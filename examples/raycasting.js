@@ -4573,6 +4573,8 @@
       inertia = 0.85,
       enableRotate = true,
       rotateSpeed = 0.1,
+      autoRotate = false,
+      autoRotateSpeed = 1.0,
       enableZoom = true,
       zoomSpeed = 1,
       enablePan = true,
@@ -4616,7 +4618,11 @@
       spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
 
       this.update = () => {
-        // apply delta
+        if (autoRotate) {
+          handleAutoRotate();
+        } // apply delta
+
+
         sphericalTarget.radius *= sphericalDelta.radius;
         sphericalTarget.theta += sphericalDelta.theta;
         sphericalTarget.phi += sphericalDelta.phi; // apply boundaries
@@ -4685,6 +4691,11 @@
 
       function dolly(dollyScale) {
         sphericalDelta.radius /= dollyScale;
+      }
+
+      function handleAutoRotate() {
+        const angle = 2 * Math.PI / 60 / 60 * autoRotateSpeed;
+        sphericalDelta.theta -= angle;
       }
 
       function handleMoveRotate(x, y) {

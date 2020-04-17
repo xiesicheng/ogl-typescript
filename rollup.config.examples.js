@@ -20,6 +20,7 @@ export default [
     buildExample('polylines'),
     buildExample('load-gltf'),
     buildExample('curves'),
+    buildExample('torus'),
 
     // Scenes
     buildExample('scene-graph'),

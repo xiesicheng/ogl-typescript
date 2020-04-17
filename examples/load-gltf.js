@@ -578,7 +578,7 @@
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
         attr.offset = attr.offset || 0;
-        attr.count = attr.count || attr.data.length / attr.size;
+        attr.count = attr.count || (attr.stride ? attr.data.byteLength / attr.stride : attr.data.length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 
@@ -3911,6 +3911,226 @@
 
     }
 
+    // TODO: facilitate Compressed Textures
+    // TODO: delete texture
+    // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
+    // TODO: use texSubImage2D for updates
+    // TODO: need? encoding = linearEncoding
+    // TODO: support non-compressed mipmaps uploads
+    const emptyPixel = new Uint8Array(4);
+
+    function isPowerOf2(value) {
+      return (value & value - 1) === 0;
+    }
+
+    let ID$4 = 1;
+
+    const isCompressedImage = image => image.isCompressedTexture === true;
+
+    class Texture {
+      // options
+      // gl.TEXTURE_2D
+      // gl.UNSIGNED_BYTE,
+      // gl.RGBA,
+      constructor(gl, {
+        image,
+        target = gl.TEXTURE_2D,
+        type = gl.UNSIGNED_BYTE,
+        format = gl.RGBA,
+        internalFormat = format,
+        wrapS = gl.CLAMP_TO_EDGE,
+        wrapT = gl.CLAMP_TO_EDGE,
+        generateMipmaps = true,
+        minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
+        magFilter = gl.LINEAR,
+        premultiplyAlpha = false,
+        unpackAlignment = 4,
+        flipY = target == gl.TEXTURE_2D ? true : false,
+        anisotropy = 0,
+        level = 0,
+        width,
+        // used for RenderTargets or Data Textures
+        height = width
+      } = {}) {
+        this.gl = void 0;
+        this.id = void 0;
+        this.image = void 0;
+        this.target = void 0;
+        this.type = void 0;
+        this.format = void 0;
+        this.internalFormat = void 0;
+        this.wrapS = void 0;
+        this.wrapT = void 0;
+        this.generateMipmaps = void 0;
+        this.minFilter = void 0;
+        this.magFilter = void 0;
+        this.premultiplyAlpha = void 0;
+        this.unpackAlignment = void 0;
+        this.flipY = void 0;
+        this.level = void 0;
+        this.width = void 0;
+        this.height = void 0;
+        this.anisotropy = void 0;
+        this.texture = void 0;
+        this.store = void 0;
+        this.glState = void 0;
+        this.state = void 0;
+        this.needsUpdate = void 0;
+        this.onUpdate = void 0;
+        this.gl = gl;
+        this.id = ID$4++;
+        this.image = image;
+        this.target = target;
+        this.type = type;
+        this.format = format;
+        this.internalFormat = internalFormat;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.generateMipmaps = generateMipmaps;
+        this.premultiplyAlpha = premultiplyAlpha;
+        this.unpackAlignment = unpackAlignment;
+        this.flipY = flipY;
+        this.anisotropy = Math.min(anisotropy, this.gl.renderer.parameters.maxAnisotropy);
+        this.level = level;
+        this.width = width;
+        this.height = height;
+        this.texture = this.gl.createTexture();
+        this.store = {
+          image: null
+        }; // Alias for state store to avoid redundant calls for global state
+
+        this.glState = this.gl.renderer.state; // State store to avoid redundant calls for per-texture state
+
+        this.state = {
+          minFilter: this.gl.NEAREST_MIPMAP_LINEAR,
+          magFilter: this.gl.LINEAR,
+          wrapS: this.gl.REPEAT,
+          wrapT: this.gl.REPEAT,
+          anisotropy: 0
+        };
+      }
+
+      bind() {
+        // Already bound to active texture unit
+        if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
+        this.gl.bindTexture(this.target, this.texture);
+        this.glState.textureUnits[this.glState.activeTextureUnit] = this.id;
+      }
+
+      update(textureUnit = 0) {
+        const needsUpdate = !(this.image === this.store.image && !this.needsUpdate); // Make sure that texture is bound to its texture unit
+
+        if (needsUpdate || this.glState.textureUnits[textureUnit] !== this.id) {
+          // set active texture unit to perform texture functions
+          this.gl.renderer.activeTexture(textureUnit);
+          this.bind();
+        }
+
+        if (!needsUpdate) return;
+        this.needsUpdate = false;
+
+        if (this.flipY !== this.glState.flipY) {
+          this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
+          this.glState.flipY = this.flipY;
+        }
+
+        if (this.premultiplyAlpha !== this.glState.premultiplyAlpha) {
+          this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
+          this.glState.premultiplyAlpha = this.premultiplyAlpha;
+        }
+
+        if (this.unpackAlignment !== this.glState.unpackAlignment) {
+          this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, this.unpackAlignment);
+          this.glState.unpackAlignment = this.unpackAlignment;
+        }
+
+        if (this.minFilter !== this.state.minFilter) {
+          this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
+          this.state.minFilter = this.minFilter;
+        }
+
+        if (this.magFilter !== this.state.magFilter) {
+          this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
+          this.state.magFilter = this.magFilter;
+        }
+
+        if (this.wrapS !== this.state.wrapS) {
+          this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.wrapS);
+          this.state.wrapS = this.wrapS;
+        }
+
+        if (this.wrapT !== this.state.wrapT) {
+          this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
+          this.state.wrapT = this.wrapT;
+        }
+
+        if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
+          this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
+          this.state.anisotropy = this.anisotropy;
+        }
+
+        if (this.image) {
+          if (this.image.width) {
+            this.width = this.image.width;
+            this.height = this.image.height;
+          }
+
+          if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+            // For cube maps
+            for (let i = 0; i < 6; i++) {
+              this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
+            }
+          } else if (ArrayBuffer.isView(this.image)) {
+            // Data texture
+            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+          } else if (isCompressedImage(this.image)) {
+            // Compressed texture
+            let m;
+
+            for (let level = 0; level < this.image.mipmaps.length; level++) {
+              m = this.image.mipmaps[level];
+              this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
+            }
+          } else {
+            // Regular texture
+            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
+          }
+
+          if (this.generateMipmaps) {
+            // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
+            if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
+              this.generateMipmaps = false;
+              this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
+              this.minFilter = this.gl.LINEAR;
+            } else {
+              this.gl.generateMipmap(this.target);
+            }
+          } // Callback for when data is pushed to GPU
+
+
+          this.onUpdate && this.onUpdate();
+        } else {
+          if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+            // Upload empty pixel for each side while no image to avoid errors while image or video loading
+            for (let i = 0; i < 6; i++) {
+              this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
+            }
+          } else if (this.width) {
+            // image intentionally left null for RenderTarget
+            this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
+          } else {
+            // Upload empty pixel if no image to avoid errors while image or video loading
+            this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
+          }
+        }
+
+        this.store.image = this.image;
+      }
+
+    }
+
     /**
      * Copy the values from one vec2 to another
      *
@@ -4812,7 +5032,7 @@
         const s1 = s3 - t2 + t;
 
         for (let i = 0; i < prevVal.length; i++) {
-          prevVal[i] = s0 * prevVal[i] + s1 * ((1 - t) * prevTan[i]) + s2 * nextVal[i] + s3 * (t * nextTan[i]);
+          prevVal[i] = s0 * prevVal[i] + s1 * (1 - t) * prevTan[i] + s2 * nextVal[i] + s3 * t * nextTan[i];
         }
 
         return prevVal;
@@ -4820,12 +5040,100 @@
 
     }
 
-    // Supports
+    const tempMat4$1 = new Mat4();
+    class GLTFSkin extends Mesh {
+      constructor(gl, {
+        skeleton,
+        geometry,
+        program,
+        mode = gl.TRIANGLES
+      } = {}) {
+        super(gl, {
+          geometry,
+          program,
+          mode
+        });
+        this.skeleton = void 0;
+        this.animations = void 0;
+        this.boneMatrices = void 0;
+        this.boneTextureSize = void 0;
+        this.boneTexture = void 0;
+        this.skeleton = skeleton;
+        this.program = program;
+        this.createBoneTexture();
+        this.animations = [];
+      }
+
+      createBoneTexture() {
+        if (!this.skeleton.joints.length) return;
+        const size = Math.max(4, Math.pow(2, Math.ceil(Math.log(Math.sqrt(this.skeleton.joints.length * 4)) / Math.LN2)));
+        this.boneMatrices = new Float32Array(size * size * 4);
+        this.boneTextureSize = size;
+        this.boneTexture = new Texture(this.gl, {
+          image: this.boneMatrices,
+          generateMipmaps: false,
+          type: this.gl.FLOAT,
+          internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA16F : this.gl.RGBA,
+          flipY: false,
+          width: size
+        });
+      } // addAnimation(data) {
+      //     const animation = new Animation({ objects: this.bones, data });
+      //     this.animations.push(animation);
+      //     return animation;
+      // }
+      // updateAnimations() {
+      //     // Calculate combined animation weight
+      //     let total = 0;
+      //     this.animations.forEach((animation) => (total += animation.weight));
+      //     this.animations.forEach((animation, i) => {
+      //         // force first animation to set in order to reset frame
+      //         animation.update(total, i === 0);
+      //     });
+      // }
+
+
+      updateUniforms() {
+        // Update bone texture
+        this.skeleton.joints.forEach((bone, i) => {
+          // Find difference between current and bind pose
+          tempMat4$1.multiply(bone.worldMatrix, bone.bindInverse);
+          this.boneMatrices.set(tempMat4$1, i * 16);
+        });
+        if (this.boneTexture) this.boneTexture.needsUpdate = true;
+      }
+
+      draw({
+        camera
+      } = {}) {
+        if (!this.program.uniforms.boneTexture) {
+          Object.assign(this.program.uniforms, {
+            boneTexture: {
+              value: this.boneTexture
+            },
+            boneTextureSize: {
+              value: this.boneTextureSize
+            }
+          });
+        }
+
+        this.updateUniforms(); // Switch this world matrix with root node's to populate uniforms
+
+        const _worldMatrix = this.worldMatrix;
+        this.worldMatrix = this.skeleton.skeleton.worldMatrix;
+        super.draw({
+          camera
+        });
+        this.worldMatrix = _worldMatrix;
+      }
+
+    }
+
     // [x] Geometry
     // [ ] Sparse support
     // [x] Nodes and Hierarchy
     // [ ] Morph Targets
-    // [ ] Skins
+    // [x] Skins
     // [ ] Materials
     // [ ] Textures
     // [x] Animation
@@ -4834,6 +5142,7 @@
     // TODO: Sparse accessor packing? For morph targets basically
     // TODO: init accessor missing bufferView with 0s
     // TODO: morph target animations
+
     const TYPE_ARRAY = {
       5121: Uint8Array,
       5122: Int16Array,
@@ -4876,9 +5185,13 @@
 
         const bufferViews = this.parseBufferViews(gl, desc, buffers); // Create geometries for each mesh primitive
 
-        const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+        const meshes = this.parseMeshes(gl, desc, bufferViews); // Fetch the inverse bind matrices for skeleton joints
 
-        const nodes = this.parseNodes(gl, desc, meshes); // Create animation handlers
+        const skins = this.parseSkins(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+
+        const nodes = this.parseNodes(gl, desc, meshes, skins); // Place nodes in skeletons
+
+        this.populateSkins(skins, nodes); // Create animation handlers
 
         const animations = this.parseAnimations(gl, desc, nodes, bufferViews); // Get top level nodes for each scene
 
@@ -5006,6 +5319,39 @@
         });
       }
 
+      static parseSkins(gl, desc, bufferViews) {
+        if (!desc.skins) return null;
+        return desc.skins.map(({
+          inverseBindMatrices,
+          // optional
+          skeleton,
+          // optional
+          joints // required
+          // name,
+          // extensions,
+          // extras,
+
+        }) => {
+          return {
+            inverseBindMatrices: this.parseAccessor(inverseBindMatrices, desc, bufferViews),
+            skeleton,
+            joints
+          };
+        });
+      }
+
+      static populateSkins(skins, nodes) {
+        if (!skins) return;
+        skins.forEach(skin => {
+          skin.joints = skin.joints.map((i, index) => {
+            const joint = nodes[i];
+            joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
+            return joint;
+          });
+          skin.skeleton = nodes[skin.skeleton];
+        });
+      }
+
       static parsePrimitives(gl, primitives, desc, bufferViews) {
         return primitives.map(({
           attributes,
@@ -5097,22 +5443,35 @@
         };
       }
 
-      static parseNodes(gl, desc, meshes) {
+      static parseNodes(gl, desc, meshes, skins) {
         const nodes = desc.nodes.map(({
           camera,
+          // optional
           children,
-          skin,
+          // optional
+          skin: skinIndex,
+          // optional
           matrix,
+          // optional
           mesh: meshIndex,
+          // optional
           rotation,
+          // optional
           scale,
+          // optional
           translation,
+          // optional
           weights,
+          // optional
           name,
+          // optional
           extensions,
-          extras
+          // optional
+          extras // optional
+
         }) => {
           const node = new Transform();
+          if (name) node.name = name; // Apply transformations
 
           if (matrix) {
             node.matrix.copy(matrix);
@@ -5121,7 +5480,8 @@
             if (rotation) node.quaternion.copy(rotation);
             if (scale) node.scale.copy(scale);
             if (translation) node.position.copy(translation);
-          }
+          } // add mesh if included
+
 
           if (meshIndex !== undefined) {
             meshes[meshIndex].primitives.forEach(({
@@ -5129,21 +5489,31 @@
               program,
               mode
             }) => {
-              const mesh = new Mesh(gl, {
-                geometry,
-                program,
-                mode
-              });
-              mesh.setParent(node);
+              if (typeof skinIndex === 'number') {
+                const skin = new GLTFSkin(gl, {
+                  skeleton: skins[skinIndex],
+                  geometry,
+                  program,
+                  mode
+                });
+                skin.setParent(node);
+              } else {
+                const mesh = new Mesh(gl, {
+                  geometry,
+                  program,
+                  mode
+                });
+                mesh.setParent(node);
+              }
             });
           }
 
           return node;
-        }); // Set hierarchy now all nodes created
-
+        });
         desc.nodes.forEach(({
           children = []
         }, i) => {
+          // Set hierarchy now all nodes created
           children.forEach(childIndex => {
             nodes[childIndex].setParent(nodes[i]);
           });
@@ -5191,9 +5561,9 @@
             const node = nodes[nodeIndex];
             const transform = TRANSFORMS[path];
             const timesAcc = this.parseAccessor(inputIndex, desc, bufferViews);
-            const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.count * timesAcc.size);
+            const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.offset / 4 + timesAcc.count * timesAcc.size);
             const valuesAcc = this.parseAccessor(outputIndex, desc, bufferViews);
-            const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.count * valuesAcc.size);
+            const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.offset / 4 + valuesAcc.count * valuesAcc.size);
             return {
               node,
               transform,
@@ -5213,6 +5583,7 @@
         return desc.scenes.map(({
           nodes: nodesIndices = [],
           name,
+          // optional
           extensions,
           extras
         }) => {
@@ -5222,51 +5593,139 @@
 
     }
 
-    const renderer = new Renderer({
-      dpr: 2
-    });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
-    const camera = new Camera(gl, {
-      near: 1,
-      far: 1000
-    });
-    camera.position.set(281, 127, 217); // window.CAMERA = camera;
-
-    const controls = new Orbit(camera);
-    controls.target.y = 50;
-
-    function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.perspective({
-        aspect: gl.canvas.width / gl.canvas.height
+    const vertex$1 =
+    /* glsl */
+`
+            precision highp float;
+            precision highp int;
+            attribute vec3 position;
+            attribute vec3 normal;
+            attribute vec4 skinIndex;
+            attribute vec4 skinWeight;
+            uniform mat3 normalMatrix;
+            uniform mat4 viewMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform sampler2D boneTexture;
+            uniform int boneTextureSize;
+            varying vec3 vNormal;
+            varying vec3 vPos;
+            mat4 getBoneMatrix(const in float i) {
+                float j = i * 4.0;
+                float x = mod(j, float(boneTextureSize));
+                float y = floor(j / float(boneTextureSize));
+                float dx = 1.0 / float(boneTextureSize);
+                float dy = 1.0 / float(boneTextureSize);
+                y = dy * (y + 0.5);
+                vec4 v1 = texture2D(boneTexture, vec2(dx * (x + 0.5), y));
+                vec4 v2 = texture2D(boneTexture, vec2(dx * (x + 1.5), y));
+                vec4 v3 = texture2D(boneTexture, vec2(dx * (x + 2.5), y));
+                vec4 v4 = texture2D(boneTexture, vec2(dx * (x + 3.5), y));
+                return mat4(v1, v2, v3, v4);
+            }
+            void skin() {
+                mat4 boneMatX = getBoneMatrix(skinIndex.x);
+                mat4 boneMatY = getBoneMatrix(skinIndex.y);
+                mat4 boneMatZ = getBoneMatrix(skinIndex.z);
+                mat4 boneMatW = getBoneMatrix(skinIndex.w);
+                // update normal
+                mat4 skinMatrix = mat4(0.0);
+                skinMatrix += skinWeight.x * boneMatX;
+                skinMatrix += skinWeight.y * boneMatY;
+                skinMatrix += skinWeight.z * boneMatZ;
+                skinMatrix += skinWeight.w * boneMatW;
+                vNormal = vec4(skinMatrix * vec4(vNormal, 0.0)).xyz;
+                // Update position
+                vec4 bindPos = vec4(vPos, 1.0);
+                vec4 transformed = vec4(0.0);
+                transformed += boneMatX * bindPos * skinWeight.x;
+                transformed += boneMatY * bindPos * skinWeight.y;
+                transformed += boneMatZ * bindPos * skinWeight.z;
+                transformed += boneMatW * bindPos * skinWeight.w;
+                vPos = transformed.xyz;
+            }
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPos = position;
+                // Updates vNormal and vPos
+                skin();
+                gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
+            }
+        `    ;
+    const fragment$1 =
+    /* glsl */
+`
+            precision highp float;
+            precision highp int;
+            varying vec3 vNormal;
+            void main() {
+                gl_FragColor.rgb = normalize(vNormal);
+                gl_FragColor.a = 1.0;
+            }
+        `    ;
+    {
+      const renderer = new Renderer({
+        dpr: 2
       });
-    }
+      const gl = renderer.gl;
+      document.body.appendChild(gl.canvas);
+      gl.clearColor(1, 1, 1, 1);
+      const camera = new Camera(gl, {
+        near: 1,
+        far: 1000
+      });
+      camera.position.set(281, 127, 217); // window.CAMERA = camera;
 
-    window.addEventListener('resize', resize, false);
-    resize();
-    const scene = new Transform();
+      const controls = new Orbit(camera);
+      controls.target.y = 50;
 
-    (async function () {
-      const gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
-      console.log(gltf);
-      gltf.scene.forEach(node => node.setParent(scene));
-    })();
+      function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({
+          aspect: gl.canvas.width / gl.canvas.height
+        });
+      }
 
-    requestAnimationFrame(update);
+      window.addEventListener('resize', resize, false);
+      resize();
+      const scene = new Transform();
+      const program = new Program(gl, {
+        vertex: vertex$1,
+        fragment: fragment$1,
+        cullFace: null
+      });
+      let gltf;
 
-    function update() {
+      (async function () {
+        gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
+        console.log(gltf);
+        gltf.scene[0].traverse(node => {// if (node.program) node.program = program;
+        });
+        gltf.scene.forEach(node => node.setParent(scene));
+      })();
+
       requestAnimationFrame(update);
-      controls.update();
-      renderer.render({
-        scene,
-        camera,
-        sort: false,
-        frustumCull: false
-      });
-    }
 
+      function update() {
+        requestAnimationFrame(update);
+        controls.update(); // Play first animation
+
+        if (gltf && gltf.animations && gltf.animations.length) {
+          let {
+            animation
+          } = gltf.animations[0];
+          animation.elapsed += 0.01;
+          animation.update();
+        }
+
+        renderer.render({
+          scene,
+          camera,
+          sort: false,
+          frustumCull: false
+        });
+      }
+    }
     document.getElementsByClassName('Info')[0].innerHTML = 'Load GLTF (Graphics Language Transmission Format). Model by <a href="https://sketchfab.com/3d-models/old-scooter-5e9b5072b2224ba982366490ad5f31d9" target="_blank">Nadia Ribitis</a>';
     document.title = 'OGL • Load GLTF';
 

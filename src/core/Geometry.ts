@@ -38,7 +38,7 @@ let ATTR_ID = 1;
 
 export interface Attribute {
     size: number,
-    data: ArrayLike<number>,
+    data: ArrayLike<number> | ArrayBufferView,
     instanced?: null,
     type: GLenum,
     normalized: boolean,
@@ -120,7 +120,7 @@ export class Geometry {
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
         attr.offset = attr.offset || 0;
-        attr.count = attr.count || (attr.stride ? attr.data.byteLength / attr.stride : attr.data.length / attr.size);
+        attr.count = attr.count || (attr.stride ? (attr.data as ArrayBufferView).byteLength / attr.stride : (attr.data as ArrayLike<number>).length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 

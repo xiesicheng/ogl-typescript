@@ -1,38 +1,128 @@
-import { Renderer, Camera, Transform, Orbit, GLTFLoader } from '../../index';
-const renderer = new Renderer({ dpr: 2 });
-const gl = renderer.gl;
-document.body.appendChild(gl.canvas);
-gl.clearColor(1, 1, 1, 1);
+import { Renderer, Camera, Transform, Orbit, Program, GLTFLoader, Vec3 } from '../../index';
+const vertex = /* glsl */ `
+            precision highp float;
+            precision highp int;
+            attribute vec3 position;
+            attribute vec3 normal;
+            attribute vec4 skinIndex;
+            attribute vec4 skinWeight;
+            uniform mat3 normalMatrix;
+            uniform mat4 viewMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform sampler2D boneTexture;
+            uniform int boneTextureSize;
+            varying vec3 vNormal;
+            varying vec3 vPos;
+            mat4 getBoneMatrix(const in float i) {
+                float j = i * 4.0;
+                float x = mod(j, float(boneTextureSize));
+                float y = floor(j / float(boneTextureSize));
+                float dx = 1.0 / float(boneTextureSize);
+                float dy = 1.0 / float(boneTextureSize);
+                y = dy * (y + 0.5);
+                vec4 v1 = texture2D(boneTexture, vec2(dx * (x + 0.5), y));
+                vec4 v2 = texture2D(boneTexture, vec2(dx * (x + 1.5), y));
+                vec4 v3 = texture2D(boneTexture, vec2(dx * (x + 2.5), y));
+                vec4 v4 = texture2D(boneTexture, vec2(dx * (x + 3.5), y));
+                return mat4(v1, v2, v3, v4);
+            }
+            void skin() {
+                mat4 boneMatX = getBoneMatrix(skinIndex.x);
+                mat4 boneMatY = getBoneMatrix(skinIndex.y);
+                mat4 boneMatZ = getBoneMatrix(skinIndex.z);
+                mat4 boneMatW = getBoneMatrix(skinIndex.w);
+                // update normal
+                mat4 skinMatrix = mat4(0.0);
+                skinMatrix += skinWeight.x * boneMatX;
+                skinMatrix += skinWeight.y * boneMatY;
+                skinMatrix += skinWeight.z * boneMatZ;
+                skinMatrix += skinWeight.w * boneMatW;
+                vNormal = vec4(skinMatrix * vec4(vNormal, 0.0)).xyz;
+                // Update position
+                vec4 bindPos = vec4(vPos, 1.0);
+                vec4 transformed = vec4(0.0);
+                transformed += boneMatX * bindPos * skinWeight.x;
+                transformed += boneMatY * bindPos * skinWeight.y;
+                transformed += boneMatZ * bindPos * skinWeight.z;
+                transformed += boneMatW * bindPos * skinWeight.w;
+                vPos = transformed.xyz;
+            }
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPos = position;
+                // Updates vNormal and vPos
+                skin();
+                gl_Position = projectionMatrix * viewMatrix * vec4(vPos, 1.0);
+            }
+        `;
 
-const camera = new Camera(gl, { near: 1, far: 1000 });
-camera.position.set(281, 127, 217);
+const fragment = /* glsl */ `
+            precision highp float;
+            precision highp int;
+            varying vec3 vNormal;
+            void main() {
+                gl_FragColor.rgb = normalize(vNormal);
+                gl_FragColor.a = 1.0;
+            }
+        `;
 
-// window.CAMERA = camera;
+{
+    const renderer = new Renderer({ dpr: 2 });
+    const gl = renderer.gl;
+    document.body.appendChild(gl.canvas);
+    gl.clearColor(1, 1, 1, 1);
 
-const controls = new Orbit(camera);
-controls.target.y = 50;
+    const camera = new Camera(gl, { near: 1, far: 1000 });
+    camera.position.set(281, 127, 217);
 
-function resize() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
-}
-window.addEventListener('resize', resize, false);
-resize();
+    // window.CAMERA = camera;
 
-const scene = new Transform();
+    const controls = new Orbit(camera);
+    controls.target.y = 50;
 
-(async function () {
-    const gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
-    console.log(gltf);
+    function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+    }
+    window.addEventListener('resize', resize, false);
+    resize();
 
-    gltf.scene.forEach(node => node.setParent(scene));
-})();
+    const scene = new Transform();
 
-requestAnimationFrame(update);
-function update() {
+    const program = new Program(gl, {
+        vertex: vertex,
+        fragment: fragment,
+        cullFace: null,
+    });
+
+    let gltf;
+
+    (async function () {
+        gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
+        console.log(gltf);
+
+        gltf.scene[0].traverse(node => {
+            // if (node.program) node.program = program;
+        });
+
+        gltf.scene.forEach(node => node.setParent(scene));
+    })();
+
     requestAnimationFrame(update);
-    controls.update();
-    renderer.render({ scene, camera, sort: false, frustumCull: false });
+    function update() {
+        requestAnimationFrame(update);
+        controls.update();
+
+        // Play first animation
+        if (gltf && gltf.animations && gltf.animations.length) {
+            let { animation } = gltf.animations[0];
+            animation.elapsed += 0.01;
+            animation.update();
+        }
+
+        renderer.render({ scene, camera, sort: false, frustumCull: false });
+    }
 }
 
 

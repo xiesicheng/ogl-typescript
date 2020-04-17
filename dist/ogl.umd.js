@@ -581,7 +581,7 @@
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
         attr.offset = attr.offset || 0;
-        attr.count = attr.count || attr.data.length / attr.size;
+        attr.count = attr.count || (attr.stride ? attr.data.byteLength / attr.stride : attr.data.length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 
@@ -7560,7 +7560,7 @@
         const s1 = s3 - t2 + t;
 
         for (let i = 0; i < prevVal.length; i++) {
-          prevVal[i] = s0 * prevVal[i] + s1 * ((1 - t) * prevTan[i]) + s2 * nextVal[i] + s3 * (t * nextTan[i]);
+          prevVal[i] = s0 * prevVal[i] + s1 * (1 - t) * prevTan[i] + s2 * nextVal[i] + s3 * t * nextTan[i];
         }
 
         return prevVal;
@@ -7568,12 +7568,100 @@
 
     }
 
-    // Supports
+    const tempMat4$3 = new Mat4();
+    class GLTFSkin extends Mesh {
+      constructor(gl, {
+        skeleton,
+        geometry,
+        program,
+        mode = gl.TRIANGLES
+      } = {}) {
+        super(gl, {
+          geometry,
+          program,
+          mode
+        });
+        this.skeleton = void 0;
+        this.animations = void 0;
+        this.boneMatrices = void 0;
+        this.boneTextureSize = void 0;
+        this.boneTexture = void 0;
+        this.skeleton = skeleton;
+        this.program = program;
+        this.createBoneTexture();
+        this.animations = [];
+      }
+
+      createBoneTexture() {
+        if (!this.skeleton.joints.length) return;
+        const size = Math.max(4, Math.pow(2, Math.ceil(Math.log(Math.sqrt(this.skeleton.joints.length * 4)) / Math.LN2)));
+        this.boneMatrices = new Float32Array(size * size * 4);
+        this.boneTextureSize = size;
+        this.boneTexture = new Texture(this.gl, {
+          image: this.boneMatrices,
+          generateMipmaps: false,
+          type: this.gl.FLOAT,
+          internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA16F : this.gl.RGBA,
+          flipY: false,
+          width: size
+        });
+      } // addAnimation(data) {
+      //     const animation = new Animation({ objects: this.bones, data });
+      //     this.animations.push(animation);
+      //     return animation;
+      // }
+      // updateAnimations() {
+      //     // Calculate combined animation weight
+      //     let total = 0;
+      //     this.animations.forEach((animation) => (total += animation.weight));
+      //     this.animations.forEach((animation, i) => {
+      //         // force first animation to set in order to reset frame
+      //         animation.update(total, i === 0);
+      //     });
+      // }
+
+
+      updateUniforms() {
+        // Update bone texture
+        this.skeleton.joints.forEach((bone, i) => {
+          // Find difference between current and bind pose
+          tempMat4$3.multiply(bone.worldMatrix, bone.bindInverse);
+          this.boneMatrices.set(tempMat4$3, i * 16);
+        });
+        if (this.boneTexture) this.boneTexture.needsUpdate = true;
+      }
+
+      draw({
+        camera
+      } = {}) {
+        if (!this.program.uniforms.boneTexture) {
+          Object.assign(this.program.uniforms, {
+            boneTexture: {
+              value: this.boneTexture
+            },
+            boneTextureSize: {
+              value: this.boneTextureSize
+            }
+          });
+        }
+
+        this.updateUniforms(); // Switch this world matrix with root node's to populate uniforms
+
+        const _worldMatrix = this.worldMatrix;
+        this.worldMatrix = this.skeleton.skeleton.worldMatrix;
+        super.draw({
+          camera
+        });
+        this.worldMatrix = _worldMatrix;
+      }
+
+    }
+
     // [x] Geometry
     // [ ] Sparse support
     // [x] Nodes and Hierarchy
     // [ ] Morph Targets
-    // [ ] Skins
+    // [x] Skins
     // [ ] Materials
     // [ ] Textures
     // [x] Animation
@@ -7582,6 +7670,7 @@
     // TODO: Sparse accessor packing? For morph targets basically
     // TODO: init accessor missing bufferView with 0s
     // TODO: morph target animations
+
     const TYPE_ARRAY = {
       5121: Uint8Array,
       5122: Int16Array,
@@ -7624,9 +7713,13 @@
 
         const bufferViews = this.parseBufferViews(gl, desc, buffers); // Create geometries for each mesh primitive
 
-        const meshes = this.parseMeshes(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+        const meshes = this.parseMeshes(gl, desc, bufferViews); // Fetch the inverse bind matrices for skeleton joints
 
-        const nodes = this.parseNodes(gl, desc, meshes); // Create animation handlers
+        const skins = this.parseSkins(gl, desc, bufferViews); // Create transforms, meshes and hierarchy
+
+        const nodes = this.parseNodes(gl, desc, meshes, skins); // Place nodes in skeletons
+
+        this.populateSkins(skins, nodes); // Create animation handlers
 
         const animations = this.parseAnimations(gl, desc, nodes, bufferViews); // Get top level nodes for each scene
 
@@ -7754,6 +7847,39 @@
         });
       }
 
+      static parseSkins(gl, desc, bufferViews) {
+        if (!desc.skins) return null;
+        return desc.skins.map(({
+          inverseBindMatrices,
+          // optional
+          skeleton,
+          // optional
+          joints // required
+          // name,
+          // extensions,
+          // extras,
+
+        }) => {
+          return {
+            inverseBindMatrices: this.parseAccessor(inverseBindMatrices, desc, bufferViews),
+            skeleton,
+            joints
+          };
+        });
+      }
+
+      static populateSkins(skins, nodes) {
+        if (!skins) return;
+        skins.forEach(skin => {
+          skin.joints = skin.joints.map((i, index) => {
+            const joint = nodes[i];
+            joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
+            return joint;
+          });
+          skin.skeleton = nodes[skin.skeleton];
+        });
+      }
+
       static parsePrimitives(gl, primitives, desc, bufferViews) {
         return primitives.map(({
           attributes,
@@ -7845,22 +7971,35 @@
         };
       }
 
-      static parseNodes(gl, desc, meshes) {
+      static parseNodes(gl, desc, meshes, skins) {
         const nodes = desc.nodes.map(({
           camera,
+          // optional
           children,
-          skin,
+          // optional
+          skin: skinIndex,
+          // optional
           matrix,
+          // optional
           mesh: meshIndex,
+          // optional
           rotation,
+          // optional
           scale,
+          // optional
           translation,
+          // optional
           weights,
+          // optional
           name,
+          // optional
           extensions,
-          extras
+          // optional
+          extras // optional
+
         }) => {
           const node = new Transform();
+          if (name) node.name = name; // Apply transformations
 
           if (matrix) {
             node.matrix.copy(matrix);
@@ -7869,7 +8008,8 @@
             if (rotation) node.quaternion.copy(rotation);
             if (scale) node.scale.copy(scale);
             if (translation) node.position.copy(translation);
-          }
+          } // add mesh if included
+
 
           if (meshIndex !== undefined) {
             meshes[meshIndex].primitives.forEach(({
@@ -7877,21 +8017,31 @@
               program,
               mode
             }) => {
-              const mesh = new Mesh(gl, {
-                geometry,
-                program,
-                mode
-              });
-              mesh.setParent(node);
+              if (typeof skinIndex === 'number') {
+                const skin = new GLTFSkin(gl, {
+                  skeleton: skins[skinIndex],
+                  geometry,
+                  program,
+                  mode
+                });
+                skin.setParent(node);
+              } else {
+                const mesh = new Mesh(gl, {
+                  geometry,
+                  program,
+                  mode
+                });
+                mesh.setParent(node);
+              }
             });
           }
 
           return node;
-        }); // Set hierarchy now all nodes created
-
+        });
         desc.nodes.forEach(({
           children = []
         }, i) => {
+          // Set hierarchy now all nodes created
           children.forEach(childIndex => {
             nodes[childIndex].setParent(nodes[i]);
           });
@@ -7939,9 +8089,9 @@
             const node = nodes[nodeIndex];
             const transform = TRANSFORMS[path];
             const timesAcc = this.parseAccessor(inputIndex, desc, bufferViews);
-            const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.count * timesAcc.size);
+            const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.offset / 4 + timesAcc.count * timesAcc.size);
             const valuesAcc = this.parseAccessor(outputIndex, desc, bufferViews);
-            const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.count * valuesAcc.size);
+            const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.offset / 4 + valuesAcc.count * valuesAcc.size);
             return {
               node,
               transform,
@@ -7961,6 +8111,7 @@
         return desc.scenes.map(({
           nodes: nodesIndices = [],
           name,
+          // optional
           extensions,
           extras
         }) => {

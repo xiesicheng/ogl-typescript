@@ -82,7 +82,7 @@ export class Shadow {
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.depthProgram;
             } else {
-                if (node.visible) node.isForceVisibility = true;
+                node.isForceVisibility = node.visible;
                 node.visible = false;
             }
         });
@@ -100,7 +100,7 @@ export class Shadow {
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.colorProgram;
             } else {
-                if (node.isForceVisibility) node.visible = true;
+                node.visible = node.isForceVisibility;
             }
         });
     }

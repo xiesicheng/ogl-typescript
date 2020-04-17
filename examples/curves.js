@@ -1103,6 +1103,7 @@
     // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
     // gl.clearStencil( stencil );
     const tempVec3$1 = new Vec3();
+    let ID$2 = 1;
     class Renderer {
       constructor({
         canvas = document.createElement('canvas'),
@@ -1142,6 +1143,7 @@
         this.drawBuffers = void 0;
         this.currentProgram = void 0;
         this.currentGeometry = void 0;
+        this.id = void 0;
         const attributes = {
           alpha,
           depth,
@@ -1157,7 +1159,8 @@
         this.depth = depth;
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
-        this.autoClear = autoClear; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
+        this.autoClear = autoClear;
+        this.id = ID$2++; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
 
         if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
         this.isWebgl2 = !!this.gl;
@@ -3799,7 +3802,7 @@
 
     }
 
-    let ID$2 = 0;
+    let ID$3 = 0;
     class Mesh extends Transform {
       // raycast.ts 
       constructor(gl, {
@@ -3824,7 +3827,7 @@
         this.hit = null;
         if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
-        this.id = ID$2++;
+        this.id = ID$3++;
         this.geometry = geometry;
         this.program = program;
         this.mode = mode; // Used to skip frustum culling
@@ -4762,9 +4765,8 @@
       };
 
       const onMouseUp = () => {
-        if (!this.enabled) return;
-        document.removeEventListener('mousemove', onMouseMove, false);
-        document.removeEventListener('mouseup', onMouseUp, false);
+        window.removeEventListener('mousemove', onMouseMove, false);
+        window.removeEventListener('mouseup', onMouseUp, false);
         state = STATE.NONE;
       };
 
@@ -4862,6 +4864,10 @@
       addHandlers();
     }
 
+    const CATMULLROM = 'catmullrom';
+    const CUBICBEZIER = 'cubicbezier';
+    const QUADRATICBEZIER = 'quadraticbezier'; // temp
+
     const _a0 = new Vec3(),
           _a1 = new Vec3(),
           _a2 = new Vec3(),
@@ -4892,7 +4898,21 @@
       return [_a0.clone(), _a1.clone()];
     }
 
-    function getBezierPoint(t, p0, c0, c1, p1) {
+    function getQuadraticBezierPoint(t, p0, c0, p1) {
+      const k = 1 - t;
+
+      _a0.copy(p0).scale(k ** 2);
+
+      _a1.copy(c0).scale(2 * k * t);
+
+      _a2.copy(p1).scale(t ** 2);
+
+      const ret = new Vec3();
+      ret.add(_a0, _a1).add(_a2);
+      return ret;
+    }
+
+    function getCubicBezierPoint(t, p0, c0, c1, p1) {
       const k = 1 - t;
 
       _a0.copy(p0).scale(k ** 3);
@@ -4922,6 +4942,42 @@
         this.type = type;
       }
 
+      _getQuadraticBezierPoints(divisions = this.divisions) {
+        const points = [];
+        const count = this.points.length;
+
+        if (count < 3) {
+          console.warn('Not enough points provided.');
+          return [];
+        }
+
+        const p0 = this.points[0];
+        let c0 = this.points[1],
+            p1 = this.points[2];
+
+        for (let i = 0; i <= divisions; i++) {
+          const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+          points.push(p);
+        }
+
+        let offset = 3;
+
+        while (count - offset > 0) {
+          p0.copy(p1);
+          c0 = p1.scale(2).sub(c0);
+          p1 = this.points[offset];
+
+          for (let i = 1; i <= divisions; i++) {
+            const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+            points.push(p);
+          }
+
+          offset++;
+        }
+
+        return points;
+      }
+
       _getCubicBezierPoints(divisions = this.divisions) {
         const points = [];
         const count = this.points.length;
@@ -4937,7 +4993,7 @@
             p1 = this.points[3];
 
         for (let i = 0; i <= divisions; i++) {
-          const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+          const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
           points.push(p);
         }
 
@@ -4950,7 +5006,7 @@
           p1 = this.points[offset + 1];
 
           for (let i = 1; i <= divisions; i++) {
-            const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+            const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
             points.push(p);
           }
 
@@ -4989,7 +5045,11 @@
       getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
         const type = this.type;
 
-        if (type === Curve.CUBICBEZIER) {
+        if (type === QUADRATICBEZIER) {
+          return this._getQuadraticBezierPoints(divisions);
+        }
+
+        if (type === CUBICBEZIER) {
           return this._getCubicBezierPoints(divisions);
         }
 
@@ -5003,6 +5063,10 @@
     }
     Curve.CATMULLROM = 'catmullrom';
     Curve.CUBICBEZIER = 'cubicbezier';
+    Curve.QUADRATICBEZIER = 'quadraticbezier';
+    Curve.CATMULLROM = CATMULLROM;
+    Curve.CUBICBEZIER = CUBICBEZIER;
+    Curve.QUADRATICBEZIER = QUADRATICBEZIER;
 
     const tmp = new Vec3();
     class Polyline {
@@ -5245,96 +5309,108 @@
               gl_FragColor.a = 1.0;
           }
         `    ;
-    {
-      const renderer = new Renderer({
-        dpr: 2
-      });
-      const gl = renderer.gl;
-      document.body.appendChild(gl.canvas);
-      gl.clearColor(1, 1, 1, 1);
-      const camera = new Camera(gl, {
-        fov: 35
-      });
-      camera.position.set(0, 0, 5); // Create controls and pass parameters
+    const renderer = new Renderer({
+      dpr: 2
+    });
+    const gl = renderer.gl;
+    document.body.appendChild(gl.canvas);
+    gl.clearColor(1, 1, 1, 1);
+    const camera = new Camera(gl, {
+      fov: 35
+    });
+    camera.position.set(0, 0, 5); // Create controls and pass parameters
 
-      const controls = new Orbit(camera, {
-        target: new Vec3(0, 0, 0)
-      });
+    const controls = new Orbit(camera, {
+      target: new Vec3(0, 0, 0)
+    });
 
-      function resize() {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.perspective({
-          aspect: gl.canvas.width / gl.canvas.height
-        });
-      }
-
-      window.addEventListener('resize', resize, false);
-      resize();
-      const scene = new Transform();
-      const sphereGeometry = new Sphere(gl);
-      const program = new Program(gl, {
-        vertex,
-        fragment,
-        // Don't cull faces so that plane is double sided - default is gl.BACK
-        cullFace: null
+    function resize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.perspective({
+        aspect: gl.canvas.width / gl.canvas.height
       });
-      const sphere = new Mesh(gl, {
-        geometry: sphereGeometry,
-        program
-      });
-      sphere.setParent(scene);
-      const curve = new Curve({
-        points: [new Vec3(0, 0.5, 0), new Vec3(0, 1, 1), new Vec3(0, -1, 1), new Vec3(0, -0.5, 0)],
-        type: Curve.CUBICBEZIER
-      });
-      const points = curve.getPoints(20);
-      curve.type = Curve.CATMULLROM;
-      const points2 = curve.getPoints(20);
-      const polyline = new Polyline(gl, {
-        points,
-        uniforms: {
-          uColor: {
-            value: new Color('#f00')
-          },
-          uThickness: {
-            value: 3
-          }
-        }
-      });
-      const polyline2 = new Polyline(gl, {
-        points: points2,
-        uniforms: {
-          uColor: {
-            value: new Color('#00f')
-          },
-          uThickness: {
-            value: 2
-          }
-        }
-      });
-
-      for (let i = 0; i <= 50; i++) {
-        const p = i % 2 ? polyline : polyline2;
-        const mesh = new Mesh(gl, {
-          geometry: p.geometry,
-          program: p.program
-        });
-        mesh.setParent(sphere);
-        mesh.rotation.y = i * Math.PI / 50;
-      }
-
-      requestAnimationFrame(update);
-
-      function update() {
-        requestAnimationFrame(update);
-        sphere.rotation.y -= 0.01;
-        controls.update();
-        renderer.render({
-          scene,
-          camera
-        });
-      }
     }
+
+    window.addEventListener('resize', resize, false);
+    resize();
+    const scene = new Transform();
+    const sphereGeometry = new Sphere(gl);
+    const program = new Program(gl, {
+      vertex,
+      fragment,
+      // Don't cull faces so that plane is double sided - default is gl.BACK
+      cullFace: null
+    });
+    const sphere = new Mesh(gl, {
+      geometry: sphereGeometry,
+      program
+    });
+    sphere.setParent(scene);
+    const curve = new Curve({
+      points: [new Vec3(0, 0.5, 0), new Vec3(0, 1, 1), new Vec3(0, -1, 1), new Vec3(0, -0.5, 0)],
+      type: Curve.CUBICBEZIER
+    });
+    const points = curve.getPoints(20);
+    curve.type = Curve.CATMULLROM;
+    const points2 = curve.getPoints(20);
+    curve.type = Curve.QUADRATICBEZIER;
+    const points3 = curve.getPoints(20);
+    const polyline = new Polyline(gl, {
+      points,
+      uniforms: {
+        uColor: {
+          value: new Color('#f00')
+        },
+        uThickness: {
+          value: 3
+        }
+      }
+    });
+    const polyline2 = new Polyline(gl, {
+      points: points2,
+      uniforms: {
+        uColor: {
+          value: new Color('#00f')
+        },
+        uThickness: {
+          value: 2
+        }
+      }
+    });
+    const polyline3 = new Polyline(gl, {
+      points: points3,
+      uniforms: {
+        uColor: {
+          value: new Color('#0f0')
+        },
+        uThickness: {
+          value: 4
+        }
+      }
+    });
+
+    for (let i = 0; i <= 60; i++) {
+      const p = [polyline, polyline2, polyline3][i % 3];
+      const mesh = new Mesh(gl, {
+        geometry: p.geometry,
+        program: p.program
+      });
+      mesh.setParent(sphere);
+      mesh.rotation.y = i * Math.PI / 60;
+    }
+
+    requestAnimationFrame(update);
+
+    function update() {
+      requestAnimationFrame(update);
+      sphere.rotation.y -= 0.01;
+      controls.update();
+      renderer.render({
+        scene,
+        camera
+      });
+    }
+
     document.getElementsByClassName('Info')[0].innerHTML = 'Curves';
     document.title = 'OGL • Curves';
 

@@ -1,11 +1,9 @@
 import { Texture } from '../core/Texture';
 import { KTXTexture } from './KTXTexture';
 
-// TODO: store cache with sampler arguments
-
 // For compressed textures, generate using https://github.com/TimvanScherpenzeel/texture-compressor
 
-const cache = {};
+let cache = {};
 const supportedExtensions = [];
 
 export interface TextureLoaderOptions {
@@ -89,6 +87,24 @@ export class TextureLoader {
             }
         }
 
+        // Stringify props
+        const cacheID =
+            String(src) +
+            wrapS +
+            wrapT +
+            anisotropy +
+            format +
+            internalFormat +
+            generateMipmaps +
+            minFilter +
+            magFilter +
+            premultiplyAlpha +
+            unpackAlignment +
+            flipY + 
+            gl.renderer.id;
+
+        // Check cache for existing texture
+        if (cache[cacheID]) return cache[cacheID];
 
         let texture;
         switch (ext) {
@@ -98,7 +114,6 @@ export class TextureLoader {
             case 'etc':
             case 'etc1':
             case 'astc':
-
                 // Load compressed texture using KTX format
                 texture = new KTXTexture(gl, {
                     src: src as string,
@@ -133,8 +148,7 @@ export class TextureLoader {
         }
 
         texture.ext = ext;
-
-        // TODO: store in cache
+        cache[cacheID] = texture;
         return texture;
     }
 
@@ -142,11 +156,13 @@ export class TextureLoader {
         if (supportedExtensions.length) return supportedExtensions;
 
         const extensions = {
-            pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') 
-                || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'), 
-            s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc')
-                || gl.renderer.getExtension('MOZ_WEBGL_compressed_texture_s3tc')
-                || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc'),
+            pvrtc:
+                gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') ||
+                gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'),
+            s3tc:
+                gl.renderer.getExtension('WEBGL_compressed_texture_s3tc') ||
+                gl.renderer.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
+                gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc'),
             etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
             etc1: gl.renderer.getExtension('WEBGL_compressed_texture_etc1'),
             astc: gl.renderer.getExtension('WEBGL_compressed_texture_astc'),
@@ -186,6 +202,10 @@ export class TextureLoader {
                 texture.onUpdate = null;
             };
         });
+    }
+
+    static clearCache() {
+        cache = {};
     }
 }
 

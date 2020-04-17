@@ -1103,6 +1103,7 @@
     // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
     // gl.clearStencil( stencil );
     const tempVec3$1 = new Vec3();
+    let ID$2 = 1;
     class Renderer {
       constructor({
         canvas = document.createElement('canvas'),
@@ -1142,6 +1143,7 @@
         this.drawBuffers = void 0;
         this.currentProgram = void 0;
         this.currentGeometry = void 0;
+        this.id = void 0;
         const attributes = {
           alpha,
           depth,
@@ -1157,7 +1159,8 @@
         this.depth = depth;
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
-        this.autoClear = autoClear; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
+        this.autoClear = autoClear;
+        this.id = ID$2++; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
 
         if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
         this.isWebgl2 = !!this.gl;
@@ -3799,7 +3802,7 @@
 
     }
 
-    let ID$2 = 0;
+    let ID$3 = 0;
     class Mesh extends Transform {
       // raycast.ts 
       constructor(gl, {
@@ -3824,7 +3827,7 @@
         this.hit = null;
         if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
-        this.id = ID$2++;
+        this.id = ID$3++;
         this.geometry = geometry;
         this.program = program;
         this.mode = mode; // Used to skip frustum culling
@@ -4923,9 +4926,8 @@
       };
 
       const onMouseUp = () => {
-        if (!this.enabled) return;
-        document.removeEventListener('mousemove', onMouseMove, false);
-        document.removeEventListener('mouseup', onMouseUp, false);
+        window.removeEventListener('mousemove', onMouseMove, false);
+        window.removeEventListener('mouseup', onMouseUp, false);
         state = STATE.NONE;
       };
 

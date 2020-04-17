@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../../Core';
+import { Renderer, Camera, Transform, Texture, TextureLoader, Program, Geometry, Mesh } from '../../index';
 import { Box } from '../../Extras';
 
 const vertex = /* glsl */ `
@@ -72,6 +72,10 @@ const img = new Image();
 // update image value with source once loaded
 img.onload = () => texture.image = img;
 img.src = 'assets/saddle.jpg';
+
+// Alternatively, you can use the TextureLoader class's load method that handles
+// these steps for you. It also handles compressed textures and fallbacks.
+// const texture = TextureLoader.load(gl, { src: 'assets/saddle.jpg'});
 
 const program = new Program(gl, {
     vertex,

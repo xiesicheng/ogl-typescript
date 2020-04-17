@@ -14,6 +14,7 @@ import { RenderTarget } from './RenderTarget';
 // gl.clearStencil( stencil );
 
 const tempVec3 = new Vec3();
+let ID = 1;
 
 export interface RendererOptions {
     canvas: HTMLCanvasElement,
@@ -91,6 +92,8 @@ export class Renderer {
     currentProgram: number;
     currentGeometry: string | null;
 
+    private id:number;
+
     constructor({
         canvas = document.createElement('canvas'),
         width = 300,
@@ -115,6 +118,7 @@ export class Renderer {
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
+        this.id = ID++;
 
         // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
         if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes) as OGLRenderingContext;

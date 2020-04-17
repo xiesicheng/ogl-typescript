@@ -1100,6 +1100,7 @@ function warn(message) {
 // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
 // gl.clearStencil( stencil );
 const tempVec3$1 = new Vec3();
+let ID$2 = 1;
 class Renderer {
   constructor({
     canvas = document.createElement('canvas'),
@@ -1139,6 +1140,7 @@ class Renderer {
     this.drawBuffers = void 0;
     this.currentProgram = void 0;
     this.currentGeometry = void 0;
+    this.id = void 0;
     const attributes = {
       alpha,
       depth,
@@ -1154,7 +1156,8 @@ class Renderer {
     this.depth = depth;
     this.stencil = stencil;
     this.premultipliedAlpha = premultipliedAlpha;
-    this.autoClear = autoClear; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
+    this.autoClear = autoClear;
+    this.id = ID$2++; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
 
     if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
     this.isWebgl2 = !!this.gl;
@@ -3796,7 +3799,7 @@ class Mat3 extends Array {
 
 }
 
-let ID$2 = 0;
+let ID$3 = 0;
 class Mesh extends Transform {
   // raycast.ts 
   constructor(gl, {
@@ -3821,7 +3824,7 @@ class Mesh extends Transform {
     this.hit = null;
     if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
     this.gl = gl;
-    this.id = ID$2++;
+    this.id = ID$3++;
     this.geometry = geometry;
     this.program = program;
     this.mode = mode; // Used to skip frustum culling
@@ -3917,7 +3920,7 @@ function isPowerOf2(value) {
   return (value & value - 1) === 0;
 }
 
-let ID$3 = 1;
+let ID$4 = 1;
 
 const isCompressedImage = image => image.isCompressedTexture === true;
 
@@ -3972,7 +3975,7 @@ class Texture {
     this.needsUpdate = void 0;
     this.onUpdate = void 0;
     this.gl = gl;
-    this.id = ID$3++;
+    this.id = ID$4++;
     this.image = image;
     this.target = target;
     this.type = type;
@@ -5444,9 +5447,8 @@ function Orbit(object, {
   };
 
   const onMouseUp = () => {
-    if (!this.enabled) return;
-    document.removeEventListener('mousemove', onMouseMove, false);
-    document.removeEventListener('mouseup', onMouseUp, false);
+    window.removeEventListener('mousemove', onMouseMove, false);
+    window.removeEventListener('mouseup', onMouseUp, false);
     state = STATE.NONE;
   };
 
@@ -5668,6 +5670,10 @@ class Raycast {
 
 }
 
+const CATMULLROM = 'catmullrom';
+const CUBICBEZIER = 'cubicbezier';
+const QUADRATICBEZIER = 'quadraticbezier'; // temp
+
 const _a0 = new Vec3(),
       _a1 = new Vec3(),
       _a2 = new Vec3(),
@@ -5698,7 +5704,21 @@ function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
   return [_a0.clone(), _a1.clone()];
 }
 
-function getBezierPoint(t, p0, c0, c1, p1) {
+function getQuadraticBezierPoint(t, p0, c0, p1) {
+  const k = 1 - t;
+
+  _a0.copy(p0).scale(k ** 2);
+
+  _a1.copy(c0).scale(2 * k * t);
+
+  _a2.copy(p1).scale(t ** 2);
+
+  const ret = new Vec3();
+  ret.add(_a0, _a1).add(_a2);
+  return ret;
+}
+
+function getCubicBezierPoint(t, p0, c0, c1, p1) {
   const k = 1 - t;
 
   _a0.copy(p0).scale(k ** 3);
@@ -5728,6 +5748,42 @@ class Curve {
     this.type = type;
   }
 
+  _getQuadraticBezierPoints(divisions = this.divisions) {
+    const points = [];
+    const count = this.points.length;
+
+    if (count < 3) {
+      console.warn('Not enough points provided.');
+      return [];
+    }
+
+    const p0 = this.points[0];
+    let c0 = this.points[1],
+        p1 = this.points[2];
+
+    for (let i = 0; i <= divisions; i++) {
+      const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+      points.push(p);
+    }
+
+    let offset = 3;
+
+    while (count - offset > 0) {
+      p0.copy(p1);
+      c0 = p1.scale(2).sub(c0);
+      p1 = this.points[offset];
+
+      for (let i = 1; i <= divisions; i++) {
+        const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+        points.push(p);
+      }
+
+      offset++;
+    }
+
+    return points;
+  }
+
   _getCubicBezierPoints(divisions = this.divisions) {
     const points = [];
     const count = this.points.length;
@@ -5743,7 +5799,7 @@ class Curve {
         p1 = this.points[3];
 
     for (let i = 0; i <= divisions; i++) {
-      const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+      const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
       points.push(p);
     }
 
@@ -5756,7 +5812,7 @@ class Curve {
       p1 = this.points[offset + 1];
 
       for (let i = 1; i <= divisions; i++) {
-        const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+        const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
         points.push(p);
       }
 
@@ -5795,7 +5851,11 @@ class Curve {
   getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
     const type = this.type;
 
-    if (type === Curve.CUBICBEZIER) {
+    if (type === QUADRATICBEZIER) {
+      return this._getQuadraticBezierPoints(divisions);
+    }
+
+    if (type === CUBICBEZIER) {
       return this._getCubicBezierPoints(divisions);
     }
 
@@ -5809,6 +5869,10 @@ class Curve {
 }
 Curve.CATMULLROM = 'catmullrom';
 Curve.CUBICBEZIER = 'cubicbezier';
+Curve.QUADRATICBEZIER = 'quadraticbezier';
+Curve.CATMULLROM = CATMULLROM;
+Curve.CUBICBEZIER = CUBICBEZIER;
+Curve.QUADRATICBEZIER = QUADRATICBEZIER;
 
 // TODO: Destroy render targets if size changed and exists
 class Post {
@@ -6996,7 +7060,7 @@ class Shadow {
       if (!!~this.castMeshes.indexOf(node)) {
         node.program = node.depthProgram;
       } else {
-        if (node.visible) node.isForceVisibility = true;
+        node.isForceVisibility = node.visible;
         node.visible = false;
       }
     }); // Render the depth shadow map using the light as the camera
@@ -7013,7 +7077,7 @@ class Shadow {
       if (!!~this.castMeshes.indexOf(node)) {
         node.program = node.colorProgram;
       } else {
-        if (node.isForceVisibility) node.visible = true;
+        node.visible = node.isForceVisibility;
       }
     });
   }
@@ -7136,6 +7200,7 @@ class KhronosTextureContainer {
 
 }
 
+let cache = {};
 const supportedExtensions = [];
 class TextureLoader {
   static load(gl, {
@@ -7182,8 +7247,12 @@ class TextureLoader {
           break;
         }
       }
-    }
+    } // Stringify props
 
+
+    const cacheID = String(src) + wrapS + wrapT + anisotropy + format + internalFormat + generateMipmaps + minFilter + magFilter + premultiplyAlpha + unpackAlignment + flipY + gl.renderer.id; // Check cache for existing texture
+
+    if (cache[cacheID]) return cache[cacheID];
     let texture;
 
     switch (ext) {
@@ -7228,8 +7297,8 @@ class TextureLoader {
         texture = new Texture(gl);
     }
 
-    texture.ext = ext; // TODO: store in cache
-
+    texture.ext = ext;
+    cache[cacheID] = texture;
     return texture;
   }
 
@@ -7272,6 +7341,10 @@ class TextureLoader {
         texture.onUpdate = null;
       };
     });
+  }
+
+  static clearCache() {
+    cache = {};
   }
 
 }

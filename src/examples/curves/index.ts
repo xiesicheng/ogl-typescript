@@ -32,87 +32,98 @@ const fragment = /* glsl */ `
           }
         `;
 
-{
-    const renderer = new Renderer({ dpr: 2 });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
+const renderer = new Renderer({ dpr: 2 });
+const gl = renderer.gl;
+document.body.appendChild(gl.canvas);
+gl.clearColor(1, 1, 1, 1);
 
-    const camera = new Camera(gl, { fov: 35 });
-    camera.position.set(0, 0, 5);
+const camera = new Camera(gl, { fov: 35 });
+camera.position.set(0, 0, 5);
 
-    // Create controls and pass parameters
-    const controls = new Orbit(camera, {
-        target: new Vec3(0, 0, 0),
-    });
+// Create controls and pass parameters
+const controls = new Orbit(camera, {
+    target: new Vec3(0, 0, 0),
+});
 
-    function resize() {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
-    }
-    window.addEventListener('resize', resize, false);
-    resize();
-
-    const scene = new Transform();
-
-    const sphereGeometry = new Sphere(gl);
-
-    const program = new Program(gl, {
-        vertex,
-        fragment,
-
-        // Don't cull faces so that plane is double sided - default is gl.BACK
-        cullFace: null,
-    });
-
-    const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
-    sphere.setParent(scene);
-
-    const curve = new Curve({
-        points: [
-            new Vec3(0, 0.5, 0),
-            new Vec3(0, 1, 1),
-            new Vec3(0, -1, 1),
-            new Vec3(0, -0.5, 0),
-        ],
-        type: Curve.CUBICBEZIER,
-    });
-    const points = curve.getPoints(20);
-
-    curve.type = Curve.CATMULLROM;
-    const points2 = curve.getPoints(20);
-
-    const polyline = new Polyline(gl, {
-        points,
-        uniforms: {
-            uColor: { value: new Color('#f00') },
-            uThickness: {value: 3},
-        }
-    });
-
-    const polyline2 = new Polyline(gl, {
-        points: points2,
-        uniforms: {
-            uColor: { value: new Color('#00f') },
-            uThickness: {value: 2},
-        }
-    });
-
-    for (let i = 0; i <= 50; i++) {
-        const p = i % 2 ? polyline : polyline2;
-        const mesh = new Mesh(gl, { geometry: p.geometry, program: p.program });
-        mesh.setParent(sphere);
-        mesh.rotation.y = i * Math.PI / 50;
-    }
-
-    requestAnimationFrame(update);
-    function update() {
-        requestAnimationFrame(update);
-        sphere.rotation.y -= 0.01;
-        controls.update();
-        renderer.render({ scene, camera });
-    }
+function resize() {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
 }
+window.addEventListener('resize', resize, false);
+resize();
+
+const scene = new Transform();
+
+const sphereGeometry = new Sphere(gl);
+
+const program = new Program(gl, {
+    vertex,
+    fragment,
+
+    // Don't cull faces so that plane is double sided - default is gl.BACK
+    cullFace: null,
+});
+
+const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
+sphere.setParent(scene);
+
+const curve = new Curve({
+    points: [
+        new Vec3(0, 0.5, 0),
+        new Vec3(0, 1, 1),
+        new Vec3(0, -1, 1),
+        new Vec3(0, -0.5, 0),
+    ],
+    type: Curve.CUBICBEZIER,
+});
+const points = curve.getPoints(20);
+
+curve.type = Curve.CATMULLROM;
+const points2 = curve.getPoints(20);
+
+curve.type = Curve.QUADRATICBEZIER;
+const points3 = curve.getPoints(20);
+
+const polyline = new Polyline(gl, {
+    points,
+    uniforms: {
+        uColor: { value: new Color('#f00') },
+        uThickness: { value: 3 },
+    }
+});
+
+const polyline2 = new Polyline(gl, {
+    points: points2,
+    uniforms: {
+        uColor: { value: new Color('#00f') },
+        uThickness: { value: 2 },
+    }
+});
+
+const polyline3 = new Polyline(gl, {
+    points: points3,
+    uniforms: {
+        uColor: { value: new Color('#0f0') },
+        uThickness: { value: 4 },
+    }
+});
+
+for (let i = 0; i <= 60; i++) {
+    const p = [polyline, polyline2, polyline3][i % 3];
+    const mesh = new Mesh(gl, { geometry: p.geometry, program: p.program });
+    mesh.setParent(sphere);
+    mesh.rotation.y = i * Math.PI / 60;
+}
+
+requestAnimationFrame(update);
+function update() {
+    requestAnimationFrame(update);
+    sphere.rotation.y -= 0.01;
+    controls.update();
+    renderer.render({ scene, camera });
+}
+
+
 
 
 document.getElementsByClassName('Info')[0].innerHTML = 'Curves';

@@ -41,10 +41,9 @@ export class Mesh extends Transform {
 
     constructor(gl, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 }: Partial<MeshOptions> = {}) {
         super();
-        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
+        if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
         this.gl = gl;
         this.id = ID++;
-
         this.geometry = geometry;
         this.program = program;
         this.mode = mode;
@@ -54,10 +53,8 @@ export class Mesh extends Transform {
 
         // Override sorting to force an order
         this.renderOrder = renderOrder;
-
         this.modelViewMatrix = new Mat4();
         this.normalMatrix = new Mat3();
-
         this.beforeRenderCallbacks = [];
         this.afterRenderCallbacks = [];
     }
@@ -89,13 +86,12 @@ export class Mesh extends Transform {
                 });
             }
 
+            // Set the matrix uniforms
             this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
             this.program.uniforms.cameraPosition.value = camera.worldPosition;
             this.program.uniforms.viewMatrix.value = camera.viewMatrix;
-
             this.modelViewMatrix.multiply(camera.viewMatrix, this.worldMatrix);
             this.normalMatrix.getNormalMatrix(this.modelViewMatrix);
-
             this.program.uniforms.modelMatrix.value = this.worldMatrix;
             this.program.uniforms.modelViewMatrix.value = this.modelViewMatrix;
             this.program.uniforms.normalMatrix.value = this.normalMatrix;

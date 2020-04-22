@@ -3822,7 +3822,7 @@ class Mesh extends Transform {
     this.beforeRenderCallbacks = void 0;
     this.afterRenderCallbacks = void 0;
     this.hit = null;
-    if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
+    if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
     this.gl = gl;
     this.id = ID$3++;
     this.geometry = geometry;
@@ -3879,7 +3879,8 @@ class Mesh extends Transform {
             value: null
           }
         });
-      }
+      } // Set the matrix uniforms
+
 
       this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
       this.program.uniforms.cameraPosition.value = camera.worldPosition;

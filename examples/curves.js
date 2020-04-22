@@ -543,7 +543,7 @@
         this.glState = void 0;
         this.isInstanced = void 0;
         this.bounds = void 0;
-        this.raycast = "box";
+        this.raycast = 'box';
         if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;
@@ -2289,7 +2289,7 @@
       }
 
       scale(v, m = this) {
-        scale$1(this, m, typeof v === "number" ? [v, v, v] : v);
+        scale$1(this, m, typeof v === 'number' ? [v, v, v] : v);
         return this;
       }
 
@@ -3804,7 +3804,7 @@
 
     let ID$3 = 0;
     class Mesh extends Transform {
-      // raycast.ts 
+      // raycast.ts
       constructor(gl, {
         geometry,
         program,
@@ -3825,7 +3825,7 @@
         this.beforeRenderCallbacks = void 0;
         this.afterRenderCallbacks = void 0;
         this.hit = null;
-        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
+        if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
         this.gl = gl;
         this.id = ID$3++;
         this.geometry = geometry;
@@ -3882,7 +3882,8 @@
                 value: null
               }
             });
-          }
+          } // Set the matrix uniforms
+
 
           this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
           this.program.uniforms.cameraPosition.value = camera.worldPosition;
@@ -3912,15 +3913,15 @@
     }
 
     const NAMES = {
-      "black": "#000000",
-      "white": "#ffffff",
-      "red": "#ff0000",
-      "green": "#00ff00",
-      "blue": "#0000ff",
-      "fuchsia": "#ff00ff",
-      "cyan": "#00ffff",
-      "yellow": "#ffff00",
-      "orange": "#ff8000"
+      black: '#000000',
+      white: '#ffffff',
+      red: '#ff0000',
+      green: '#00ff00',
+      blue: '#0000ff',
+      fuchsia: '#ff00ff',
+      cyan: '#00ffff',
+      yellow: '#ffff00',
+      orange: '#ff8000'
     };
     function hexToRGB(hex) {
       if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
@@ -3940,7 +3941,7 @@
 
       if (!isNaN(color)) return numberToRGB(color); // Hex
 
-      if (color[0] === "#") return hexToRGB(color); // Names
+      if (color[0] === '#') return hexToRGB(color); // Names
 
       if (NAMES[color.toLowerCase()]) return hexToRGB(NAMES[color.toLowerCase()]);
       console.warn('Color format not recognised');

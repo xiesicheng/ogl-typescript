@@ -543,7 +543,7 @@
         this.glState = void 0;
         this.isInstanced = void 0;
         this.bounds = void 0;
-        this.raycast = "box";
+        this.raycast = 'box';
         if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;
@@ -2289,7 +2289,7 @@
       }
 
       scale(v, m = this) {
-        scale$1(this, m, typeof v === "number" ? [v, v, v] : v);
+        scale$1(this, m, typeof v === 'number' ? [v, v, v] : v);
         return this;
       }
 
@@ -3618,7 +3618,7 @@
 
     let ID$3 = 0;
     class Mesh extends Transform {
-      // raycast.ts 
+      // raycast.ts
       constructor(gl, {
         geometry,
         program,
@@ -3639,7 +3639,7 @@
         this.beforeRenderCallbacks = void 0;
         this.afterRenderCallbacks = void 0;
         this.hit = null;
-        if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
+        if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
         this.gl = gl;
         this.id = ID$3++;
         this.geometry = geometry;
@@ -3696,7 +3696,8 @@
                 value: null
               }
             });
-          }
+          } // Set the matrix uniforms
+
 
           this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
           this.program.uniforms.cameraPosition.value = camera.worldPosition;

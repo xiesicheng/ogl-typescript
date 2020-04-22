@@ -9,7 +9,7 @@ export class Euler extends Array<number> {
     constructor(x = 0, y = x, z = x, order = 'YXZ') {
         super(x, y, z);
         this.order = order;
-        this.onChange = () => { };
+        this.onChange = () => {};
         return this;
     }
 

@@ -4,7 +4,6 @@ import { Mat4 } from '../math/Mat4';
 import { Euler } from '../math/Euler';
 
 export class Transform {
-
     parent: Transform;
     children: Transform[];
     visible: boolean;
@@ -12,7 +11,7 @@ export class Transform {
     matrix: Mat4;
     worldMatrix: Mat4;
     matrixAutoUpdate: boolean;
-    worldMatrixNeedsUpdate: boolean
+    worldMatrixNeedsUpdate: boolean;
 
     position: Vec3;
     scale: Vec3;
@@ -20,9 +19,7 @@ export class Transform {
     quaternion: Quat;
     rotation: Euler;
 
-
     constructor() {
-
         this.parent = null;
         this.children = [];
         this.visible = true;
@@ -30,7 +27,6 @@ export class Transform {
         this.matrix = new Mat4();
         this.worldMatrix = new Mat4();
         this.matrixAutoUpdate = true;
-
 
         this.up = new Vec3(0, 1, 0);
         this.position = new Vec3();
@@ -79,7 +75,6 @@ export class Transform {
     }
 
     traverse(callback) {
-
         // Return true in callback to stop traversing children
         if (callback(this)) return;
         for (let i = 0, l = this.children.length; i < l; i++) {

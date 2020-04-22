@@ -13,11 +13,10 @@ export interface PolylineOptions {
     vertex: string;
     fragment: string;
     uniforms: { [key: string]: { value: any } };
-    attributes: { [key: string]: any }, // For passing in custom attribs
+    attributes: { [key: string]: any }; // For passing in custom attribs
 }
 
 export class Polyline {
-
     gl: OGLRenderingContext;
     points: Vec3[];
     count: number;
@@ -36,13 +35,16 @@ export class Polyline {
     program: Program;
     mesh: Mesh;
 
-    constructor(gl: OGLRenderingContext, {
-        points, // Array of Vec3s
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        attributes = {}, // For passing in custom attribs
-    }: Partial<PolylineOptions>) {
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            points, // Array of Vec3s
+            vertex = defaultVertex,
+            fragment = defaultFragment,
+            uniforms = {},
+            attributes = {}, // For passing in custom attribs
+        }: Partial<PolylineOptions>
+    ) {
         this.gl = gl;
         this.points = points;
         this.count = points.length;
@@ -67,14 +69,17 @@ export class Polyline {
             index.set([ind + 2, ind + 1, ind + 3], (ind + 1) * 3);
         }
 
-        const geometry = this.geometry = new Geometry(gl, Object.assign(attributes, {
-            position: { size: 3, data: this.position },
-            prev: { size: 3, data: this.prev },
-            next: { size: 3, data: this.next },
-            side: { size: 1, data: side },
-            uv: { size: 2, data: uv },
-            index: { size: 1, data: index },
-        }));
+        const geometry = (this.geometry = new Geometry(
+            gl,
+            Object.assign(attributes, {
+                position: { size: 3, data: this.position },
+                prev: { size: 3, data: this.prev },
+                next: { size: 3, data: this.next },
+                side: { size: 1, data: side },
+                uv: { size: 2, data: uv },
+                index: { size: 1, data: index },
+            })
+        ));
 
         // Populate dynamic buffers
         this.updateGeometry();
@@ -88,11 +93,11 @@ export class Polyline {
         // Set size uniforms' values
         this.resize();
 
-        const program = this.program = new Program(gl, {
+        const program = (this.program = new Program(gl, {
             vertex,
             fragment,
             uniforms,
-        });
+        }));
 
         this.mesh = new Mesh(gl, { geometry, program });
     }
@@ -103,9 +108,10 @@ export class Polyline {
             p.toArray(this.position, i * 3 * 2 + 3);
 
             if (!i) {
-
                 // If first point, calculate prev using the distance to 2nd point
-                tmp.copy(p).sub(this.points[i + 1]).add(p);
+                tmp.copy(p)
+                    .sub(this.points[i + 1])
+                    .add(p);
                 tmp.toArray(this.prev, i * 3 * 2);
                 tmp.toArray(this.prev, i * 3 * 2 + 3);
             } else {
@@ -114,9 +120,10 @@ export class Polyline {
             }
 
             if (i === this.points.length - 1) {
-
                 // If last point, calculate next using distance to 2nd last point
-                tmp.copy(p).sub(this.points[i - 1]).add(p);
+                tmp.copy(p)
+                    .sub(this.points[i - 1])
+                    .add(p);
                 tmp.toArray(this.next, i * 3 * 2);
                 tmp.toArray(this.next, i * 3 * 2 + 3);
             } else {
@@ -132,12 +139,11 @@ export class Polyline {
 
     // Only need to call if not handling resolution uniforms manually
     resize() {
-
         // Update automatic uniforms if not overridden
         if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
         if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
     }
-};
+}
 
 const defaultVertex = /* glsl */ `
     precision highp float;
@@ -202,7 +208,3 @@ const defaultFragment = /* glsl */ `
         gl_FragColor.a = 1.0;
     }
 `;
-
-
-
-

@@ -540,7 +540,7 @@ class Geometry {
     this.glState = void 0;
     this.isInstanced = void 0;
     this.bounds = void 0;
-    this.raycast = "box";
+    this.raycast = 'box';
     if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
     this.gl = gl;
     this.attributes = attributes;
@@ -2286,7 +2286,7 @@ class Mat4 extends Array {
   }
 
   scale(v, m = this) {
-    scale$1(this, m, typeof v === "number" ? [v, v, v] : v);
+    scale$1(this, m, typeof v === 'number' ? [v, v, v] : v);
     return this;
   }
 
@@ -3801,7 +3801,7 @@ class Mat3 extends Array {
 
 let ID$3 = 0;
 class Mesh extends Transform {
-  // raycast.ts 
+  // raycast.ts
   constructor(gl, {
     geometry,
     program,
@@ -4244,15 +4244,15 @@ class RenderTarget {
 }
 
 const NAMES = {
-  "black": "#000000",
-  "white": "#ffffff",
-  "red": "#ff0000",
-  "green": "#00ff00",
-  "blue": "#0000ff",
-  "fuchsia": "#ff00ff",
-  "cyan": "#00ffff",
-  "yellow": "#ffff00",
-  "orange": "#ff8000"
+  black: '#000000',
+  white: '#ffffff',
+  red: '#ff0000',
+  green: '#00ff00',
+  blue: '#0000ff',
+  fuchsia: '#ff00ff',
+  cyan: '#00ffff',
+  yellow: '#ffff00',
+  orange: '#ff8000'
 };
 function hexToRGB(hex) {
   if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
@@ -4272,7 +4272,7 @@ function parseColor(color = null) {
 
   if (!isNaN(color)) return numberToRGB(color); // Hex
 
-  if (color[0] === "#") return hexToRGB(color); // Names
+  if (color[0] === '#') return hexToRGB(color); // Names
 
   if (NAMES[color.toLowerCase()]) return hexToRGB(NAMES[color.toLowerCase()]);
   console.warn('Color format not recognised');
@@ -5662,8 +5662,8 @@ class Raycast {
         top,
         zoom
       } = camera;
-      const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
-      const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
+      const x = left / zoom + (right - left) / zoom * (mouse[0] * 0.5 + 0.5);
+      const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * 0.5 + 0.5);
       this.origin.set(x, y, 0);
       this.origin.applyMatrix4(camera.worldMatrix); // Set direction
       // https://community.khronos.org/t/get-direction-from-transformation-matrix-or-quat/65502/2
@@ -6218,7 +6218,8 @@ class Skin extends Mesh {
       bone.quaternion.fromArray(rig.bindPose.quaternion, i * 4);
       bone.scale.fromArray(rig.bindPose.scale, i * 3);
       this.bones.push(bone);
-    }
+    } // Once created, set the hierarchy
+
 
     rig.bones.forEach((data, i) => {
       this.bones[i].name = data.name;
@@ -7246,7 +7247,8 @@ class KhronosTextureContainer {
     for (let i = 0; i < id.length; i++) if (id[i] !== idCheck[i]) {
       console.error('File missing KTX identifier');
       return;
-    }
+    } // TODO: Is this always 4? Tested: [android, macos]
+
 
     const size = Uint32Array.BYTES_PER_ELEMENT;
     const head = new DataView(buffer, 12, 13 * size);
@@ -7257,6 +7259,7 @@ class KhronosTextureContainer {
       console.warn('only compressed formats currently supported');
       return;
     }
+
     this.glInternalFormat = head.getUint32(4 * size, littleEndian);
     let width = head.getUint32(6 * size, littleEndian);
     let height = head.getUint32(7 * size, littleEndian);

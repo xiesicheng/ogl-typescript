@@ -2,14 +2,7 @@ import { Geometry } from '../core/Geometry';
 import { OGLRenderingContext } from '../core/Renderer';
 
 export class Plane extends Geometry {
-
-    constructor(gl: OGLRenderingContext, {
-        width = 1,
-        height = 1,
-        widthSegments = 1,
-        heightSegments = 1,
-        attributes = {},
-    } = {}) {
+    constructor(gl: OGLRenderingContext, { width = 1, height = 1, widthSegments = 1, heightSegments = 1, attributes = {} } = {}) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;
 
@@ -21,7 +14,7 @@ export class Plane extends Geometry {
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = (num > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
 
@@ -35,10 +28,23 @@ export class Plane extends Geometry {
         super(gl, attributes);
     }
 
-    static buildPlane(position: Float32Array, normal: Float32Array, uv: Float32Array, index: Uint32Array | Uint16Array, width: number, height: number, depth: number, wSegs: number, hSegs: number,
-        u = 0, v = 1, w = 2,
-        uDir = 1, vDir = -1,
-        i = 0, ii = 0
+    static buildPlane(
+        position: Float32Array,
+        normal: Float32Array,
+        uv: Float32Array,
+        index: Uint32Array | Uint16Array,
+        width: number,
+        height: number,
+        depth: number,
+        wSegs: number,
+        hSegs: number,
+        u = 0,
+        v = 1,
+        w = 2,
+        uDir = 1,
+        vDir = -1,
+        i = 0,
+        ii = 0
     ) {
         const io = i;
         const segW = width / wSegs;
@@ -46,7 +52,7 @@ export class Plane extends Geometry {
 
         for (let iy = 0; iy <= hSegs; iy++) {
             let y = iy * segH - height / 2;
-            for (let ix = 0; ix <= wSegs; ix++ , i++) {
+            for (let ix = 0; ix <= wSegs; ix++, i++) {
                 let x = ix * segW - width / 2;
 
                 position[i * 3 + u] = x * uDir;

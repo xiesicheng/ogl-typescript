@@ -1,7 +1,6 @@
 import * as Vec3Func from './functions/Vec3Func';
 // typescript
-export class Vec3 extends Array<number>{
-
+export class Vec3 extends Array<number> {
     constant: number; // todo: 放哪？
     constructor(x = 0, y = x, z = x) {
         super(x, y, z);

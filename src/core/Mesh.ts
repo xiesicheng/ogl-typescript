@@ -22,7 +22,6 @@ export interface DrawOptions {
 }
 
 export class Mesh extends Transform {
-
     gl: OGLRenderingContext & WebGL2RenderingContext;
     id: number;
     geometry: Geometry;
@@ -37,16 +36,10 @@ export class Mesh extends Transform {
     beforeRenderCallbacks: Array<any>;
     afterRenderCallbacks: Array<any>;
 
-    // raycast.ts 
-    hit: Partial<{ localPoint: Vec3, distance: number, point: Vec3; }> = null;
+    // raycast.ts
+    hit: Partial<{ localPoint: Vec3; distance: number; point: Vec3 }> = null;
 
-    constructor(gl, {
-        geometry,
-        program,
-        mode = gl.TRIANGLES,
-        frustumCulled = true,
-        renderOrder = 0,
-    }: Partial<MeshOptions> = {}) {
+    constructor(gl, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 }: Partial<MeshOptions> = {}) {
         super();
         if (!gl.canvas) console.error('gl not passed as fist argument to Mesh');
         this.gl = gl;
@@ -79,14 +72,11 @@ export class Mesh extends Transform {
         return this;
     }
 
-    draw({
-        camera,
-    }: Partial<DrawOptions> = {}) {
-        this.beforeRenderCallbacks.forEach(f => f && f({ mesh: this, camera }));
+    draw({ camera }: Partial<DrawOptions> = {}) {
+        this.beforeRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
 
         // Set the matrix uniforms
         if (camera) {
-
             // Add empty matrix uniforms to program if unset
             if (!this.program.uniforms.modelMatrix) {
                 Object.assign(this.program.uniforms, {
@@ -117,6 +107,6 @@ export class Mesh extends Transform {
         this.program.use({ flipFaces });
         this.geometry.draw({ mode: this.mode, program: this.program });
 
-        this.afterRenderCallbacks.forEach(f => f && f({ mesh: this, camera }));
+        this.afterRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
     }
 }

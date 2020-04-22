@@ -2,7 +2,7 @@ import { RenderTarget } from '../core/RenderTarget';
 import { Program } from '../core/Program';
 import { Mesh } from '../core/Mesh';
 import { Vec2 } from '../math/Vec2';
-import { Triangle } from "./Triangle";
+import { Triangle } from './Triangle';
 import { OGLRenderingContext } from '../core/Renderer';
 
 export interface FlowmapOptions {
@@ -14,12 +14,11 @@ export interface FlowmapOptions {
 }
 
 export class Flowmap {
-
     gl: OGLRenderingContext;
-    uniform: { value: any; };
+    uniform: { value: any };
     mask: {
-        read: any,
-        write: any,
+        read: any;
+        write: any;
         swap: () => void;
     };
 
@@ -29,13 +28,16 @@ export class Flowmap {
 
     mesh: Mesh;
 
-    constructor(gl: OGLRenderingContext, {
-        size = 128, // default size of the render targets
-        falloff = 0.3, // size of the stamp, percentage of the size
-        alpha = 1, // opacity of the stamp
-        dissipation = 0.98, // affects the speed that the stamp fades. Closer to 1 is slower
-        type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
-    }: Partial<FlowmapOptions> = {}) {
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            size = 128, // default size of the render targets
+            falloff = 0.3, // size of the stamp, percentage of the size
+            alpha = 1, // opacity of the stamp
+            dissipation = 0.98, // affects the speed that the stamp fades. Closer to 1 is slower
+            type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
+        }: Partial<FlowmapOptions> = {}
+    ) {
         const _this = this;
         this.gl = gl;
 
@@ -81,7 +83,9 @@ export class Flowmap {
                 type: type,
                 format: gl.RGBA,
                 internalFormat: gl.renderer.isWebgl2
-                    ? (type === gl.FLOAT ? (gl as WebGL2RenderingContext).RGBA32F : (gl as WebGL2RenderingContext).RGBA16F)
+                    ? type === gl.FLOAT
+                        ? (gl as WebGL2RenderingContext).RGBA32F
+                        : (gl as WebGL2RenderingContext).RGBA16F
                     : gl.RGBA,
                 minFilter,
                 depth: false,
@@ -94,7 +98,6 @@ export class Flowmap {
 
         function initProgram() {
             return new Mesh(gl, {
-
                 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
                 geometry: new Triangle(gl),
 

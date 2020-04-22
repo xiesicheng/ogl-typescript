@@ -37,24 +37,23 @@ let ATTR_ID = 1;
 // }
 
 export interface Attribute {
-    size: number,
-    data: ArrayLike<number> | ArrayBufferView,
-    instanced?: null,
-    type: GLenum,
-    normalized: boolean,
+    size: number;
+    data: ArrayLike<number> | ArrayBufferView;
+    instanced?: null;
+    type: GLenum;
+    normalized: boolean;
 
-    target?: number, // this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER
-    id?: number,
-    buffer?: WebGLBuffer,
-    stride: number,
-    offset: number,
-    count?: number,
-    divisor?: number,
+    target?: number; // this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER
+    id?: number;
+    buffer?: WebGLBuffer;
+    stride: number;
+    offset: number;
+    count?: number;
+    divisor?: number;
     needsUpdate?: boolean;
 
-    min?: any,
-    max?: any,
-
+    min?: any;
+    max?: any;
 }
 
 export interface Bounds {
@@ -68,18 +67,17 @@ export interface Bounds {
 let isBoundsWarned = false;
 
 export class Geometry {
-
     gl: OGLRenderingContext;
     id: number;
-    attributes: { [key: string]: Attribute; };
+    attributes: { [key: string]: Attribute };
     VAOs: {};
-    drawRange: { start: number; count: number; };
+    drawRange: { start: number; count: number };
     instancedCount: number;
     glState: RenderState;
     isInstanced: boolean;
     bounds: Bounds;
 
-    raycast: "sphere" | "box" = "box";
+    raycast: 'sphere' | 'box' = 'box';
 
     constructor(gl: OGLRenderingContext, attributes = {}) {
         if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
@@ -112,15 +110,20 @@ export class Geometry {
         // Set options
         attr.id = ATTR_ID++; // TODO: currently unused, remove?
         attr.size = attr.size || 1;
-        attr.type = attr.type || (
-            attr.data.constructor === Float32Array ? this.gl.FLOAT :
-                attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT :
-                    this.gl.UNSIGNED_INT); // Uint32Array
+        attr.type =
+            attr.type ||
+            (attr.data.constructor === Float32Array
+                ? this.gl.FLOAT
+                : attr.data.constructor === Uint16Array
+                ? this.gl.UNSIGNED_SHORT
+                : this.gl.UNSIGNED_INT); // Uint32Array
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
         attr.offset = attr.offset || 0;
-        attr.count = attr.count || (attr.stride ? (attr.data as ArrayBufferView).byteLength / attr.stride : (attr.data as ArrayLike<number>).length / attr.size);
+        attr.count =
+            attr.count ||
+            (attr.stride ? (attr.data as ArrayBufferView).byteLength / attr.stride : (attr.data as ArrayLike<number>).length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 
@@ -136,7 +139,7 @@ export class Geometry {
             this.isInstanced = true;
             if (this.instancedCount && this.instancedCount !== attr.count * attr.divisor) {
                 console.warn('geometry has multiple instanced buffers of different length');
-                return this.instancedCount = Math.min(this.instancedCount, attr.count * attr.divisor);
+                return (this.instancedCount = Math.min(this.instancedCount, attr.count * attr.divisor));
             }
             this.instancedCount = attr.count * attr.divisor;
         } else if (key === 'index') {
@@ -175,10 +178,8 @@ export class Geometry {
     }
 
     bindAttributes(program: Program) {
-
         // Link all attributes to program using gl.vertexAttribPointer
         program.attributeLocations.forEach((location, name) => {
-
             // If geometry missing a required shader attribute
             if (!this.attributes[name]) {
                 console.warn(`active attribute ${name} not being supplied`);
@@ -189,14 +190,7 @@ export class Geometry {
 
             this.gl.bindBuffer(attr.target, attr.buffer);
             this.glState.boundBuffer = attr.buffer;
-            this.gl.vertexAttribPointer(
-                location,
-                attr.size,
-                attr.type,
-                attr.normalized,
-                attr.stride,
-                attr.offset
-            );
+            this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalized, attr.stride, attr.offset);
             this.gl.enableVertexAttribArray(location);
 
             // For instanced attributes, divisor needs to be set.
@@ -208,10 +202,7 @@ export class Geometry {
         if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
     }
 
-    draw({
-        program,
-        mode = this.gl.TRIANGLES,
-    }) {
+    draw({ program, mode = this.gl.TRIANGLES }) {
         if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {
             if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
             this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
@@ -226,7 +217,13 @@ export class Geometry {
 
         if (this.isInstanced) {
             if (this.attributes.index) {
-                this.gl.renderer.drawElementsInstanced(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start, this.instancedCount);
+                this.gl.renderer.drawElementsInstanced(
+                    mode,
+                    this.drawRange.count,
+                    this.attributes.index.type,
+                    this.drawRange.start,
+                    this.instancedCount
+                );
             } else {
                 this.gl.renderer.drawArraysInstanced(mode, this.drawRange.start, this.drawRange.count, this.instancedCount);
             }
@@ -240,14 +237,13 @@ export class Geometry {
     }
 
     getPositionArray() {
-
         // Use position buffer, or min/max if available
         const attr = this.attributes.position;
         if (attr.min) return [...attr.min, ...attr.max];
         if (attr.data) return attr.data;
         if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');
-        return isBoundsWarned = true;
+        return (isBoundsWarned = true);
     }
 
     computeBoundingBox(array = null) {

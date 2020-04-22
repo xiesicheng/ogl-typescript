@@ -16,13 +16,11 @@ export interface AnimationOptions {
 }
 
 export class Animation {
-
     objects: BoneTransform[];
     data: any;
     elapsed: number;
     weight: number;
     duration: number;
-
 
     constructor({ objects, data }: AnimationOptions) {
         this.objects = objects;
@@ -42,7 +40,7 @@ export class Animation {
         const nextKey = this.data.frames[(floorFrame + 1) % this.duration];
 
         this.objects.forEach((object, i) => {
-            prevPos.fromArray(prevKey.position, i * 3)
+            prevPos.fromArray(prevKey.position, i * 3);
             prevRot.fromArray(prevKey.quaternion, i * 4);
             prevScl.fromArray(prevKey.scale, i * 3);
 

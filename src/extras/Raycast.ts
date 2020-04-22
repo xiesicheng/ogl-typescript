@@ -14,7 +14,6 @@ const tempVec3c = new Vec3();
 const tempMat4 = new Mat4();
 
 export class Raycast {
-
     gl: OGLRenderingContext;
     origin: Vec3;
     direction: Vec3;
@@ -32,8 +31,8 @@ export class Raycast {
             // Set origin
             // Since camera is orthographic, origin is not the camera position
             const { left, right, bottom, top, zoom } = camera;
-            const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
-            const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
+            const x = left / zoom + ((right - left) / zoom) * (mouse[0] * 0.5 + 0.5);
+            const y = bottom / zoom + ((top - bottom) / zoom) * (mouse[1] * 0.5 + 0.5);
             this.origin.set(x, y, 0);
             this.origin.applyMatrix4(camera.worldMatrix);
 
@@ -62,8 +61,7 @@ export class Raycast {
 
         const hits = [];
 
-        meshes.forEach(mesh => {
-
+        meshes.forEach((mesh) => {
             // Create bounds
             if (!mesh.geometry.bounds) mesh.geometry.computeBoundingBox();
             if (mesh.geometry.raycast === 'sphere' && mesh.geometry.bounds.radius === Infinity) mesh.geometry.computeBoundingSphere();
@@ -82,7 +80,7 @@ export class Raycast {
             if (!localDistance) return;
 
             // Create object on mesh to avoid generating lots of objects
-            if (!mesh.hit) mesh.hit = {localPoint: new Vec3(), point: new Vec3()};
+            if (!mesh.hit) mesh.hit = { localPoint: new Vec3(), point: new Vec3() };
 
             mesh.hit.localPoint.copy(direction).multiply(localDistance).add(origin);
             mesh.hit.point.copy(mesh.hit.localPoint).applyMatrix4(mesh.worldMatrix);
@@ -132,7 +130,7 @@ export class Raycast {
         tYmin = ((invdiry >= 0 ? min.y : max.y) - origin.y) * invdiry;
         tYmax = ((invdiry >= 0 ? max.y : min.y) - origin.y) * invdiry;
 
-        if ((tmin > tYmax) || (tYmin > tmax)) return 0;
+        if (tmin > tYmax || tYmin > tmax) return 0;
 
         if (tYmin > tmin) tmin = tYmin;
         if (tYmax < tmax) tmax = tYmax;
@@ -140,7 +138,7 @@ export class Raycast {
         tZmin = ((invdirz >= 0 ? min.z : max.z) - origin.z) * invdirz;
         tZmax = ((invdirz >= 0 ? max.z : min.z) - origin.z) * invdirz;
 
-        if ((tmin > tZmax) || (tZmin > tmax)) return 0;
+        if (tmin > tZmax || tZmin > tmax) return 0;
         if (tZmin > tmin) tmin = tZmin;
         if (tZmax < tmax) tmax = tZmax;
 
@@ -149,6 +147,3 @@ export class Raycast {
         return tmin >= 0 ? tmin : tmax;
     }
 }
-
-
-

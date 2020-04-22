@@ -7,16 +7,18 @@ let cache = {};
 const supportedExtensions = [];
 
 export interface TextureLoaderOptions {
-    src: Partial<{
-        pvrtc: string,
-        s3tc: string,
-        etc: string,
-        etc1: string,
-        astc: string,
-        webp: string,
-        jpg: string,
-        png: string,
-    }> | string;
+    src:
+        | Partial<{
+              pvrtc: string;
+              s3tc: string;
+              etc: string;
+              etc1: string;
+              astc: string;
+              webp: string;
+              jpg: string;
+              png: string;
+          }>
+        | string;
 
     wrapS: number;
     wrapT: number;
@@ -34,45 +36,44 @@ export interface TextureLoaderOptions {
 }
 
 export class TextureLoader {
-    static load(gl, {
-        src, // string or object of extension:src key-values
-        // {
-        //     pvrtc: '...ktx',
-        //     s3tc: '...ktx',
-        //     etc: '...ktx',
-        //     etc1: '...ktx',
-        //     astc: '...ktx',
-        //     webp: '...webp',
-        //     jpg: '...jpg',
-        //     png: '...png',
-        // }
+    static load(
+        gl,
+        {
+            src, // string or object of extension:src key-values
+            // {
+            //     pvrtc: '...ktx',
+            //     s3tc: '...ktx',
+            //     etc: '...ktx',
+            //     etc1: '...ktx',
+            //     astc: '...ktx',
+            //     webp: '...webp',
+            //     jpg: '...jpg',
+            //     png: '...png',
+            // }
 
-        // Only props relevant to KTXTexture
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        anisotropy = 0,
+            // Only props relevant to KTXTexture
+            wrapS = gl.CLAMP_TO_EDGE,
+            wrapT = gl.CLAMP_TO_EDGE,
+            anisotropy = 0,
 
-        // For regular images
-        format = gl.RGBA,
-        internalFormat = format,
-        generateMipmaps = true,
-        minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-        magFilter = gl.LINEAR,
-        premultiplyAlpha = false,
-        unpackAlignment = 4,
-        flipY = true,
-    }: Partial<TextureLoaderOptions> = {}) {
+            // For regular images
+            format = gl.RGBA,
+            internalFormat = format,
+            generateMipmaps = true,
+            minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
+            magFilter = gl.LINEAR,
+            premultiplyAlpha = false,
+            unpackAlignment = 4,
+            flipY = true,
+        }: Partial<TextureLoaderOptions> = {}
+    ) {
         const support = TextureLoader.getSupportedExtensions(gl);
 
         let ext = 'none';
 
         // If src is string, determine which format from the extension
         if (typeof src === 'string') {
-            ext = src
-                .split('.')
-                .pop()
-                .split('?')[0]
-                .toLowerCase();
+            ext = src.split('.').pop().split('?')[0].toLowerCase();
         }
 
         // If src is object, use supported extensions and provided list to choose best option
@@ -100,7 +101,7 @@ export class TextureLoader {
             magFilter +
             premultiplyAlpha +
             unpackAlignment +
-            flipY + 
+            flipY +
             gl.renderer.id;
 
         // Check cache for existing texture
@@ -156,9 +157,7 @@ export class TextureLoader {
         if (supportedExtensions.length) return supportedExtensions;
 
         const extensions = {
-            pvrtc:
-                gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') ||
-                gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'),
+            pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'),
             s3tc:
                 gl.renderer.getExtension('WEBGL_compressed_texture_s3tc') ||
                 gl.renderer.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
@@ -181,12 +180,12 @@ export class TextureLoader {
 
     static loadKTX(src: string, texture: KTXTexture) {
         return fetch(src)
-            .then(res => res.arrayBuffer())
-            .then(buffer => texture.parseBuffer(buffer));
+            .then((res) => res.arrayBuffer())
+            .then((buffer) => texture.parseBuffer(buffer));
     }
 
     static loadImage(gl, src: string, texture: Texture) {
-        return decodeImage(src).then(imgBmp => {
+        return decodeImage(src).then((imgBmp) => {
             // Catch non POT textures and update params to avoid errors
             if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
                 if (texture.generateMipmaps) texture.generateMipmaps = false;
@@ -210,12 +209,7 @@ export class TextureLoader {
 }
 
 function detectWebP() {
-    return (
-        document
-            .createElement('canvas')
-            .toDataURL('image/webp')
-            .indexOf('data:image/webp') == 0
-    );
+    return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') == 0;
 }
 
 function powerOfTwo(value) {
@@ -223,7 +217,7 @@ function powerOfTwo(value) {
 }
 
 function decodeImage(src: string): Promise<HTMLImageElement> {
-    return new Promise<HTMLImageElement>(resolve => {
+    return new Promise<HTMLImageElement>((resolve) => {
         const img = new Image();
         img.src = src;
 

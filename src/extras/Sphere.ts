@@ -3,16 +3,19 @@ import { Vec3 } from '../math/Vec3';
 import { OGLRenderingContext } from '../core/Renderer';
 
 export class Sphere extends Geometry {
-    constructor(gl: OGLRenderingContext, {
-        radius = 0.5,
-        widthSegments = 16,
-        heightSegments = Math.ceil(widthSegments * 0.5),
-        phiStart = 0,
-        phiLength = Math.PI * 2,
-        thetaStart = 0,
-        thetaLength = Math.PI,
-        attributes = {},
-    } = {}) {
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            radius = 0.5,
+            widthSegments = 16,
+            heightSegments = Math.ceil(widthSegments * 0.5),
+            phiStart = 0,
+            phiLength = Math.PI * 2,
+            thetaStart = 0,
+            thetaLength = Math.PI,
+            attributes = {},
+        } = {}
+    ) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;
         const pStart = phiStart;
@@ -26,7 +29,7 @@ export class Sphere extends Geometry {
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = (num > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         let i = 0;
         let iv = 0;
@@ -39,7 +42,7 @@ export class Sphere extends Geometry {
         for (let iy = 0; iy <= hSegs; iy++) {
             let vRow = [];
             let v = iy / hSegs;
-            for (let ix = 0; ix <= wSegs; ix++ , i++) {
+            for (let ix = 0; ix <= wSegs; ix++, i++) {
                 let u = ix / wSegs;
                 let x = -radius * Math.cos(pStart + u * pLength) * Math.sin(tStart + v * tLength);
                 let y = radius * Math.cos(tStart + v * tLength);

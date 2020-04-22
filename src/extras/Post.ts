@@ -10,8 +10,8 @@ export interface PostOptions {
     width: number;
     height: number;
     dpr: number;
-    wrapS: GLenum;  //gl.CLAMP_TO_EDGE,
-    wrapT: GLenum;  //gl.CLAMP_TO_EDGE,
+    wrapS: GLenum; //gl.CLAMP_TO_EDGE,
+    wrapT: GLenum; //gl.CLAMP_TO_EDGE,
     minFilter: GLenum; // gl.LINEAR,
     magFilter: GLenum; // gl.LINEAR,
     geometry: Triangle;
@@ -19,45 +19,41 @@ export interface PostOptions {
 }
 
 export interface Pass {
-
-    mesh: Mesh,
-    program: Program,
-    uniforms: any,
-    enabled: boolean,
-    textureUniform: any,
-    vertex?: string,
+    mesh: Mesh;
+    program: Program;
+    uniforms: any;
+    enabled: boolean;
+    textureUniform: any;
+    vertex?: string;
     fragment?: string;
-
-
 }
 
-
-
 export class Post {
-
     gl: OGLRenderingContext;
-    options: { wrapS: GLenum, wrapT: GLenum, minFilter: GLenum, magFilter: GLenum, width?: number, height?: number; };
+    options: { wrapS: GLenum; wrapT: GLenum; minFilter: GLenum; magFilter: GLenum; width?: number; height?: number };
     passes: Pass[];
     geometry: Triangle;
-    uniform: { value: any; };
+    uniform: { value: any };
     targetOnly: any;
     fbo: any;
     dpr: number;
     width: number;
     height: number;
 
-    constructor(gl: OGLRenderingContext, {
-        width,
-        height,
-        dpr,
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        minFilter = gl.LINEAR,
-        magFilter = gl.LINEAR,
-        geometry = new Triangle(gl),
-        targetOnly = null,
-    }: Partial<PostOptions> = {}) {
-
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            width,
+            height,
+            dpr,
+            wrapS = gl.CLAMP_TO_EDGE,
+            wrapT = gl.CLAMP_TO_EDGE,
+            minFilter = gl.LINEAR,
+            magFilter = gl.LINEAR,
+            geometry = new Triangle(gl),
+            targetOnly = null,
+        }: Partial<PostOptions> = {}
+    ) {
         this.gl = gl;
 
         this.options = { wrapS, wrapT, minFilter, magFilter };
@@ -69,7 +65,7 @@ export class Post {
         this.uniform = { value: null };
         this.targetOnly = targetOnly;
 
-        const fbo = this.fbo = {
+        const fbo = (this.fbo = {
             read: null,
             write: null,
             swap: () => {
@@ -77,19 +73,12 @@ export class Post {
                 fbo.read = fbo.write;
                 fbo.write = temp;
             },
-        };
+        });
 
         this.resize({ width, height, dpr });
     }
 
-
-    addPass({
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        textureUniform = 'tMap',
-        enabled = true,
-    }: Partial<Pass> = {}) {
+    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true }: Partial<Pass> = {}) {
         uniforms[textureUniform] = { value: this.fbo.read.texture };
 
         const program = new Program(this.gl, { vertex, fragment, uniforms });
@@ -107,7 +96,7 @@ export class Post {
         return pass;
     }
 
-    resize({ width, height, dpr }: Partial<{ width: number, height: number, dpr: number; }> = {}) {
+    resize({ width, height, dpr }: Partial<{ width: number; height: number; dpr: number }> = {}) {
         if (dpr) this.dpr = dpr;
         if (width) {
             this.width = width;
@@ -126,20 +115,16 @@ export class Post {
     }
 
     // Uses same arguments as renderer.render
-    render({
-        scene,
-        camera,
-        target = null,
-        update = true,
-        sort = true,
-        frustumCull = true,
-    }) {
-        const enabledPasses = this.passes.filter(pass => pass.enabled);
+    render({ scene, camera, target = null, update = true, sort = true, frustumCull = true }) {
+        const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
         this.gl.renderer.render({
-            scene, camera,
+            scene,
+            camera,
             target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
-            update, sort, frustumCull,
+            update,
+            sort,
+            frustumCull,
         });
         this.fbo.swap();
 

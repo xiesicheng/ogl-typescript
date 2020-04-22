@@ -4,7 +4,7 @@ export class Quat extends Array<number> {
     onChange: () => void;
     constructor(x = 0, y = 0, z = 0, w = 1) {
         super(x, y, z, w);
-        this.onChange = () => { };
+        this.onChange = () => {};
         return this;
     }
 

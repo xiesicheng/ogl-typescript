@@ -2,37 +2,37 @@ import { Program } from '../core/Program';
 import { Mesh } from '../core/Mesh';
 import { Texture } from '../core/Texture';
 import { RenderTarget } from '../core/RenderTarget';
-import { Triangle } from "./Triangle";
+import { Triangle } from './Triangle';
 import { OGLRenderingContext } from '../core/Renderer';
 
 export interface GPGPUpass {
-    mesh: Mesh,
-    program: Program,
-    uniforms,
-    enabled,
-    textureUniform,
-};
-
+    mesh: Mesh;
+    program: Program;
+    uniforms;
+    enabled;
+    textureUniform;
+}
 
 export class GPGPU {
-
     gl: OGLRenderingContext;
     passes: GPGPUpass[];
     geometry: Triangle;
     dataLength: number;
     size: number;
     coords: Float32Array;
-    uniform: { value: any; };
-    fbo: { read: RenderTarget, write: RenderTarget, swap: () => void; };
+    uniform: { value: any };
+    fbo: { read: RenderTarget; write: RenderTarget; swap: () => void };
 
-    constructor(gl: OGLRenderingContext, {
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            // Always pass in array of vec4s (RGBA values within texture)
+            data = new Float32Array(16),
 
-        // Always pass in array of vec4s (RGBA values within texture)
-        data = new Float32Array(16),
-
-        geometry = new Triangle(gl),
-        type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
-    }) {
+            geometry = new Triangle(gl),
+            type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
+        }
+    ) {
         this.gl = gl;
         const initialData = data;
         this.passes = [];
@@ -77,7 +77,7 @@ export class GPGPU {
                 magFilter: gl.NEAREST,
                 width: this.size,
                 flipY: false,
-            })
+            }),
         };
 
         // Create FBOs
@@ -87,7 +87,9 @@ export class GPGPU {
             type: type || (gl as WebGL2RenderingContext).HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
             format: gl.RGBA,
             internalFormat: gl.renderer.isWebgl2
-                ? (type === gl.FLOAT ? (gl as WebGL2RenderingContext).RGBA32F : (gl as WebGL2RenderingContext).RGBA16F)
+                ? type === gl.FLOAT
+                    ? (gl as WebGL2RenderingContext).RGBA32F
+                    : (gl as WebGL2RenderingContext).RGBA16F
                 : gl.RGBA,
             minFilter: gl.NEAREST,
             depth: false,
@@ -106,13 +108,7 @@ export class GPGPU {
         };
     }
 
-    addPass({
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        textureUniform = 'tMap',
-        enabled = true,
-    } = {}) {
+    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
         uniforms[textureUniform] = this.uniform;
         const program = new Program(this.gl, { vertex, fragment, uniforms });
         const mesh = new Mesh(this.gl, { geometry: this.geometry, program });
@@ -130,7 +126,7 @@ export class GPGPU {
     }
 
     render() {
-        const enabledPasses = this.passes.filter(pass => pass.enabled);
+        const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
         enabledPasses.forEach((pass, i) => {
             this.gl.renderer.render({
@@ -141,7 +137,7 @@ export class GPGPU {
             this.fbo.swap();
         });
     }
-};
+}
 
 const defaultVertex = /* glsl */ `
     attribute vec2 uv;

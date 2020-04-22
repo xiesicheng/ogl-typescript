@@ -1,10 +1,7 @@
 import { Geometry } from '../core/Geometry';
 
 export class Triangle extends Geometry {
-    constructor(gl, {
-        attributes = {},
-    } = {}) {
-
+    constructor(gl, { attributes = {} } = {}) {
         //         position                uv
         //      (-1, 3)                  (0, 2)
         //         |\                      |\

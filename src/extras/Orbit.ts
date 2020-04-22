@@ -11,27 +11,30 @@ const tempVec3 = new Vec3();
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 
-export function Orbit(object, {
-    element = document.body,
-    enabled = true,
-    target = new Vec3(),
-    ease = 0.25,
-    inertia = 0.85,
-    enableRotate = true,
-    rotateSpeed = 0.1,
-    autoRotate = false,
-    autoRotateSpeed = 1.0,
-    enableZoom = true,
-    zoomSpeed = 1,
-    enablePan = true,
-    panSpeed = 0.1,
-    minPolarAngle = 0,
-    maxPolarAngle = Math.PI,
-    minAzimuthAngle = -Infinity,
-    maxAzimuthAngle = Infinity,
-    minDistance = 0,
-    maxDistance = Infinity,
-} = {}) {
+export function Orbit(
+    object,
+    {
+        element = document.body,
+        enabled = true,
+        target = new Vec3(),
+        ease = 0.25,
+        inertia = 0.85,
+        enableRotate = true,
+        rotateSpeed = 0.1,
+        autoRotate = false,
+        autoRotateSpeed = 1.0,
+        enableZoom = true,
+        zoomSpeed = 1,
+        enablePan = true,
+        panSpeed = 0.1,
+        minPolarAngle = 0,
+        maxPolarAngle = Math.PI,
+        minAzimuthAngle = -Infinity,
+        maxAzimuthAngle = Infinity,
+        minDistance = 0,
+        maxDistance = Infinity,
+    } = {}
+) {
     this.enabled = enabled;
     this.target = target;
 
@@ -97,12 +100,8 @@ export function Orbit(object, {
         sphericalDelta.radius = 1;
     };
 
-
-
     // Everything below here just updates panDelta and sphericalDelta
     // Using those two objects' values, the orbit is calculated
-
-
 
     const rotateStart = new Vec2();
     const panStart = new Vec2();
@@ -131,9 +130,9 @@ export function Orbit(object, {
         // let el = element === document ? document.body : element;
         tempVec3.copy(object.position).sub(this.target);
         let targetDistance = tempVec3.distance();
-        targetDistance *= Math.tan(((object.fov || 45) / 2) * Math.PI / 180.0);
-        panLeft(2 * deltaX * targetDistance / element.clientHeight, object.matrix);
-        panUp(2 * deltaY * targetDistance / element.clientHeight, object.matrix);
+        targetDistance *= Math.tan((((object.fov || 45) / 2) * Math.PI) / 180.0);
+        panLeft((2 * deltaX * targetDistance) / element.clientHeight, object.matrix);
+        panUp((2 * deltaY * targetDistance) / element.clientHeight, object.matrix);
     };
 
     function dolly(dollyScale) {
@@ -141,16 +140,16 @@ export function Orbit(object, {
     }
 
     function handleAutoRotate() {
-        const angle = 2 * Math.PI / 60 / 60 * autoRotateSpeed;
+        const angle = ((2 * Math.PI) / 60 / 60) * autoRotateSpeed;
         sphericalDelta.theta -= angle;
-	}
+    }
 
     function handleMoveRotate(x, y) {
         tempVec2a.set(x, y);
         tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed);
         // let el = element === document ? document.body : element;
-        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / element.clientHeight;
-        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / element.clientHeight;
+        sphericalDelta.theta -= (2 * Math.PI * tempVec2b.x) / element.clientHeight;
+        sphericalDelta.phi -= (2 * Math.PI * tempVec2b.y) / element.clientHeight;
         rotateStart.copy(tempVec2a);
     }
 
@@ -321,13 +320,13 @@ export function Orbit(object, {
     function addHandlers() {
         element.addEventListener('contextmenu', onContextMenu, false);
         element.addEventListener('mousedown', onMouseDown, false);
-        element.addEventListener('wheel', onMouseWheel, {passive: false});
-        element.addEventListener('touchstart', onTouchStart, {passive: false});
+        element.addEventListener('wheel', onMouseWheel, { passive: false });
+        element.addEventListener('touchstart', onTouchStart, { passive: false });
         element.addEventListener('touchend', onTouchEnd, false);
         element.addEventListener('touchmove', onTouchMove, { passive: false });
     }
 
-    this.remove = function() {
+    this.remove = function () {
         element.removeEventListener('contextmenu', onContextMenu);
         element.removeEventListener('mousedown', onMouseDown);
         element.removeEventListener('wheel', onMouseWheel);

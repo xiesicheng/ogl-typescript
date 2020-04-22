@@ -9,7 +9,7 @@ export class Vec2 extends Array<number> {
     get x() {
         return this[0];
     }
-    
+
     get y() {
         return this[1];
     }
@@ -87,7 +87,7 @@ export class Vec2 extends Array<number> {
     }
 
     cross(va, vb) {
-        if(vb) return Vec2Func.cross(va, vb);
+        if (vb) return Vec2Func.cross(va, vb);
         return Vec2Func.cross(this, va);
     }
 

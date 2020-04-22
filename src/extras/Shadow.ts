@@ -5,18 +5,13 @@ import { OGLRenderingContext } from '../core/Renderer';
 import { Mesh } from '../core/Mesh';
 
 export class Shadow {
-
     gl: OGLRenderingContext;
     light: Camera;
     target: RenderTarget;
     depthProgram: Program;
     castMeshes: Mesh[];
 
-    constructor(gl: OGLRenderingContext, {
-        light = new Camera(gl),
-        width = 1024,
-        height = width,
-    }) {
+    constructor(gl: OGLRenderingContext, { light = new Camera(gl), width = 1024, height = width }) {
         this.gl = gl;
 
         this.light = light;
@@ -42,7 +37,6 @@ export class Shadow {
         uniformView = 'shadowViewMatrix',
         uniformTexture = 'tShadow',
     }) {
-
         // Add uniforms to existing program
         if (receive && !mesh.program.uniforms[uniformProjection]) {
             mesh.program.uniforms[uniformProjection] = { value: this.light.projectionMatrix };
@@ -74,10 +68,9 @@ export class Shadow {
     }
 
     render({ scene }) {
-
         // For depth render, replace program with depth override.
         // Hide meshes not casting shadows.
-        scene.traverse(node => {
+        scene.traverse((node) => {
             if (!node.draw) return;
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.depthProgram;
@@ -95,7 +88,7 @@ export class Shadow {
         });
 
         // Then switch the program back to the normal one
-        scene.traverse(node => {
+        scene.traverse((node) => {
             if (!node.draw) return;
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.colorProgram;

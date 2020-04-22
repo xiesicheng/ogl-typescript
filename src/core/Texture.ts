@@ -1,4 +1,4 @@
-import { OGLRenderingContext, RenderState, RendererOptions } from "./Renderer";
+import { OGLRenderingContext, RenderState, RendererOptions } from './Renderer';
 
 // TODO: facilitate Compressed Textures
 // TODO: delete texture
@@ -17,9 +17,9 @@ let ID = 1;
 
 export interface TextureOptions {
     image: HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView;
-    target: number;            // gl.TEXTURE_2D
-    type: number;            // gl.UNSIGNED_BYTE,
-    format: number;            // gl.RGBA,
+    target: number; // gl.TEXTURE_2D
+    type: number; // gl.UNSIGNED_BYTE,
+    format: number; // gl.RGBA,
     internalFormat: number;
     wrapS: number;
     wrapT: number;
@@ -37,24 +37,25 @@ export interface TextureOptions {
 
 type CompressedImage = {
     isCompressedTexture: boolean;
-    mipmaps: { data: Uint8Array, width: number, height: number; }[];
+    mipmaps: { data: Uint8Array; width: number; height: number }[];
 };
 
 const isCompressedImage = (image: any): image is CompressedImage => (image as CompressedImage).isCompressedTexture === true;
 
 export class Texture {
-
     gl: OGLRenderingContext;
     id: number;
-    image: HTMLImageElement | HTMLVideoElement
+    image:
+        | HTMLImageElement
+        | HTMLVideoElement
         | HTMLImageElement[] // cube maps
         | ArrayBufferView // Data texture
         | CompressedImage;
 
     // options
-    target: number;            // gl.TEXTURE_2D
-    type: number;            // gl.UNSIGNED_BYTE,
-    format: number;            // gl.RGBA,
+    target: number; // gl.TEXTURE_2D
+    type: number; // gl.UNSIGNED_BYTE,
+    format: number; // gl.RGBA,
     internalFormat: number;
     wrapS: number;
     wrapT: number;
@@ -70,40 +71,42 @@ export class Texture {
     anisotropy: number;
 
     texture: WebGLTexture;
-    store: { image: any; };
+    store: { image: any };
     glState: RenderState;
 
     state: {
-        minFilter: number,
-        magFilter: number,
-        wrapS: number,
-        wrapT: number,
+        minFilter: number;
+        magFilter: number;
+        wrapS: number;
+        wrapT: number;
         anisotropy: number;
     };
 
     needsUpdate: Boolean;
     onUpdate?: () => void;
 
-    constructor(gl: OGLRenderingContext, {
-        image,
-        target = gl.TEXTURE_2D,
-        type = gl.UNSIGNED_BYTE,
-        format = gl.RGBA,
-        internalFormat = format,
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        generateMipmaps = true,
-        minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-        magFilter = gl.LINEAR,
-        premultiplyAlpha = false,
-        unpackAlignment = 4,
-        flipY = target == gl.TEXTURE_2D ? true : false,
-        anisotropy = 0,
-        level = 0,
-        width, // used for RenderTargets or Data Textures
-        height = width,
-    }: Partial<TextureOptions> = {}) {
-
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            image,
+            target = gl.TEXTURE_2D,
+            type = gl.UNSIGNED_BYTE,
+            format = gl.RGBA,
+            internalFormat = format,
+            wrapS = gl.CLAMP_TO_EDGE,
+            wrapT = gl.CLAMP_TO_EDGE,
+            generateMipmaps = true,
+            minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
+            magFilter = gl.LINEAR,
+            premultiplyAlpha = false,
+            unpackAlignment = 4,
+            flipY = target == gl.TEXTURE_2D ? true : false,
+            anisotropy = 0,
+            level = 0,
+            width, // used for RenderTargets or Data Textures
+            height = width,
+        }: Partial<TextureOptions> = {}
+    ) {
         this.gl = gl;
         this.id = ID++;
 
@@ -139,13 +142,11 @@ export class Texture {
             magFilter: this.gl.LINEAR,
             wrapS: this.gl.REPEAT,
             wrapT: this.gl.REPEAT,
-            anisotropy: 0
+            anisotropy: 0,
         };
-
     }
 
     bind() {
-
         // Already bound to active texture unit
         if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
         this.gl.bindTexture(this.target, this.texture);
@@ -157,7 +158,6 @@ export class Texture {
 
         // Make sure that texture is bound to its texture unit
         if (needsUpdate || this.glState.textureUnits[textureUnit] !== this.id) {
-
             // set active texture unit to perform texture functions
             this.gl.renderer.activeTexture(textureUnit);
             this.bind();
@@ -202,7 +202,11 @@ export class Texture {
         }
 
         if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
-            this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
+            this.gl.texParameterf(
+                this.target,
+                this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT,
+                this.anisotropy
+            );
             this.state.anisotropy = this.anisotropy;
         }
 
@@ -212,12 +216,17 @@ export class Texture {
                 this.height = (this.image as any).height;
             }
 
-
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-
                 // For cube maps
                 for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
+                    this.gl.texImage2D(
+                        this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                        this.level,
+                        this.internalFormat,
+                        this.format,
+                        this.type,
+                        this.image[i]
+                    );
                 }
             } else if (ArrayBuffer.isView(this.image)) {
                 // Data texture
@@ -230,15 +239,16 @@ export class Texture {
                     this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
                 }
             } else {
-
                 // Regular texture
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image as HTMLImageElement);
             }
 
             if (this.generateMipmaps) {
-
                 // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
-                if (!this.gl.renderer.isWebgl2 && (!isPowerOf2((this.image as HTMLImageElement).width) || !isPowerOf2((this.image as HTMLImageElement).height))) {
+                if (
+                    !this.gl.renderer.isWebgl2 &&
+                    (!isPowerOf2((this.image as HTMLImageElement).width) || !isPowerOf2((this.image as HTMLImageElement).height))
+                ) {
                     this.generateMipmaps = false;
                     this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
                     this.minFilter = this.gl.LINEAR;
@@ -251,17 +261,24 @@ export class Texture {
             this.onUpdate && this.onUpdate();
         } else {
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-
                 // Upload empty pixel for each side while no image to avoid errors while image or video loading
                 for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
+                    this.gl.texImage2D(
+                        this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                        0,
+                        this.gl.RGBA,
+                        1,
+                        1,
+                        0,
+                        this.gl.RGBA,
+                        this.gl.UNSIGNED_BYTE,
+                        emptyPixel
+                    );
                 }
             } else if (this.width) {
-
                 // image intentionally left null for RenderTarget
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
             } else {
-
                 // Upload empty pixel if no image to avoid errors while image or video loading
                 this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
             }

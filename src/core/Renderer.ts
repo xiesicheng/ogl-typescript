@@ -17,19 +17,19 @@ const tempVec3 = new Vec3();
 let ID = 1;
 
 export interface RendererOptions {
-    canvas: HTMLCanvasElement,
-    width: number,
-    height: number,
-    dpr: number,
-    alpha: boolean,
-    depth: boolean,
-    stencil: boolean,
-    antialias: boolean,
-    premultipliedAlpha: boolean,
-    preserveDrawingBuffer: boolean,
-    powerPreference: string,
-    autoClear: boolean,
-    webgl: number,
+    canvas: HTMLCanvasElement;
+    width: number;
+    height: number;
+    dpr: number;
+    alpha: boolean;
+    depth: boolean;
+    stencil: boolean;
+    antialias: boolean;
+    premultipliedAlpha: boolean;
+    preserveDrawingBuffer: boolean;
+    powerPreference: string;
+    autoClear: boolean;
+    webgl: number;
 }
 
 export type OGLRenderingContext = {
@@ -40,30 +40,29 @@ export type OGLRenderingContext = {
 export type DeviceParameters = {
     maxTextureUnits?: number;
     maxAnisotropy?: number;
-}
+};
 
 export type RenderState = {
-    blendFunc?: { src: GLenum, dst: GLenum, srcAlpha?, dstAlpha?},
-    blendEquation?: { modeRGB: GLenum, modeAlpha?},
-    cullFace?: number,
-    frontFace?: number,
-    depthMask?: boolean,
-    depthFunc?: number,
-    premultiplyAlpha?: boolean,
-    flipY?: boolean,
-    unpackAlignment?: number,
-    viewport?: { width: number | null, height: number | null },
-    textureUnits?: Array<number>,
-    activeTextureUnit?: number,
-    framebuffer?,
-    boundBuffer?,
-    uniformLocations?: Map<number, WebGLUniformLocation>
-}
+    blendFunc?: { src: GLenum; dst: GLenum; srcAlpha?; dstAlpha? };
+    blendEquation?: { modeRGB: GLenum; modeAlpha? };
+    cullFace?: number;
+    frontFace?: number;
+    depthMask?: boolean;
+    depthFunc?: number;
+    premultiplyAlpha?: boolean;
+    flipY?: boolean;
+    unpackAlignment?: number;
+    viewport?: { width: number | null; height: number | null };
+    textureUnits?: Array<number>;
+    activeTextureUnit?: number;
+    framebuffer?;
+    boundBuffer?;
+    uniformLocations?: Map<number, WebGLUniformLocation>;
+};
 
 export type RenderExtensions = { [key: string]: any };
 
 export class Renderer {
-
     dpr: number;
     alpha: boolean;
     color: boolean;
@@ -92,7 +91,7 @@ export class Renderer {
     currentProgram: number;
     currentGeometry: string | null;
 
-    private id:number;
+    private id: number;
 
     constructor({
         canvas = document.createElement('canvas'),
@@ -109,7 +108,6 @@ export class Renderer {
         autoClear = true,
         webgl = 2,
     }: Partial<RendererOptions> = {}) {
-
         const attributes = { alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference };
         this.dpr = dpr;
         this.alpha = alpha;
@@ -184,9 +182,9 @@ export class Renderer {
         // Store device parameters
         this.parameters = {};
         this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-        this.parameters.maxAnisotropy = this.getExtension('EXT_texture_filter_anisotropic') ?
-            this.gl.getParameter(this.getExtension('EXT_texture_filter_anisotropic').MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 0;
-
+        this.parameters.maxAnisotropy = this.getExtension('EXT_texture_filter_anisotropic')
+            ? this.gl.getParameter(this.getExtension('EXT_texture_filter_anisotropic').MAX_TEXTURE_MAX_ANISOTROPY_EXT)
+            : 0;
     }
 
     setSize(width, height) {
@@ -222,10 +220,13 @@ export class Renderer {
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
-        if (this.state.blendFunc.src === src &&
+        if (
+            this.state.blendFunc.src === src &&
             this.state.blendFunc.dst === dst &&
             this.state.blendFunc.srcAlpha === srcAlpha &&
-            this.state.blendFunc.dstAlpha === dstAlpha) return;
+            this.state.blendFunc.dstAlpha === dstAlpha
+        )
+            return;
         this.state.blendFunc.src = src;
         this.state.blendFunc.dst = dst;
         this.state.blendFunc.srcAlpha = srcAlpha;
@@ -235,8 +236,7 @@ export class Renderer {
     }
 
     setBlendEquation(modeRGB, modeAlpha) {
-        if (this.state.blendEquation.modeRGB === modeRGB &&
-            this.state.blendEquation.modeAlpha === modeAlpha) return;
+        if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
         this.state.blendEquation.modeRGB = modeRGB;
         this.state.blendEquation.modeAlpha = modeAlpha;
         if (modeAlpha !== undefined) this.gl.blendEquationSeparate(modeRGB, modeAlpha);
@@ -280,7 +280,6 @@ export class Renderer {
     }
 
     getExtension(extension: string, webgl2Func?: keyof WebGL2RenderingContext, extFunc?: string) {
-
         // if webgl2 function supported, return func bound to gl context
         if (webgl2Func && this.gl[webgl2Func]) return (this.gl[webgl2Func] as Function).bind(this.gl);
 
@@ -314,7 +313,8 @@ export class Renderer {
     sortTransparent(a, b) {
         if (a.renderOrder !== b.renderOrder) {
             return a.renderOrder - b.renderOrder;
-        } if (a.zDepth !== b.zDepth) {
+        }
+        if (a.zDepth !== b.zDepth) {
             return b.zDepth - a.zDepth;
         } else {
             return b.id - a.id;
@@ -337,7 +337,7 @@ export class Renderer {
         if (camera && frustumCull) camera.updateFrustum();
 
         // Get visible
-        scene.traverse(node => {
+        scene.traverse((node) => {
             if (!node.visible) return true;
             if (!node.draw) return;
 
@@ -353,8 +353,7 @@ export class Renderer {
             const transparent = []; // depthTest true
             const ui = []; // depthTest false
 
-            renderList.forEach(node => {
-
+            renderList.forEach((node) => {
                 // Split into the 3 render groups
                 if (!node.program.transparent) {
                     opaque.push(node);
@@ -394,35 +393,35 @@ export class Renderer {
         frustumCull = true,
         clear,
     }: Partial<{
-        scene: Transform,
-        camera: Camera,
-        target: RenderTarget,
-        update: boolean,
-        sort: boolean,
-        frustumCull: boolean,
-        clear: boolean,
+        scene: Transform;
+        camera: Camera;
+        target: RenderTarget;
+        update: boolean;
+        sort: boolean;
+        frustumCull: boolean;
+        clear: boolean;
     }>) {
-
         if (target === null) {
-
             // make sure no render target bound so draws to canvas
             this.bindFramebuffer();
             this.setViewport(this.width * this.dpr, this.height * this.dpr);
         } else {
-
             // bind supplied render target and update viewport
             this.bindFramebuffer(target);
             this.setViewport(target.width, target.height);
         }
 
         if (clear || (this.autoClear && clear !== false)) {
-
             // Ensure depth buffer writing is enabled so it can be cleared
             if (this.depth && (!target || target.depth)) {
                 this.enable(this.gl.DEPTH_TEST);
                 this.setDepthMask(true);
             }
-            this.gl.clear((this.color ? this.gl.COLOR_BUFFER_BIT : 0) | (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) | (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0));
+            this.gl.clear(
+                (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
+                    (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
+                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
+            );
         }
 
         // updates all scene graph matrices
@@ -434,7 +433,7 @@ export class Renderer {
         // Get render list - entails culling and sorting
         const renderList = this.getRenderList({ scene, camera, frustumCull, sort });
 
-        renderList.forEach(node => {
+        renderList.forEach((node) => {
             node.draw({ camera });
         });
     }

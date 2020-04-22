@@ -5,28 +5,26 @@
 import { Texture } from './Texture';
 import { OGLRenderingContext } from './Renderer';
 
-
 export interface RenderTargetOptions {
-    width: number,
-    height: number,
-    target: GLenum,    //gl.FRAMEBUFFER,
-    color: number,    // number of color attachments
-    depth: boolean,
-    stencil: boolean,
-    depthTexture: boolean,   // note - stencil breaks
-    wrapS: GLenum,    // gl.CLAMP_TO_EDGE,
-    wrapT: GLenum,// gl.CLAMP_TO_EDGE,
-    minFilter: GLenum,// gl.LINEAR,
-    magFilter: GLenum // minFilter,
-    type: GLenum, // gl.UNSIGNED_BYTE,
-    format: GLenum, // gl.RGBA,
-    internalFormat: GLenum, //= format,
-    unpackAlignment: number,
-    premultiplyAlpha: boolean,
+    width: number;
+    height: number;
+    target: GLenum; //gl.FRAMEBUFFER,
+    color: number; // number of color attachments
+    depth: boolean;
+    stencil: boolean;
+    depthTexture: boolean; // note - stencil breaks
+    wrapS: GLenum; // gl.CLAMP_TO_EDGE,
+    wrapT: GLenum; // gl.CLAMP_TO_EDGE,
+    minFilter: GLenum; // gl.LINEAR,
+    magFilter: GLenum; // minFilter,
+    type: GLenum; // gl.UNSIGNED_BYTE,
+    format: GLenum; // gl.RGBA,
+    internalFormat: GLenum; //= format,
+    unpackAlignment: number;
+    premultiplyAlpha: boolean;
 }
 
 export class RenderTarget {
-
     gl: OGLRenderingContext;
     width: number;
     height: number;
@@ -41,26 +39,27 @@ export class RenderTarget {
     stencilBuffer: WebGLRenderbuffer;
     depthStencilBuffer: WebGLRenderbuffer;
 
-
-
-    constructor(gl: OGLRenderingContext, {
-        width = gl.canvas.width,
-        height = gl.canvas.height,
-        target = gl.FRAMEBUFFER,
-        color = 1, // number of color attachments
-        depth = true,
-        stencil = false,
-        depthTexture = false, // note - stencil breaks
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        minFilter = gl.LINEAR,
-        magFilter = minFilter,
-        type = gl.UNSIGNED_BYTE,
-        format = gl.RGBA,
-        internalFormat = format,
-        unpackAlignment,
-        premultiplyAlpha,
-    }: Partial<RenderTargetOptions> = {}) {
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            width = gl.canvas.width,
+            height = gl.canvas.height,
+            target = gl.FRAMEBUFFER,
+            color = 1, // number of color attachments
+            depth = true,
+            stencil = false,
+            depthTexture = false, // note - stencil breaks
+            wrapS = gl.CLAMP_TO_EDGE,
+            wrapT = gl.CLAMP_TO_EDGE,
+            minFilter = gl.LINEAR,
+            magFilter = minFilter,
+            type = gl.UNSIGNED_BYTE,
+            format = gl.RGBA,
+            internalFormat = format,
+            unpackAlignment,
+            premultiplyAlpha,
+        }: Partial<RenderTargetOptions> = {}
+    ) {
         this.gl = gl;
         this.width = width;
         this.height = height;
@@ -74,12 +73,23 @@ export class RenderTarget {
 
         // create and attach required num of color textures
         for (let i = 0; i < color; i++) {
-            this.textures.push(new Texture(gl, {
-                width, height,
-                wrapS, wrapT, minFilter, magFilter, type, format, internalFormat, unpackAlignment, premultiplyAlpha,
-                flipY: false,
-                generateMipmaps: false,
-            }));
+            this.textures.push(
+                new Texture(gl, {
+                    width,
+                    height,
+                    wrapS,
+                    wrapT,
+                    minFilter,
+                    magFilter,
+                    type,
+                    format,
+                    internalFormat,
+                    unpackAlignment,
+                    premultiplyAlpha,
+                    flipY: false,
+                    generateMipmaps: false,
+                })
+            );
             this.textures[i].update();
             this.gl.framebufferTexture2D(this.target, this.gl.COLOR_ATTACHMENT0 + i, this.gl.TEXTURE_2D, this.textures[i].texture, 0 /* level */);
             drawBuffers.push(this.gl.COLOR_ATTACHMENT0 + i);
@@ -94,7 +104,8 @@ export class RenderTarget {
         // note depth textures break stencil - so can't use together
         if (depthTexture && (this.gl.renderer.isWebgl2 || this.gl.renderer.getExtension('WEBGL_depth_texture'))) {
             this.depthTexture = new Texture(gl, {
-                width, height,
+                width,
+                height,
                 minFilter: this.gl.NEAREST,
                 magFilter: this.gl.NEAREST,
                 format: this.gl.DEPTH_COMPONENT,
@@ -104,7 +115,6 @@ export class RenderTarget {
             this.depthTexture.update();
             this.gl.framebufferTexture2D(this.target, this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
         } else {
-
             // Render buffers
             if (depth && !stencil) {
                 this.depthBuffer = this.gl.createRenderbuffer();
@@ -130,5 +140,4 @@ export class RenderTarget {
 
         this.gl.bindFramebuffer(this.target, null);
     }
-
 }

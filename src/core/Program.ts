@@ -1,4 +1,4 @@
-import { OGLRenderingContext } from "./Renderer";
+import { OGLRenderingContext } from './Renderer';
 
 // TODO: upload empty texture if null ? maybe not
 // TODO: upload identity matrix if null ?
@@ -11,7 +11,7 @@ const arrayCacheF32 = {};
 export interface ProgramOptions {
     vertex: string;
     fragment: string;
-    uniforms: { [name: string]: any; };
+    uniforms: { [name: string]: any };
 
     transparent: boolean;
     cullFace: GLenum | false;
@@ -41,9 +41,8 @@ export interface UniformInfo extends WebGLActiveInfo {
 }
 
 export class Program {
-
     gl: OGLRenderingContext;
-    uniforms: { [name: string]: { value: any; }; };
+    uniforms: { [name: string]: { value: any } };
     id: number;
 
     transparent: boolean;
@@ -59,18 +58,21 @@ export class Program {
     attributeLocations: Map<any, any>;
     attributeOrder: string;
 
-    constructor(gl: OGLRenderingContext, {
-        vertex,
-        fragment,
-        uniforms = {},
+    constructor(
+        gl: OGLRenderingContext,
+        {
+            vertex,
+            fragment,
+            uniforms = {},
 
-        transparent = false,
-        cullFace = gl.BACK,
-        frontFace = gl.CCW,
-        depthTest = true,
-        depthWrite = true,
-        depthFunc = gl.LESS,
-    }: Partial<ProgramOptions> = {}) {
+            transparent = false,
+            cullFace = gl.BACK,
+            frontFace = gl.CCW,
+            depthTest = true,
+            depthWrite = true,
+            depthFunc = gl.LESS,
+        }: Partial<ProgramOptions> = {}
+    ) {
         if (!gl.canvas) console.error('gl not passed as fist argument to Program');
 
         this.gl = gl;
@@ -188,13 +190,12 @@ export class Program {
         this.gl.renderer.setFrontFace(this.frontFace);
         this.gl.renderer.setDepthMask(this.depthWrite);
         this.gl.renderer.setDepthFunc(this.depthFunc);
-        if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
+        if (this.blendFunc.src)
+            this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
         if (this.blendEquation.modeRGB) this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
     }
 
-    use({
-        flipFaces = false,
-    } = {}) {
+    use({ flipFaces = false } = {}) {
         let textureUnit = -1;
         const programActive = this.gl.renderer.currentProgram === this.id;
 
@@ -240,7 +241,7 @@ export class Program {
             // For texture arrays, set uniform as an array of texture units instead of just one
             if (uniform.value.length && uniform.value[0].texture) {
                 const textureUnits = [];
-                uniform.value.forEach(value => {
+                uniform.value.forEach((value) => {
                     textureUnit = textureUnit + 1;
                     value.update(textureUnit);
                     textureUnits.push(textureUnit);
@@ -268,7 +269,6 @@ function setUniform(gl, type, location, value) {
     // Avoid redundant uniform commands
     if (value.length) {
         if (setValue === undefined) {
-
             // clone array to store as cache
             gl.renderer.state.uniformLocations.set(location, value.slice(0));
         } else {
@@ -284,30 +284,41 @@ function setUniform(gl, type, location, value) {
     }
 
     switch (type) {
-        case 5126: return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
-        case 35664: return gl.uniform2fv(location, value); // FLOAT_VEC2
-        case 35665: return gl.uniform3fv(location, value); // FLOAT_VEC3
-        case 35666: return gl.uniform4fv(location, value); // FLOAT_VEC4
+        case 5126:
+            return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
+        case 35664:
+            return gl.uniform2fv(location, value); // FLOAT_VEC2
+        case 35665:
+            return gl.uniform3fv(location, value); // FLOAT_VEC3
+        case 35666:
+            return gl.uniform4fv(location, value); // FLOAT_VEC4
         case 35670: // BOOL
         case 5124: // INT
         case 35678: // SAMPLER_2D
-        case 35680: return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
+        case 35680:
+            return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
         case 35671: // BOOL_VEC2
-        case 35667: return gl.uniform2iv(location, value); // INT_VEC2
+        case 35667:
+            return gl.uniform2iv(location, value); // INT_VEC2
         case 35672: // BOOL_VEC3
-        case 35668: return gl.uniform3iv(location, value); // INT_VEC3
+        case 35668:
+            return gl.uniform3iv(location, value); // INT_VEC3
         case 35673: // BOOL_VEC4
-        case 35669: return gl.uniform4iv(location, value); // INT_VEC4
-        case 35674: return gl.uniformMatrix2fv(location, false, value); // FLOAT_MAT2
-        case 35675: return gl.uniformMatrix3fv(location, false, value); // FLOAT_MAT3
-        case 35676: return gl.uniformMatrix4fv(location, false, value); // FLOAT_MAT4
+        case 35669:
+            return gl.uniform4iv(location, value); // INT_VEC4
+        case 35674:
+            return gl.uniformMatrix2fv(location, false, value); // FLOAT_MAT2
+        case 35675:
+            return gl.uniformMatrix3fv(location, false, value); // FLOAT_MAT3
+        case 35676:
+            return gl.uniformMatrix4fv(location, false, value); // FLOAT_MAT4
     }
 }
 
 function addLineNumbers(string) {
     let lines = string.split('\n');
     for (let i = 0; i < lines.length; i++) {
-        lines[i] = (i + 1) + ': ' + lines[i];
+        lines[i] = i + 1 + ': ' + lines[i];
     }
     return lines.join('\n');
 }

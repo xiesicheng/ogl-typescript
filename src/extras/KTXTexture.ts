@@ -12,12 +12,7 @@ export interface KTXTextureOptions {
 }
 
 export class KTXTexture extends Texture {
-    constructor(gl, {
-        buffer,
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        anisotropy = 0,
-    }: Partial<KTXTextureOptions> = {}) {
+    constructor(gl, { buffer, wrapS = gl.CLAMP_TO_EDGE, wrapT = gl.CLAMP_TO_EDGE, anisotropy = 0 }: Partial<KTXTextureOptions> = {}) {
         super(gl, {
             generateMipmaps: false,
             wrapS,
@@ -34,7 +29,7 @@ export class KTXTexture extends Texture {
         // Update texture
         this.image = {
             isCompressedTexture: true,
-            mipmaps: ktx.mipmaps
+            mipmaps: ktx.mipmaps,
         };
         this.internalFormat = ktx.glInternalFormat;
         this.minFilter = ktx.numberOfMipmapLevels > 1 ? this.gl.NEAREST_MIPMAP_LINEAR : this.gl.LINEAR;
@@ -42,29 +37,33 @@ export class KTXTexture extends Texture {
         // TODO: support cube maps
         // ktx.numberOfFaces
     }
-};
+}
 
 class KhronosTextureContainer {
-
     glInternalFormat: number;
     numberOfFaces: number;
     numberOfMipmapLevels: number;
-    mipmaps: Array<{ data: Uint8Array, width: number, height: number; }>;
+    mipmaps: Array<{ data: Uint8Array; width: number; height: number }>;
     isCompressedTexture: boolean;
 
     constructor(buffer) {
-
         const idCheck = [0xab, 0x4b, 0x54, 0x58, 0x20, 0x31, 0x31, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a];
         const id = new Uint8Array(buffer, 0, 12);
         for (let i = 0; i < id.length; i++)
-            if (id[i] !== idCheck[i]) { console.error('File missing KTX identifier'); return; };
+            if (id[i] !== idCheck[i]) {
+                console.error('File missing KTX identifier');
+                return;
+            }
 
         // TODO: Is this always 4? Tested: [android, macos]
         const size = Uint32Array.BYTES_PER_ELEMENT;
         const head = new DataView(buffer, 12, 13 * size);
         const littleEndian = head.getUint32(0, true) === 0x04030201;
         const glType = head.getUint32(1 * size, littleEndian);
-        if (glType !== 0) { console.warn('only compressed formats currently supported'); return; };
+        if (glType !== 0) {
+            console.warn('only compressed formats currently supported');
+            return;
+        }
         this.glInternalFormat = head.getUint32(4 * size, littleEndian);
         let width = head.getUint32(6 * size, littleEndian);
         let height = head.getUint32(7 * size, littleEndian);

@@ -1,6 +1,6 @@
-import { Mat4 } from "../math/Mat4";
-import { Vec3 } from "../math/Vec3";
-import { Transform } from "./Transform";
+import { Mat4 } from '../math/Mat4';
+import { Vec3 } from '../math/Vec3';
+import { Transform } from './Transform';
 
 const tempMat4 = new Mat4();
 const tempVec3a = new Vec3();
@@ -19,7 +19,6 @@ export type CameraOptions = {
 };
 
 export class Camera extends Transform {
-
     near: number;
     far: number;
     fov: number;
@@ -38,17 +37,7 @@ export class Camera extends Transform {
     type: 'perspective' | 'orthographic';
     frustum: Vec3[];
 
-    constructor(gl, {
-        near = 0.1,
-        far = 100,
-        fov = 45,
-        aspect = 1,
-        left,
-        right,
-        bottom,
-        top,
-        zoom = 1,
-    }: Partial<CameraOptions> = {}) {
+    constructor(gl, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 }: Partial<CameraOptions> = {}) {
         super();
 
         Object.assign(this, { near, far, fov, aspect, left, right, bottom, top, zoom });
@@ -65,12 +54,7 @@ export class Camera extends Transform {
         else this.perspective();
     }
 
-    perspective({
-        near = this.near,
-        far = this.far,
-        fov = this.fov,
-        aspect = this.aspect,
-    } = {}) {
+    perspective({ near = this.near, far = this.far, fov = this.fov, aspect = this.aspect } = {}) {
         Object.assign(this, { near, far, fov, aspect });
         this.projectionMatrix.fromPerspective({ fov: fov * (Math.PI / 180), aspect, near, far });
         this.type = 'perspective';
@@ -146,7 +130,6 @@ export class Camera extends Transform {
     }
 
     frustumIntersectsMesh(node) {
-
         // If no position attribute, treat as frustumCulled false
         if (!node.geometry.attributes.position) return true;
 

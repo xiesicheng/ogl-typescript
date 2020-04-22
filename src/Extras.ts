@@ -22,6 +22,3 @@ export { KTXTexture } from './extras/KTXTexture';
 export { TextureLoader } from './extras/TextureLoader';
 export { GLTFLoader } from './extras/GLTFLoader';
 export { GLTFAnimation } from './extras/GLTFAnimation';
-
-
-

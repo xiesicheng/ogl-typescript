@@ -140,191 +140,191 @@ export class GLTFLoader {
         // Clone to leave description pure
         const bufferViews = desc.bufferViews.map((o) => Object.assign({}, o));
 
-                desc.meshes.forEach(({ primitives }) => {
-                    primitives.forEach(({ attributes, indices }) => {
-                        // Flag bufferView as an attribute, so it knows to create a gl buffer
-                        for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+        desc.meshes.forEach(({ primitives }) => {
+            primitives.forEach(({ attributes, indices }) => {
+                // Flag bufferView as an attribute, so it knows to create a gl buffer
+                for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
 
-                        if (indices === undefined) return;
-                        bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
+                if (indices === undefined) return;
+                bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
 
-                        // Make sure indices bufferView have a target property for gl buffer binding
-                        bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
-                    });
-                });
-
-                // Get componentType of each bufferView from the accessors
-                desc.accessors.forEach(({ bufferView: i, componentType }) => {
-                    bufferViews[i].componentType = componentType;
-                });
-
-                // Push each bufferView to the GPU as a separate buffer
-                bufferViews.forEach(
-                    (
-                        {
-                            buffer: bufferIndex, // required
-                            byteOffset = 0, // optional
-                            byteLength, // required
-                            byteStride, // optional
-                            target = gl.ARRAY_BUFFER, // optional, added above for elements
-                            name, // optional
-                            extensions, // optional
-                            extras, // optional
-
-                            componentType, // required, added from accessor above
-                            isAttribute,
-                        },
-                        i
-                    ) => {
-                        const TypeArray = TYPE_ARRAY[componentType];
-                        const elementBytes = TypeArray.BYTES_PER_ELEMENT;
-
-                        const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
-                        bufferViews[i].data = data;
-
-                        // Create gl buffers for the bufferView, pushing it to the GPU
-                        if (!isAttribute) return;
-                        const buffer = gl.createBuffer();
-                        gl.bindBuffer(target, buffer);
-                        gl.renderer.state.boundBuffer = buffer;
-                        gl.bufferData(target, data, gl.STATIC_DRAW);
-                        bufferViews[i].buffer = buffer;
-                    }
-                );
-
-                return bufferViews;
-            }
-
-    static parseMeshes(gl, desc, bufferViews) {
-                return desc.meshes.map(
-                    ({
-                        primitives, // required
-                        weights, // optional
-                        name, // optional
-                        extensions, // optional
-                        extras, // optional
-                    }) => {
-                        return {
-                            primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
-                            weights,
-                            name,
-                        };
-                    }
-                );
-            }
-
-    static parseSkins(gl, desc, bufferViews) {
-                if(!desc.skins) return null;
-            return desc.skins.map(
-                ({
-                    inverseBindMatrices, // optional
-                    skeleton, // optional
-                    joints, // required
-                    // name,
-                    // extensions,
-                    // extras,
-                }) => {
-                    return {
-                        inverseBindMatrices: this.parseAccessor(inverseBindMatrices, desc, bufferViews),
-                        skeleton,
-                        joints,
-                    };
-                }
-            );
-        }
-
-    static populateSkins(skins, nodes) {
-            if(!skins) return;
-            skins.forEach((skin) => {
-                skin.joints = skin.joints.map((i, index) => {
-                    const joint = nodes[i];
-                    joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
-                    return joint;
-                });
-                skin.skeleton = nodes[skin.skeleton];
+                // Make sure indices bufferView have a target property for gl buffer binding
+                bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
             });
-        }
+        });
 
-    static parsePrimitives(gl, primitives, desc, bufferViews) {
-            return primitives.map(
-                ({
-                    attributes, // required
-                    indices, // optional
-                    material, // optional
-                    mode = 4, // optional
-                    targets, // optional
+        // Get componentType of each bufferView from the accessors
+        desc.accessors.forEach(({ bufferView: i, componentType }) => {
+            bufferViews[i].componentType = componentType;
+        });
+
+        // Push each bufferView to the GPU as a separate buffer
+        bufferViews.forEach(
+            (
+                {
+                    buffer: bufferIndex, // required
+                    byteOffset = 0, // optional
+                    byteLength, // required
+                    byteStride, // optional
+                    target = gl.ARRAY_BUFFER, // optional, added above for elements
+                    name, // optional
                     extensions, // optional
                     extras, // optional
-                }) => {
-                    const geometry = new Geometry(gl);
 
-                    // Add each attribute found in primitive
-                    for (let attr in attributes) {
-                        geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
-                    }
+                    componentType, // required, added from accessor above
+                    isAttribute,
+                },
+                i
+            ) => {
+                const TypeArray = TYPE_ARRAY[componentType];
+                const elementBytes = TypeArray.BYTES_PER_ELEMENT;
+
+                const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+                bufferViews[i].data = data;
+
+                // Create gl buffers for the bufferView, pushing it to the GPU
+                if (!isAttribute) return;
+                const buffer = gl.createBuffer();
+                gl.bindBuffer(target, buffer);
+                gl.renderer.state.boundBuffer = buffer;
+                gl.bufferData(target, data, gl.STATIC_DRAW);
+                bufferViews[i].buffer = buffer;
+            }
+        );
+
+        return bufferViews;
+    }
+
+    static parseMeshes(gl, desc, bufferViews) {
+        return desc.meshes.map(
+            ({
+                primitives, // required
+                weights, // optional
+                name, // optional
+                extensions, // optional
+                extras, // optional
+            }) => {
+                return {
+                    primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+                    weights,
+                    name,
+                };
+            }
+        );
+    }
+
+    static parseSkins(gl, desc, bufferViews) {
+        if (!desc.skins) return null;
+        return desc.skins.map(
+            ({
+                inverseBindMatrices, // optional
+                skeleton, // optional
+                joints, // required
+                // name,
+                // extensions,
+                // extras,
+            }) => {
+                return {
+                    inverseBindMatrices: this.parseAccessor(inverseBindMatrices, desc, bufferViews),
+                    skeleton,
+                    joints,
+                };
+            }
+        );
+    }
+
+    static populateSkins(skins, nodes) {
+        if (!skins) return;
+        skins.forEach((skin) => {
+            skin.joints = skin.joints.map((i, index) => {
+                const joint = nodes[i];
+                joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
+                return joint;
+            });
+            skin.skeleton = nodes[skin.skeleton];
+        });
+    }
+
+    static parsePrimitives(gl, primitives, desc, bufferViews) {
+        return primitives.map(
+            ({
+                attributes, // required
+                indices, // optional
+                material, // optional
+                mode = 4, // optional
+                targets, // optional
+                extensions, // optional
+                extras, // optional
+            }) => {
+                const geometry = new Geometry(gl);
+
+                // Add each attribute found in primitive
+                for (let attr in attributes) {
+                    geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+                }
 
                 // Add index attribute if found
                 if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
 
-                    // TODO: materials
-                    const program = NormalProgram(gl);
+                // TODO: materials
+                const program = NormalProgram(gl);
 
-                    return {
-                        geometry,
-                        program,
-                        mode,
-                    };
-                }
-            );
-        }
+                return {
+                    geometry,
+                    program,
+                    mode,
+                };
+            }
+        );
+    }
 
     static parseAccessor(index, desc, bufferViews) {
-            // TODO: init missing bufferView with 0s
-            // TODO: support sparse
+        // TODO: init missing bufferView with 0s
+        // TODO: support sparse
 
-            const {
-                bufferView: bufferViewIndex, // optional
-                byteOffset = 0, // optional
-                componentType, // required
-                normalized = false, // optional
-                count, // required
-                type, // required
-                min, // optional
-                max, // optional
-                sparse, // optional
-                // name, // optional
-                // extensions, // optional
-                // extras, // optional
-            } = desc.accessors[index];
+        const {
+            bufferView: bufferViewIndex, // optional
+            byteOffset = 0, // optional
+            componentType, // required
+            normalized = false, // optional
+            count, // required
+            type, // required
+            min, // optional
+            max, // optional
+            sparse, // optional
+            // name, // optional
+            // extensions, // optional
+            // extras, // optional
+        } = desc.accessors[index];
 
-            const {
-                data, // attached in parseBufferViews
-                buffer, // replaced to be the actual GL buffer
-                // byteOffset = 0, // applied in parseBufferViews
-                // byteLength, // applied in parseBufferViews
-                byteStride = 0,
-                target,
-                // name,
-                // extensions,
-                // extras,
-            } = bufferViews[bufferViewIndex];
+        const {
+            data, // attached in parseBufferViews
+            buffer, // replaced to be the actual GL buffer
+            // byteOffset = 0, // applied in parseBufferViews
+            // byteLength, // applied in parseBufferViews
+            byteStride = 0,
+            target,
+            // name,
+            // extensions,
+            // extras,
+        } = bufferViews[bufferViewIndex];
 
-            const size = TYPE_SIZE[type];
+        const size = TYPE_SIZE[type];
 
-            // Return attribute data
-            return {
-                data, // Optional. Used for computing bounds if no min/max
-                size,
-                type: componentType,
-                normalized,
-                buffer,
-                stride: byteStride,
-                offset: byteOffset,
-                count,
-                min,
-                max,
-            };
-        }
+        // Return attribute data
+        return {
+            data, // Optional. Used for computing bounds if no min/max
+            size,
+            type: componentType,
+            normalized,
+            buffer,
+            stride: byteStride,
+            offset: byteOffset,
+            count,
+            min,
+            max,
+        };
+    }
 
     static parseNodes(gl, desc, meshes, skins) {
         const nodes = desc.nodes.map(
@@ -369,7 +369,7 @@ export class GLTFLoader {
                 }
 
                 return node;
-                }
+            }
         );
 
         desc.nodes.forEach(({ children = [] }, i) => {

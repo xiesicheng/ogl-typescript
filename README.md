@@ -19,11 +19,11 @@
 
 <br />
 
-⚠️ *Note: currently in alpha, so expect breaking changes.*
+⚠️ _Note: currently in alpha, so expect breaking changes._
 
 [See the Examples!](https://nshen.github.io/ogl-typescript/examples)
 
-OGL-TypeScript is TypeScript port of  [OGL Minimal WebGL library](https://github.com/oframe/ogl) , so it add code completion feature to OGL.
+OGL-TypeScript is TypeScript port of [OGL Minimal WebGL library](https://github.com/oframe/ogl) , so it add code completion feature to OGL.
 
 <img src="./code-complete.gif"  width="577px" height="337px" />
 
@@ -47,7 +47,7 @@ to
 import { ... } from 'ogl-typescript'
 ```
 
-You can find  [ogl-typescript-starter](https://github.com/nshen/ogl-typescript-starter) here, it's very easy to get start.
+You can find [ogl-typescript-starter](https://github.com/nshen/ogl-typescript-starter) here, it's very easy to get start.
 
 ## Examples
 
@@ -67,12 +67,10 @@ build examples
 yarn build:examples # npm run build:examples
 ```
 
-
-
-
 ## Versions
 
-| OGL-TypeScript | OGL |
-|---------|--------|
-| 0.1.2   | 0.0.42 | 
-| 0.1.1   | 0.0.40 | 
+| OGL-TypeScript | OGL    |
+| -------------- | ------ |
+| 0.1.3          | 0.0.43 |
+| 0.1.2          | 0.0.42 |
+| 0.1.1          | 0.0.40 |

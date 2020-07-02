@@ -70,7 +70,7 @@ export class GLTFSkin extends Mesh {
         if (this.boneTexture) this.boneTexture.needsUpdate = true;
     }
 
-    draw({ camera }: { camera?: Camera } = {}) {
+    draw({ camera }: { camera?: Camera; } = {}) {
         if (!this.program.uniforms.boneTexture) {
             Object.assign(this.program.uniforms, {
                 boneTexture: { value: this.boneTexture },

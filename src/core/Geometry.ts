@@ -37,7 +37,7 @@ let ATTR_ID = 1;
 export interface Attribute {
     size: number;
     data: ArrayLike<number> | ArrayBufferView;
-    instanced?: null;
+    instanced?: null | number;
     type: GLenum;
     normalized: boolean;
 
@@ -67,9 +67,9 @@ let isBoundsWarned = false;
 export class Geometry {
     gl: OGLRenderingContext;
     id: number;
-    attributes: { [key: string]: Attribute };
+    attributes: { [key: string]: Partial<Attribute>; };
     VAOs: {};
-    drawRange: { start: number; count: number };
+    drawRange: { start: number; count: number; };
     instancedCount: number;
     glState: RenderState;
     isInstanced: boolean;
@@ -102,7 +102,7 @@ export class Geometry {
         }
     }
 
-    addAttribute(key: string, attr: Attribute) {
+    addAttribute(key: string, attr: Partial<Attribute>) {
         this.attributes[key] = attr;
 
         // Set options
@@ -113,8 +113,8 @@ export class Geometry {
             (attr.data.constructor === Float32Array
                 ? this.gl.FLOAT
                 : attr.data.constructor === Uint16Array
-                ? this.gl.UNSIGNED_SHORT
-                : this.gl.UNSIGNED_INT); // Uint32Array
+                    ? this.gl.UNSIGNED_SHORT
+                    : this.gl.UNSIGNED_INT); // Uint32Array
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;

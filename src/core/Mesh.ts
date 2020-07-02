@@ -23,6 +23,9 @@ export interface DrawOptions {
 }
 
 export class Mesh extends Transform {
+    name: string;
+    numInstances;
+
     gl: OGLRenderingContext & WebGL2RenderingContext;
     id: number;
     geometry: Geometry;

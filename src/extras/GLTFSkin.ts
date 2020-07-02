@@ -4,6 +4,7 @@ import { Texture } from '../core/Texture';
 import { Camera } from '../core/Camera';
 
 const tempMat4 = new Mat4();
+const identity = new Mat4();
 
 export interface GLTFSkinOptions {
     skeleton;
@@ -79,14 +80,14 @@ export class GLTFSkin extends Mesh {
 
         this.updateUniforms();
 
-        // Switch this world matrix with root node's to populate uniforms
+        // Switch the world matrix with identity to ignore any transforms
+        // on the mesh itself - only use skeleton's transforms
         const _worldMatrix = this.worldMatrix;
-
-        // TODO: figure out what's the deal with this
-        // if (this.skeleton.skeleton) this.worldMatrix = this.skeleton.skeleton.worldMatrix;
+        this.worldMatrix = identity;
 
         super.draw({ camera });
 
+        // Switch back to leave identity untouched
         this.worldMatrix = _worldMatrix;
     }
 }

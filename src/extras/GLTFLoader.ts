@@ -73,6 +73,10 @@ export class GLTFLoader {
         // load main description json
         const desc = await this.parseDesc(src);
 
+        return await this.parse(gl, desc, dir);
+    }
+
+    static async parse(gl, desc, dir) {
         if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
 
         // Load buffers async
@@ -119,6 +123,7 @@ export class GLTFLoader {
             buffers,
             bufferViews,
             images,
+            textures,
             materials,
             meshes,
             nodes,
@@ -345,6 +350,10 @@ export class GLTFLoader {
                 if (normalTexture) {
                     normalTexture.texture = textures[normalTexture.index];
                     // scale: 1
+                    // texCoord
+                }
+                if (metallicRoughnessTexture) {
+                    metallicRoughnessTexture.texture = textures[metallicRoughnessTexture.index];
                     // texCoord
                 }
                 if (occlusionTexture) {

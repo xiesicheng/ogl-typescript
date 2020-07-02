@@ -130,6 +130,18 @@ function move(e) {
     // return an array of intersected meshes in order of closest to farthest
     const hits: HitableMesh[] = raycast.intersectBounds(meshes);
 
+    // Can intersect with geometry if the bounds aren't enough, or if you need
+    // to find out the uv or normal value at the hit point.
+    // Optional 2nd and third arguments are backface culling, and max distance
+    // Both useful for doing early exits to help optimise.
+    // const hits = raycast.intersectMeshes(meshes, { 
+    //     cullFace: true, 
+    //     maxDistance: 10, 
+    //     includeUV: true, 
+    //     includeNormal: true,
+    // });
+    // if (hits.length) console.log(hits[0].hit.uv);
+
     // Update our feedback using this array
     hits.forEach(mesh => mesh.isHit = true);
 }

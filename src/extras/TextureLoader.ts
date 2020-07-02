@@ -221,6 +221,7 @@ function powerOfTwo(value) {
 function decodeImage(src: string): Promise<HTMLImageElement> {
     return new Promise<HTMLImageElement>((resolve) => {
         const img = new Image();
+        img.crossOrigin = '';
         img.src = src;
 
         // Only chrome's implementation of createImageBitmap is fully supported

@@ -38,7 +38,7 @@ const fragment = /* glsl */ `
             }
         `;
 
-type HitableMesh = Mesh & { isHit?: boolean };
+type HitableMesh = Mesh & { isHit?: boolean; };
 
 const renderer = new Renderer({ dpr: 2 });
 const gl = renderer.gl;

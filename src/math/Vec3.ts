@@ -95,7 +95,7 @@ export class Vec3 extends Array<number> {
         return this;
     }
 
-    cross(va, vb) {
+    cross(va, vb?) {
         if (vb) Vec3Func.cross(this, va, vb);
         else Vec3Func.cross(this, this, va);
         return this;

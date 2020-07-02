@@ -1,6 +1,6 @@
 {
     "name": "ogl-typescript",
-    "version": "0.1.10",
+    "version": "0.1.11",
     "description": "TypeScript port of OGL WebGL Library",
     "module": "lib/index.js",
     "types": "lib/index.d.ts",

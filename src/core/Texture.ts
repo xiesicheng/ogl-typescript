@@ -37,7 +37,7 @@ export interface TextureOptions {
 
 type CompressedImage = {
     isCompressedTexture: boolean;
-    mipmaps: { data: Uint8Array; width: number; height: number }[];
+    mipmaps: { data: Uint8Array; width: number; height: number; }[];
 };
 
 const isCompressedImage = (image: any): image is CompressedImage => (image as CompressedImage).isCompressedTexture === true;
@@ -45,6 +45,7 @@ const isCompressedImage = (image: any): image is CompressedImage => (image as Co
 export class Texture {
     gl: OGLRenderingContext;
     id: number;
+    name: string;
     image:
         | HTMLImageElement
         | HTMLVideoElement
@@ -71,7 +72,7 @@ export class Texture {
     anisotropy: number;
 
     texture: WebGLTexture;
-    store: { image: any };
+    store: { image: any; };
     glState: RenderState;
 
     state: {

@@ -66,14 +66,15 @@ export class Raycast {
         }
     }
 
-    intersectBounds(meshes: Mesh | Mesh[], { maxDistance }: { maxDistance?: number; } = {}) {
+    intersectBounds(meshes: Mesh | Mesh[], { maxDistance, output = [] }: { maxDistance?: number; output?: Array<Mesh>; } = {}) {
         if (!Array.isArray(meshes)) meshes = [meshes];
 
         const invWorldMat4 = tempMat4;
         const origin = tempVec3a;
         const direction = tempVec3b;
 
-        const hits = [];
+        const hits = output;
+        hits.length = 0;
 
         meshes.forEach((mesh) => {
             // Create bounds
@@ -135,9 +136,9 @@ export class Raycast {
         return hits;
     }
 
-    intersectMeshes(meshes, { cullFace = true, maxDistance, includeUV = true, includeNormal = true }) {
+    intersectMeshes(meshes, { cullFace = true, maxDistance = null, includeUV = true, includeNormal = true, output = [] } = {}) {
         // Test bounds first before testing geometry
-        const hits = this.intersectBounds(meshes, { maxDistance });
+        const hits = this.intersectBounds(meshes, { maxDistance, output });
         if (!hits.length) return hits;
 
         const invWorldMat4 = tempMat4;

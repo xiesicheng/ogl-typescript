@@ -6,6 +6,7 @@ import { Program } from './Program';
 import { OGLRenderingContext } from './Renderer';
 import { Camera } from './Camera';
 import { Vec3 } from '../math/Vec3';
+import { Vec2 } from '../math/Vec2';
 
 let ID = 0;
 
@@ -37,7 +38,14 @@ export class Mesh extends Transform {
     afterRenderCallbacks: Array<any>;
 
     // raycast.ts
-    hit: Partial<{ localPoint: Vec3; distance: number; point: Vec3 }> = null;
+    hit: Partial<{
+        localPoint: Vec3; distance: number; point: Vec3;
+        faceNormal: Vec3;
+        localFaceNormal: Vec3;
+        uv: Vec2;
+        localNormal: Vec3;
+        normal: Vec3;
+    }> = null;
 
     constructor(gl, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 }: Partial<MeshOptions> = {}) {
         super();

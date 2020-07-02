@@ -11,7 +11,7 @@ const arrayCacheF32 = {};
 export interface ProgramOptions {
     vertex: string;
     fragment: string;
-    uniforms: { [name: string]: any };
+    uniforms: { [name: string]: any; };
 
     transparent: boolean;
     cullFace: GLenum | false;
@@ -42,7 +42,7 @@ export interface UniformInfo extends WebGLActiveInfo {
 
 export class Program {
     gl: OGLRenderingContext;
-    uniforms: { [name: string]: { value: any } };
+    uniforms: { [name: string]: { value: any; }; };
     id: number;
 
     transparent: boolean;
@@ -57,6 +57,8 @@ export class Program {
     uniformLocations: Map<any, any>;
     attributeLocations: Map<any, any>;
     attributeOrder: string;
+
+    gltfMaterial;
 
     constructor(
         gl: OGLRenderingContext,

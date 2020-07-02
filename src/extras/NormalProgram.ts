@@ -32,19 +32,19 @@ const fragment = /* glsl */ `
     }
 `;
 
-// export function NormalProgram(gl) {
-//     return new Program(gl, {
-//         vertex: vertex,
-//         fragment: fragment,
-//         cullFace: null,
-//     });
-// }
-
-export class NormalProgram extends Program {
-
-    public gltfMaterial;
-
-    constructor(gl: OGLRenderingContext, options: Partial<ProgramOptions> = {}) {
-        super(gl, options);
-    }
+export function NormalProgram(gl) {
+    return new Program(gl, {
+        vertex: vertex,
+        fragment: fragment,
+        cullFace: null,
+    });
 }
+
+// export class NormalProgram extends Program {
+
+//     public gltfMaterial;
+
+//     constructor(gl: OGLRenderingContext, options: Partial<ProgramOptions> = {}) {
+//         super(gl, options);
+//     }
+// }

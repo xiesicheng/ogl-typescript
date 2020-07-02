@@ -200,6 +200,8 @@ export class TextureLoader {
                 if ((imgBmp as any).close) (imgBmp as any).close();
                 texture.onUpdate = null;
             };
+
+            return imgBmp;
         });
     }
 

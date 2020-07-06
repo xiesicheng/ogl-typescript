@@ -7,6 +7,7 @@ import { OGLRenderingContext } from '../core/Renderer';
 import { Geometry } from '../core/Geometry';
 import { Program } from '../core/Program';
 import { Camera } from '../core/Camera';
+import { isWebGl2 } from '../Guards';
 
 const tempMat4 = new Mat4();
 
@@ -87,7 +88,8 @@ export class Skin extends Mesh {
             image: this.boneMatrices,
             generateMipmaps: false,
             type: this.gl.FLOAT,
-            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
+            internalFormat: isWebGl2(this.gl) ? this.gl.RGBA32F : this.gl.RGBA,
+            // internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
             flipY: false,
             width: size,
         });
@@ -110,7 +112,7 @@ export class Skin extends Mesh {
         });
     }
 
-    draw({ camera }: { camera?: Camera } = {}) {
+    draw({ camera }: { camera?: Camera; } = {}) {
         // Update world matrices manually, as not part of scene graph
         this.root.updateMatrixWorld(true);
 

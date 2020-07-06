@@ -1,9 +1,22 @@
-import { Geometry } from '../core/Geometry';
+import { Geometry, AttributeMap } from '../core/Geometry';
 import { Vec3 } from '../math/Vec3';
+import { OGLRenderingContext } from '../core/Renderer';
+
+export type CylinderOptions = {
+    radiusTop: number,
+    radiusBottom: number,
+    height: number,
+    radialSegments: number,
+    heightSegments: number,
+    openEnded: boolean,
+    thetaStart: number,
+    thetaLength: number,
+    attributes: AttributeMap,
+};
 
 export class Cylinder extends Geometry {
     constructor(
-        gl,
+        gl: OGLRenderingContext,
         {
             radiusTop = 0.5,
             radiusBottom = 0.5,
@@ -14,7 +27,7 @@ export class Cylinder extends Geometry {
             thetaStart = 0,
             thetaLength = Math.PI * 2,
             attributes = {},
-        } = {}
+        }: Partial<CylinderOptions> = {}
     ) {
         const rSegs = radialSegments;
         const hSegs = heightSegments;

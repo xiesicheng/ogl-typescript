@@ -1,4 +1,5 @@
 import * as Mat4Func from './functions/Mat4Func';
+import { Vec3 } from './Vec3';
 
 export class Mat4 extends Array<number> {
     constructor(
@@ -156,7 +157,7 @@ export class Mat4 extends Array<number> {
         return Mat4Func.getMaxScaleOnAxis(this);
     }
 
-    lookAt(eye, target, up) {
+    lookAt<T extends number[]>(eye: T, target, up) {
         Mat4Func.targetTo(this, eye, target, up);
         return this;
     }

@@ -374,8 +374,17 @@
       return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
     }
 
+    const isArrayLike = term => {
+      if (term.length) return true;
+      return false;
+    };
+
+    const isMesh = node => {
+      return !!node.draw;
+    }; // used in Skin and GLTFSkin
+
     class Vec3 extends Array {
-      // todo: 放哪？
+      // TODO: only be used in Camera class
       constructor(x = 0, y = x, z = x) {
         super(x, y, z);
         this.constant = void 0;
@@ -407,7 +416,7 @@
       }
 
       set(x, y = x, z = x) {
-        if (x.length) return this.copy(x);
+        if (isArrayLike(x)) return this.copy(x);
         set(this, x, y, z);
         return this;
       }
@@ -545,10 +554,10 @@
     const tempVec3 = new Vec3();
     let ID = 1;
     let ATTR_ID = 1; // export interface Attributes {
-    //     position: { size: number, data: UInt16Array },
-    //     normal: { size: number, data: normal },
-    //     uv: { size: number, data: uv },
-    //     index: { data: index },
+    //     position: { size: number, data: UInt16Array; },
+    //     normal: { size: number, data: normal; },
+    //     uv: { size: number, data: uv; },
+    //     index: { data: index; },
     // }
 
     // To stop inifinite warnings
@@ -1135,7 +1144,6 @@
       if (warnCount > 100) console.warn('More than 100 program warnings - stopping logs.');
     }
 
-    // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
     // Not automatic - devs to use these methods manually
     // gl.colorMask( colorMask, colorMask, colorMask, colorMask );
     // gl.clearColor( r, g, b, a );
@@ -1143,6 +1151,7 @@
     // gl.stencilFunc( stencilFunc, stencilRef, stencilMask );
     // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
     // gl.clearStencil( stencil );
+
     const tempVec3$1 = new Vec3();
     let ID$2 = 1;
     class Renderer {
@@ -1417,7 +1426,7 @@
 
         scene.traverse(node => {
           if (!node.visible) return true;
-          if (!node.draw) return;
+          if (!isMesh(node)) return; // if (!node.draw) return;
 
           if (frustumCull && node.frustumCulled && camera) {
             if (!camera.frustumIntersectsMesh(node)) return;
@@ -4770,7 +4779,8 @@
     const tempVec3$2 = new Vec3();
     const tempVec2a = new Vec2();
     const tempVec2b = new Vec2();
-    function Orbit(object, {
+    function Orbit(object, // TODO: fov property only be used in pan()
+    {
       element = document.body,
       enabled = true,
       target = new Vec3(),

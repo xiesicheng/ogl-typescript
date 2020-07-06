@@ -1,8 +1,20 @@
-import { Geometry } from '../core/Geometry';
+import { Geometry, AttributeMap } from '../core/Geometry';
 import { Vec3 } from '../math/Vec3';
 import { OGLRenderingContext } from '../core/Renderer';
 
+export type SphereOptions = {
+    radius: number,
+    widthSegments: number,
+    heightSegments: number,
+    phiStart: number,
+    phiLength: number,
+    thetaStart: number,
+    thetaLength: number,
+    attributes: AttributeMap,
+};
+
 export class Sphere extends Geometry {
+
     constructor(
         gl: OGLRenderingContext,
         {
@@ -14,7 +26,7 @@ export class Sphere extends Geometry {
             thetaStart = 0,
             thetaLength = Math.PI,
             attributes = {},
-        } = {}
+        }: Partial<SphereOptions> = {}
     ) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;

@@ -1,8 +1,17 @@
-import { Geometry } from '../core/Geometry';
+import { Geometry, Attribute, AttributeMap } from '../core/Geometry';
 import { OGLRenderingContext } from '../core/Renderer';
 
+export type PlaneOptions = {
+    width: number,
+    height: number,
+    widthSegments: number,
+    heightSegments: number,
+    attributes: AttributeMap;
+};
+
 export class Plane extends Geometry {
-    constructor(gl: OGLRenderingContext, { width = 1, height = 1, widthSegments = 1, heightSegments = 1, attributes = {} } = {}) {
+
+    constructor(gl: OGLRenderingContext, { width = 1, height = 1, widthSegments = 1, heightSegments = 1, attributes = {} }: Partial<PlaneOptions> = {}) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;
 

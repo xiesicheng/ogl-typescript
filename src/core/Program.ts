@@ -8,18 +8,17 @@ let ID = 1;
 
 // cache of typed arrays used to flatten uniform arrays
 const arrayCacheF32 = {};
-export interface ProgramOptions {
+export type ProgramOptions = {
     vertex: string;
     fragment: string;
-    uniforms: { [name: string]: any; };
-
+    uniforms: { [name: string]: { value: any; }; };
     transparent: boolean;
     cullFace: GLenum | false;
     frontFace: GLenum;
     depthTest: boolean;
     depthWrite: boolean;
     depthFunc: GLenum;
-}
+};
 export interface BlendFunc {
     src?: GLenum;
     dst?: GLenum;

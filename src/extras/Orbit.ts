@@ -5,14 +5,37 @@
 
 import { Vec3 } from '../math/Vec3';
 import { Vec2 } from '../math/Vec2';
+import { Transform } from '../core/Transform';
 
 const STATE = { NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2, DOLLY_PAN: 3 };
 const tempVec3 = new Vec3();
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 
+export type OrbitOptions = {
+    element: HTMLElement,
+    enabled: boolean,
+    target: Vec3,
+    ease: number,
+    inertia: number,
+    enableRotate: boolean,
+    rotateSpeed: number,
+    autoRotate: boolean,
+    autoRotateSpeed: number,
+    enableZoom: boolean,
+    zoomSpeed: number,
+    enablePan: boolean,
+    panSpeed: number,
+    minPolarAngle: number,
+    maxPolarAngle: number,
+    minAzimuthAngle: number,
+    maxAzimuthAngle: number,
+    minDistance: number,
+    maxDistance: number,
+};
+
 export function Orbit(
-    object,
+    object: Transform & { fov: number; }, // TODO: fov property only be used in pan()
     {
         element = document.body,
         enabled = true,
@@ -33,7 +56,7 @@ export function Orbit(
         maxAzimuthAngle = Infinity,
         minDistance = 0,
         maxDistance = Infinity,
-    } = {}
+    }: Partial<OrbitOptions> = {}
 ) {
     this.enabled = enabled;
     this.target = target;

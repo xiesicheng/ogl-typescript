@@ -28,13 +28,17 @@ let ID = 1;
 let ATTR_ID = 1;
 
 // export interface Attributes {
-//     position: { size: number, data: UInt16Array },
-//     normal: { size: number, data: normal },
-//     uv: { size: number, data: uv },
-//     index: { data: index },
+//     position: { size: number, data: UInt16Array; },
+//     normal: { size: number, data: normal; },
+//     uv: { size: number, data: uv; },
+//     index: { data: index; },
 // }
 
-export interface Attribute {
+export type AttributeMap = {
+    [key: string]: Partial<Attribute>;
+};
+
+export type Attribute = {
     size: number;
     data: ArrayLike<number> | ArrayBufferView;
     instanced?: null | number;
@@ -52,22 +56,22 @@ export interface Attribute {
 
     min?: any;
     max?: any;
-}
+};
 
-export interface Bounds {
+export type Bounds = {
     min: Vec3;
     max: Vec3;
     center: Vec3;
     scale: Vec3;
     radius: number;
-}
+};
 // To stop inifinite warnings
 let isBoundsWarned = false;
 
 export class Geometry {
     gl: OGLRenderingContext;
     id: number;
-    attributes: { [key: string]: Partial<Attribute>; };
+    attributes: AttributeMap;
     VAOs: {};
     drawRange: { start: number; count: number; };
     instancedCount: number;
@@ -77,7 +81,7 @@ export class Geometry {
 
     raycast: 'sphere' | 'box' = 'box';
 
-    constructor(gl: OGLRenderingContext, attributes = {}) {
+    constructor(gl: OGLRenderingContext, attributes: { [key: string]: Partial<Attribute>; } = {}) {
         if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;

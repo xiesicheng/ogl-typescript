@@ -1,7 +1,7 @@
 import * as Vec3Func from './functions/Vec3Func';
-// typescript
+import { isArrayLike } from "../Guards";
 export class Vec3 extends Array<number> {
-    constant: number; // todo: 放哪？
+    constant: number; // TODO: only be used in Camera class
     constructor(x = 0, y = x, z = x) {
         super(x, y, z);
         return this;
@@ -31,8 +31,8 @@ export class Vec3 extends Array<number> {
         this[2] = v;
     }
 
-    set(x, y = x, z = x) {
-        if (x.length) return this.copy(x);
+    set(x: number | Array<number>, y = x, z = x) {
+        if (isArrayLike<number>(x)) return this.copy(x);
         Vec3Func.set(this, x, y, z);
         return this;
     }
@@ -173,3 +173,4 @@ export class Vec3 extends Array<number> {
         return this.normalize();
     }
 }
+

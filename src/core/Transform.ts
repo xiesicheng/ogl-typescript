@@ -39,18 +39,18 @@ export class Transform {
         this.quaternion.onChange = () => this.rotation.fromQuaternion(this.quaternion);
     }
 
-    setParent(parent, notifyParent = true) {
+    setParent(parent: Transform, notifyParent: boolean = true) {
         if (notifyParent && this.parent && parent !== this.parent) this.parent.removeChild(this, false);
         this.parent = parent;
         if (notifyParent && parent) parent.addChild(this, false);
     }
 
-    addChild(child, notifyChild = true) {
+    addChild(child: Transform, notifyChild: boolean = true) {
         if (!~this.children.indexOf(child)) this.children.push(child);
         if (notifyChild) child.setParent(this, false);
     }
 
-    removeChild(child, notifyChild = true) {
+    removeChild(child: Transform, notifyChild: boolean = true) {
         if (!!~this.children.indexOf(child)) this.children.splice(this.children.indexOf(child), 1);
         if (notifyChild) child.setParent(null, false);
     }
@@ -74,7 +74,7 @@ export class Transform {
         this.worldMatrixNeedsUpdate = true;
     }
 
-    traverse(callback) {
+    traverse(callback: <T extends Transform>(node: T) => boolean) {
         // Return true in callback to stop traversing children
         if (callback(this)) return;
         for (let i = 0, l = this.children.length; i < l; i++) {
@@ -89,7 +89,7 @@ export class Transform {
         this.rotation.fromQuaternion(this.quaternion);
     }
 
-    lookAt(target, invert = false) {
+    lookAt<T extends number[]>(target: T, invert = false) {
         if (invert) this.matrix.lookAt(this.position, target, this.up);
         else this.matrix.lookAt(target, this.position, this.up);
         this.matrix.getRotation(this.quaternion);

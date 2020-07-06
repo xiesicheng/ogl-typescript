@@ -374,8 +374,17 @@
       return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
     }
 
+    const isArrayLike = term => {
+      if (term.length) return true;
+      return false;
+    };
+
+    const isMesh = node => {
+      return !!node.draw;
+    }; // used in Skin and GLTFSkin
+
     class Vec3 extends Array {
-      // todo: 放哪？
+      // TODO: only be used in Camera class
       constructor(x = 0, y = x, z = x) {
         super(x, y, z);
         this.constant = void 0;
@@ -407,7 +416,7 @@
       }
 
       set(x, y = x, z = x) {
-        if (x.length) return this.copy(x);
+        if (isArrayLike(x)) return this.copy(x);
         set(this, x, y, z);
         return this;
       }
@@ -545,10 +554,10 @@
     const tempVec3 = new Vec3();
     let ID = 1;
     let ATTR_ID = 1; // export interface Attributes {
-    //     position: { size: number, data: UInt16Array },
-    //     normal: { size: number, data: normal },
-    //     uv: { size: number, data: uv },
-    //     index: { data: index },
+    //     position: { size: number, data: UInt16Array; },
+    //     normal: { size: number, data: normal; },
+    //     uv: { size: number, data: uv; },
+    //     index: { data: index; },
     // }
 
     // To stop inifinite warnings
@@ -1135,7 +1144,6 @@
       if (warnCount > 100) console.warn('More than 100 program warnings - stopping logs.');
     }
 
-    // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
     // Not automatic - devs to use these methods manually
     // gl.colorMask( colorMask, colorMask, colorMask, colorMask );
     // gl.clearColor( r, g, b, a );
@@ -1143,6 +1151,7 @@
     // gl.stencilFunc( stencilFunc, stencilRef, stencilMask );
     // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
     // gl.clearStencil( stencil );
+
     const tempVec3$1 = new Vec3();
     let ID$2 = 1;
     class Renderer {
@@ -1417,7 +1426,7 @@
 
         scene.traverse(node => {
           if (!node.visible) return true;
-          if (!node.draw) return;
+          if (!isMesh(node)) return; // if (!node.draw) return;
 
           if (frustumCull && node.frustumCulled && camera) {
             if (!camera.frustumIntersectsMesh(node)) return;
@@ -4775,7 +4784,8 @@
     const tempVec3$2 = new Vec3();
     const tempVec2a = new Vec2();
     const tempVec2b = new Vec2();
-    function Orbit(object, {
+    function Orbit(object, // TODO: fov property only be used in pan()
+    {
       element = document.body,
       enabled = true,
       target = new Vec3(),
@@ -5165,79 +5175,78 @@
                 gl_FragColor.a = 1.0;
             }
         `    ;
-    {
-      const renderer = new Renderer({
-        dpr: 2
-      });
-      const gl = renderer.gl;
-      document.body.appendChild(gl.canvas);
-      gl.clearColor(1, 1, 1, 1);
-      const camera = new Camera(gl, {
-        fov: 35
-      });
-      camera.position.set(0, 1, 7);
-      camera.lookAt([0, 0, 0]);
-      const controls = new Orbit(camera);
+    const renderer = new Renderer({
+      dpr: 2
+    });
+    const gl = renderer.gl;
+    document.body.appendChild(gl.canvas);
+    gl.clearColor(1, 1, 1, 1);
+    const camera = new Camera(gl, {
+      fov: 35
+    });
+    camera.position.set(0, 1, 7);
+    camera.lookAt([0, 0, 0]);
+    const controls = new Orbit(camera);
 
-      function resize() {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.perspective({
-          aspect: gl.canvas.width / gl.canvas.height
-        });
-      }
-
-      window.addEventListener('resize', resize, false);
-      resize();
-      const scene = new Transform();
-      const planeGeometry = new Plane(gl);
-      const sphereGeometry = new Sphere(gl);
-      const cubeGeometry = new Box(gl);
-      const cylinderGeometry = new Cylinder(gl);
-      const program = new Program(gl, {
-        vertex,
-        fragment,
-        // Don't cull faces so that plane is double sided - default is gl.BACK
-        cullFace: null
+    function resize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.perspective({
+        aspect: gl.canvas.width / gl.canvas.height
       });
-      const plane = new Mesh(gl, {
-        geometry: planeGeometry,
-        program
-      });
-      plane.position.set(0, 1.3, 0);
-      plane.setParent(scene);
-      const sphere = new Mesh(gl, {
-        geometry: sphereGeometry,
-        program
-      });
-      sphere.position.set(1.3, 0, 0);
-      sphere.setParent(scene);
-      const cube = new Mesh(gl, {
-        geometry: cubeGeometry,
-        program
-      });
-      cube.position.set(0, -1.3, 0);
-      cube.setParent(scene);
-      const cylinder = new Mesh(gl, {
-        geometry: cylinderGeometry,
-        program
-      });
-      cylinder.position.set(-1.3, 0, 0);
-      cylinder.setParent(scene);
-      requestAnimationFrame(update);
-
-      function update() {
-        requestAnimationFrame(update);
-        controls.update();
-        plane.rotation.y -= 0.02;
-        sphere.rotation.y -= 0.03;
-        cube.rotation.y -= 0.04;
-        cylinder.rotation.y -= 0.02;
-        renderer.render({
-          scene,
-          camera
-        });
-      }
     }
+
+    window.addEventListener('resize', resize, false);
+    resize();
+    const scene = new Transform();
+    const planeGeometry = new Plane(gl);
+    const sphereGeometry = new Sphere(gl);
+    const cubeGeometry = new Box(gl);
+    const cylinderGeometry = new Cylinder(gl);
+    const program = new Program(gl, {
+      vertex,
+      fragment,
+      // Don't cull faces so that plane is double sided - default is gl.BACK
+      cullFace: null
+    });
+    const plane = new Mesh(gl, {
+      geometry: planeGeometry,
+      program
+    });
+    plane.position.set(0, 1.3, 0);
+    plane.setParent(scene);
+    const sphere = new Mesh(gl, {
+      geometry: sphereGeometry,
+      program
+    });
+    sphere.position.set(1.3, 0, 0);
+    sphere.setParent(scene);
+    const cube = new Mesh(gl, {
+      geometry: cubeGeometry,
+      program
+    });
+    cube.position.set(0, -1.3, 0);
+    cube.setParent(scene);
+    const cylinder = new Mesh(gl, {
+      geometry: cylinderGeometry,
+      program
+    });
+    cylinder.position.set(-1.3, 0, 0);
+    cylinder.setParent(scene);
+    requestAnimationFrame(update);
+
+    function update() {
+      requestAnimationFrame(update);
+      controls.update();
+      plane.rotation.y -= 0.02;
+      sphere.rotation.y -= 0.03;
+      cube.rotation.y -= 0.04;
+      cylinder.rotation.y -= 0.02;
+      renderer.render({
+        scene,
+        camera
+      });
+    }
+
     document.getElementsByClassName('Info')[0].innerHTML = 'Base Primitives - Plane, Cube, Sphere, Cylinder';
     document.title = 'OGL • Base Primitives - Plane, Cube, Sphere, Cylinder';
 

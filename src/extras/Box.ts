@@ -1,11 +1,22 @@
-import { Geometry } from '../core/Geometry';
+import { Geometry, AttributeMap } from '../core/Geometry';
 import { Plane } from './Plane';
 import { OGLRenderingContext } from '../core/Renderer';
 
+export type BoxOptions = {
+    width: number,
+    height: number,
+    depth: number,
+    widthSegments: number,
+    heightSegments: number,
+    depthSegments: number,
+    attributes: AttributeMap;
+};
+
 export class Box extends Geometry {
+
     constructor(
         gl: OGLRenderingContext,
-        { width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1, attributes = {} } = {}
+        { width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1, attributes = {} }: Partial<BoxOptions> = {}
     ) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;

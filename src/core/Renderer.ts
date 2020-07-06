@@ -2,6 +2,7 @@ import { Vec3 } from '../math/Vec3';
 import { Transform } from './Transform';
 import { Camera } from './Camera';
 import { RenderTarget } from './RenderTarget';
+import { isMesh } from '../Guards';
 
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
@@ -43,8 +44,8 @@ export type DeviceParameters = {
 };
 
 export type RenderState = {
-    blendFunc?: { src: GLenum; dst: GLenum; srcAlpha?; dstAlpha? };
-    blendEquation?: { modeRGB: GLenum; modeAlpha? };
+    blendFunc?: { src: GLenum; dst: GLenum; srcAlpha?; dstAlpha?; };
+    blendEquation?: { modeRGB: GLenum; modeAlpha?; };
     cullFace?: number;
     frontFace?: number;
     depthMask?: boolean;
@@ -52,7 +53,7 @@ export type RenderState = {
     premultiplyAlpha?: boolean;
     flipY?: boolean;
     unpackAlignment?: number;
-    viewport?: { width: number | null; height: number | null };
+    viewport?: { width: number | null; height: number | null; };
     textureUnits?: Array<number>;
     activeTextureUnit?: number;
     framebuffer?;
@@ -60,7 +61,7 @@ export type RenderState = {
     uniformLocations?: Map<number, WebGLUniformLocation>;
 };
 
-export type RenderExtensions = { [key: string]: any };
+export type RenderExtensions = { [key: string]: any; };
 
 export class Renderer {
     dpr: number;
@@ -187,7 +188,7 @@ export class Renderer {
             : 0;
     }
 
-    setSize(width, height) {
+    setSize(width: number, height: number) {
         this.width = width;
         this.height = height;
 
@@ -200,26 +201,26 @@ export class Renderer {
         });
     }
 
-    setViewport(width, height) {
+    setViewport(width: number, height: number) {
         if (this.state.viewport.width === width && this.state.viewport.height === height) return;
         this.state.viewport.width = width;
         this.state.viewport.height = height;
         this.gl.viewport(0, 0, width, height);
     }
 
-    enable(id) {
+    enable(id: GLenum) {
         if (this.state[id] === true) return;
         this.gl.enable(id);
         this.state[id] = true;
     }
 
-    disable(id) {
+    disable(id: GLenum) {
         if (this.state[id] === false) return;
         this.gl.disable(id);
         this.state[id] = false;
     }
 
-    setBlendFunc(src, dst, srcAlpha, dstAlpha) {
+    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha: GLenum, dstAlpha: GLenum) {
         if (
             this.state.blendFunc.src === src &&
             this.state.blendFunc.dst === dst &&
@@ -235,7 +236,7 @@ export class Renderer {
         else this.gl.blendFunc(src, dst);
     }
 
-    setBlendEquation(modeRGB, modeAlpha) {
+    setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum) {
         if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
         this.state.blendEquation.modeRGB = modeRGB;
         this.state.blendEquation.modeAlpha = modeAlpha;
@@ -243,31 +244,31 @@ export class Renderer {
         else this.gl.blendEquation(modeRGB);
     }
 
-    setCullFace(value) {
+    setCullFace(value: GLenum) {
         if (this.state.cullFace === value) return;
         this.state.cullFace = value;
         this.gl.cullFace(value);
     }
 
-    setFrontFace(value) {
+    setFrontFace(value: GLenum) {
         if (this.state.frontFace === value) return;
         this.state.frontFace = value;
         this.gl.frontFace(value);
     }
 
-    setDepthMask(value) {
+    setDepthMask(value: GLboolean) {
         if (this.state.depthMask === value) return;
         this.state.depthMask = value;
         this.gl.depthMask(value);
     }
 
-    setDepthFunc(value) {
+    setDepthFunc(value: GLenum) {
         if (this.state.depthFunc === value) return;
         this.state.depthFunc = value;
         this.gl.depthFunc(value);
     }
 
-    activeTexture(value) {
+    activeTexture(value: number) {
         if (this.state.activeTextureUnit === value) return;
         this.state.activeTextureUnit = value;
         this.gl.activeTexture(this.gl.TEXTURE0 + value);
@@ -331,7 +332,8 @@ export class Renderer {
         }
     }
 
-    getRenderList({ scene, camera, frustumCull, sort }) {
+
+    getRenderList({ scene, camera, frustumCull, sort }: { scene: Transform; camera: Camera; frustumCull: boolean; sort: boolean; }) {
         let renderList = [];
 
         if (camera && frustumCull) camera.updateFrustum();
@@ -339,7 +341,8 @@ export class Renderer {
         // Get visible
         scene.traverse((node) => {
             if (!node.visible) return true;
-            if (!node.draw) return;
+            if (!isMesh(node)) return;
+            // if (!node.draw) return;
 
             if (frustumCull && node.frustumCulled && camera) {
                 if (!camera.frustumIntersectsMesh(node)) return;
@@ -419,8 +422,8 @@ export class Renderer {
             }
             this.gl.clear(
                 (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
-                    (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
-                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
+                (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
+                (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
             );
         }
 

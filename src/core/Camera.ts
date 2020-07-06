@@ -1,6 +1,7 @@
 import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
 import { Transform } from './Transform';
+import { OGLRenderingContext } from './Renderer';
 
 const tempMat4 = new Mat4();
 const tempVec3a = new Vec3();
@@ -37,7 +38,7 @@ export class Camera extends Transform {
     type: 'perspective' | 'orthographic';
     frustum: Vec3[];
 
-    constructor(gl, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 }: Partial<CameraOptions> = {}) {
+    constructor(gl: OGLRenderingContext, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 }: Partial<CameraOptions> = {}) {
         super();
 
         Object.assign(this, { near, far, fov, aspect, left, right, bottom, top, zoom });
@@ -90,7 +91,7 @@ export class Camera extends Transform {
         return this;
     }
 
-    lookAt(target) {
+    lookAt<T extends number[]>(target: T) {
         super.lookAt(target, true);
         return this;
     }

@@ -2,6 +2,7 @@ import { Mesh } from '../core/Mesh';
 import { Mat4 } from '../math/Mat4';
 import { Texture } from '../core/Texture';
 import { Camera } from '../core/Camera';
+import { isWebGl2 } from '../Guards';
 
 const tempMat4 = new Mat4();
 const identity = new Mat4();
@@ -37,7 +38,8 @@ export class GLTFSkin extends Mesh {
             image: this.boneMatrices,
             generateMipmaps: false,
             type: this.gl.FLOAT,
-            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
+            internalFormat: isWebGl2(this.gl) ? this.gl.RGBA32F : this.gl.RGBA,
+            // internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
             flipY: false,
             width: size,
         });

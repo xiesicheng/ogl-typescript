@@ -26,7 +26,7 @@ export class Mesh extends Transform {
     name: string;
     numInstances;
 
-    gl: OGLRenderingContext & WebGL2RenderingContext;
+    gl: OGLRenderingContext;
     id: number;
     geometry: Geometry;
     program: Program;
@@ -50,7 +50,7 @@ export class Mesh extends Transform {
         normal: Vec3;
     }> = null;
 
-    constructor(gl, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 }: Partial<MeshOptions> = {}) {
+    constructor(gl: OGLRenderingContext, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 }: Partial<MeshOptions> = {}) {
         super();
         if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
         this.gl = gl;

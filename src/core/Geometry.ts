@@ -232,7 +232,7 @@ export class Geometry {
                     mode,
                     this.drawRange.count,
                     this.attributes.index.type,
-                    this.drawRange.start,
+                    this.attributes.index.offset + this.drawRange.start * 2,
                     this.instancedCount
                 );
             } else {

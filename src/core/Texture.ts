@@ -43,6 +43,8 @@ type CompressedImage = {
 const isCompressedImage = (image: any): image is CompressedImage => (image as CompressedImage).isCompressedTexture === true;
 
 export class Texture {
+
+    ext: string;
     gl: OGLRenderingContext;
     id: number;
     name: string;

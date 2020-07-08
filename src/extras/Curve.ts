@@ -16,7 +16,7 @@ const _a0 = new Vec3(),
  * @param {*} a
  * @param {*} b
  */
-function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
+function getCtrlPoint(points, i, a = 0.168, b = 0.168): [Vec3, Vec3] {
     if (i < 1) {
         _a0.sub(points[1], points[0]).scale(a).add(points[0]);
     } else {
@@ -83,8 +83,8 @@ export class Curve {
         this.type = type;
     }
 
-    _getQuadraticBezierPoints(divisions = this.divisions) {
-        const points = [];
+    _getQuadraticBezierPoints(divisions = this.divisions): Vec3[] {
+        const points: Vec3[] = [];
         const count = this.points.length;
 
         if (count < 3) {
@@ -116,7 +116,7 @@ export class Curve {
         return points;
     }
 
-    _getCubicBezierPoints(divisions = this.divisions) {
+    _getCubicBezierPoints(divisions = this.divisions): Vec3[] {
         const points = [];
         const count = this.points.length;
 
@@ -151,7 +151,7 @@ export class Curve {
         return points;
     }
 
-    _getCatmullRomPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
+    _getCatmullRomPoints(divisions = this.divisions, a = 0.168, b = 0.168): Vec3[] {
         const points = [];
         const count = this.points.length;
 
@@ -178,7 +178,7 @@ export class Curve {
         return points;
     }
 
-    getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
+    getPoints(divisions = this.divisions, a = 0.168, b = 0.168): Vec3[] {
         const type = this.type;
 
         if (type === QUADRATICBEZIER) {

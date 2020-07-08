@@ -1,24 +1,24 @@
 import { Texture } from '../core/Texture';
 import { KTXTexture } from './KTXTexture';
+import { OGLRenderingContext } from '../core/Renderer';
 
 // For compressed textures, generate using https://github.com/TimvanScherpenzeel/texture-compressor
-
-let cache = {};
+let cache: { [key: string]: any; } = {};
 const supportedExtensions = [];
 
 export interface TextureLoaderOptions {
     src:
-        | Partial<{
-              pvrtc: string;
-              s3tc: string;
-              etc: string;
-              etc1: string;
-              astc: string;
-              webp: string;
-              jpg: string;
-              png: string;
-          }>
-        | string;
+    | Partial<{
+        pvrtc: string;
+        s3tc: string;
+        etc: string;
+        etc1: string;
+        astc: string;
+        webp: string;
+        jpg: string;
+        png: string;
+    }>
+    | string;
 
     wrapS: number;
     wrapT: number;
@@ -36,8 +36,8 @@ export interface TextureLoaderOptions {
 }
 
 export class TextureLoader {
-    static load(
-        gl,
+    static load<T extends Texture>(
+        gl: OGLRenderingContext,
         {
             src, // string or object of extension:src key-values
             // {
@@ -66,7 +66,7 @@ export class TextureLoader {
             unpackAlignment = 4,
             flipY = true,
         }: Partial<TextureLoaderOptions> = {}
-    ) {
+    ): T {
         const support = TextureLoader.getSupportedExtensions(gl);
 
         let ext = 'none';
@@ -87,7 +87,6 @@ export class TextureLoader {
                 }
             }
         }
-
         // Stringify props
         const cacheID =
             String(src) +
@@ -150,10 +149,10 @@ export class TextureLoader {
 
         texture.ext = ext;
         cache[cacheID] = texture;
-        return texture;
+        return texture as T;
     }
 
-    static getSupportedExtensions(gl) {
+    static getSupportedExtensions(gl: OGLRenderingContext) {
         if (supportedExtensions.length) return supportedExtensions;
 
         const extensions = {

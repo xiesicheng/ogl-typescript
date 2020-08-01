@@ -1,6 +1,6 @@
 
 import { Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Vec3, Color } from '../../index';
-import { Orbit, Plane } from '../../Extras';
+import { Orbit, Plane } from '../../';
 
 const vertex100 = /* glsl */ `
             precision highp float;
@@ -722,5 +722,5 @@ function update() {
 }
 
 document.getElementsByClassName('Info')[0].innerHTML = 'PBR (Physically Based Rendering). Model by <a href="https://sketchfab.com/slava" target="_blank">Slava Z</a>';
-(document.getElementsByClassName('Info')[0] as HTMLDivElement).style.color = "#fff"
+(document.getElementsByClassName('Info')[0] as HTMLDivElement).style.color = "#fff";
 document.title = 'OGL • PBR';

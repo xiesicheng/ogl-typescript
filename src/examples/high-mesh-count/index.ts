@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Program, Mesh } from '../../Core';
-import { Box } from '../../Extras';
+import { Renderer, Camera, Transform, Program, Mesh } from '../../';
+import { Box } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;
@@ -85,7 +85,7 @@ function setMeshCount(count) {
         );
         mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
         scene.addChild(mesh);
-        meshes.push(mesh)
+        meshes.push(mesh);
     }
 
     // set input counter value to make sure
@@ -95,7 +95,7 @@ function setMeshCount(count) {
 
 (window as any).setMeshCount = setMeshCount;
 
-setMeshCount(1000)
+setMeshCount(1000);
 
 requestAnimationFrame(update);
 function update() {
@@ -108,8 +108,8 @@ function update() {
 
     // rotate meshes
     for (let i = 0; i < meshes.length; ++i) {
-        meshes[i].rotation.x += 0.01
-        meshes[i].rotation.y += 0.01
+        meshes[i].rotation.x += 0.01;
+        meshes[i].rotation.y += 0.01;
     }
 
     renderer.render({ scene, camera });

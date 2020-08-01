@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../../Core';
-import { Orbit, Plane, Shadow } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../../';
+import { Orbit, Plane, Shadow } from '../../';
 
 const vertexColor = /* glsl */ `
             attribute vec3 position;

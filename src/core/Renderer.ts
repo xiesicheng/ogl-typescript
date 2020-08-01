@@ -348,7 +348,7 @@ export class Renderer {
             if (!isMesh(node)) return;
             // if (!node.draw) return;
 
-            if (frustumCull && node.frustumCulled && camera) {
+            if (frustumCull && node!.frustumCulled && camera) {
                 if (!camera.frustumIntersectsMesh(node)) return;
             }
 

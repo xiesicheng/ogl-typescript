@@ -1,6 +1,6 @@
 
-import { Renderer, Triangle, Program, Texture, Mesh, Vec2 } from '../../index';
-import { Flowmap } from '../../Extras';
+import { Renderer, Triangle, Program, Texture, Mesh, Vec2 } from '../../';
+import { Flowmap } from '../../';
 
 const vertex = /* glsl */ `
             attribute vec2 uv;
@@ -48,7 +48,7 @@ const renderer = new Renderer({ dpr: 2 });
 const gl = renderer.gl;
 document.body.appendChild(gl.canvas);
 
-type Velocity = Vec2 & { needsUpdate?: boolean };
+type Velocity = Vec2 & { needsUpdate?: boolean; };
 
 // Variable inputs to control flowmap
 let aspect = 1;

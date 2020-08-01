@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../../Core';
+import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;

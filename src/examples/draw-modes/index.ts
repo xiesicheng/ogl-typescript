@@ -1,5 +1,5 @@
 
-import { Renderer, Camera, Transform, Geometry, Program, Mesh } from '../../Core';
+import { Renderer, Camera, Transform, Geometry, Program, Mesh } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;
@@ -118,7 +118,7 @@ function update(t) {
 
     program.uniforms.uTime.value = t * 0.001;
     renderer.render({ scene, camera });
-    
+
 }
 
 document.getElementsByClassName('Info')[0].innerHTML = 'Draw Modes';

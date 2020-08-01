@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh } from '../../Core';
-import { Box } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh } from '../../';
+import { Box } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;

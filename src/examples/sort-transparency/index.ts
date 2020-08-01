@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Mesh, Color } from '../../index';
-import { Plane } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, Program, Mesh, Color } from '../../';
+import { Plane } from '../../';
 
 type SpeedMesh = Mesh & { speed?: number; };
 

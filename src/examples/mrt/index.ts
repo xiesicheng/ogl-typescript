@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Geometry, Triangle, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../index';
-import { Orbit } from '../../Extras';
+import { Renderer, Camera, Transform, Geometry, Triangle, Texture, RenderTarget, Program, Mesh, Vec3, Vec2 } from '../../';
+import { Orbit } from '../../';
 
 const vertex100 = /* glsl */ `
             attribute vec3 position;

@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Mesh } from '../../Core';
-import { Plane } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, Program, Mesh } from '../../';
+import { Plane } from '../../';
 
 const vertex = /* glsl */ `
             attribute vec2 uv;
@@ -97,7 +97,7 @@ requestAnimationFrame(update);
 function update(t) {
     requestAnimationFrame(update);
     renderer.render({ scene, camera });
-    
+
 }
 
 document.getElementsByClassName('Info')[0].innerHTML = 'Anisotropic';

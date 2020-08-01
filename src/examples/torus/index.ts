@@ -1,4 +1,4 @@
-import { Renderer, Camera, Orbit, Transform, Program, Torus, Mesh } from '../../index';
+import { Renderer, Camera, Orbit, Transform, Program, Torus, Mesh } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;

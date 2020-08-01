@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Geometry, Texture, Program, Mesh } from '../../Core';
-import { Orbit, Text } from '../../Extras';
+import { Renderer, Camera, Transform, Geometry, Texture, Program, Mesh } from '../../';
+import { Orbit, Text } from '../../';
 
 const vertex100 = /* glsl */ `
             precision highp float;

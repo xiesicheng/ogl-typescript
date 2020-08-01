@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Program, Mesh, Vec2 } from '../../index';
-import { Post, Box, NormalProgram } from '../../Extras';
+import { Renderer, Camera, Program, Mesh, Vec2 } from '../../';
+import { Post, Box, NormalProgram } from '../../';
 
 const fragment = /* glsl */ `
             precision highp float;

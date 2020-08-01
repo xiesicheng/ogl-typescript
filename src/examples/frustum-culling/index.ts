@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh, Vec3 } from '../../index';
-import { Orbit, Cylinder, NormalProgram } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh, Vec3 } from '../../';
+import { Orbit, Cylinder, NormalProgram } from '../../';
 
 const vertex = /* glsl */ `
             attribute vec2 uv;
@@ -158,7 +158,7 @@ function update(t) {
 
     // Traverse all meshes in the scene
     scene.traverse(node => {
-        if (!node.draw) return;
+        if (!(node as Mesh).draw) return;
         // if (node.isCameraShape) return;
         if (node === cameraShape) return;
 

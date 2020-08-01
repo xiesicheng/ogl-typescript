@@ -1,7 +1,7 @@
 
 
-import { Renderer, Transform, Vec3, Color } from '../../index';
-import { Polyline } from '../../Extras';
+import { Renderer, Transform, Vec3, Color } from '../../';
+import { Polyline } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;

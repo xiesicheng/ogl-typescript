@@ -1,6 +1,6 @@
 
 import { Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2 } from '../../index';
-import { GPGPU } from '../../Extras';
+import { GPGPU } from '../../';
 
 const vertex = /* glsl */ `
             precision highp float;

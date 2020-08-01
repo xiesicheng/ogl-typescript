@@ -1,6 +1,6 @@
 
-import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3 } from '../../index';
-import { Orbit } from '../../Extras';
+import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3 } from '../../';
+import { Orbit } from '../../';
 
 // When we use standard derivatives (dFdx & dFdy functions),
 // which are necessary for this effect, WebGL1 requires the 

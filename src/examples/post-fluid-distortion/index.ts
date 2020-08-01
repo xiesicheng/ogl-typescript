@@ -1,6 +1,6 @@
 
 import { Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2 } from '../../index';
-import { Box, NormalProgram, Post } from '../../Extras';
+import { Box, NormalProgram, Post } from '../../';
 import { RenderTargetOptions } from '../../core/RenderTarget';
 
 const fragment = /* glsl */ `

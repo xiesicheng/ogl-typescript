@@ -74,7 +74,7 @@ export class Transform {
         this.worldMatrixNeedsUpdate = true;
     }
 
-    traverse(callback: <T extends Transform>(node: T) => boolean) {
+    traverse(callback: (node: Transform) => boolean | void) {
         // Return true in callback to stop traversing children
         if (callback(this)) return;
         for (let i = 0, l = this.children.length; i < l; i++) {

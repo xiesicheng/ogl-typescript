@@ -1,9 +1,9 @@
 
-import { Renderer, Camera, Program, Transform, Mesh } from '../../Core';
-import { Sphere, Box } from '../../Extras';
+import { Renderer, Camera, Program, Transform, Mesh } from '../../';
+import { Sphere, Box } from '../../';
 
 
-type SpeedMesh = { speed?: number } & Mesh;
+type SpeedMesh = { speed?: number; } & Mesh;
 
 const vertex = /* glsl */ `
             precision highp float;

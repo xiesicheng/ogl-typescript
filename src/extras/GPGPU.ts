@@ -20,8 +20,8 @@ export class GPGPU {
     dataLength: number;
     size: number;
     coords: Float32Array;
-    uniform: { value: any };
-    fbo: { read: RenderTarget; write: RenderTarget; swap: () => void };
+    uniform: { value: any; };
+    fbo: { read: RenderTarget; write: RenderTarget; swap: () => void; };
 
     constructor(
         gl: OGLRenderingContext,
@@ -30,7 +30,7 @@ export class GPGPU {
             data = new Float32Array(16),
 
             geometry = new Triangle(gl),
-            type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
+            type = null, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
         }
     ) {
         this.gl = gl;

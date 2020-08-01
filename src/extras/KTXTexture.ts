@@ -9,15 +9,19 @@ export interface KTXTextureOptions {
     wrapS: number;
     wrapT: number;
     anisotropy: number;
+    minFilter: number;
+    magFilter: number;
 }
 
 export class KTXTexture extends Texture {
-    constructor(gl, { buffer, wrapS = gl.CLAMP_TO_EDGE, wrapT = gl.CLAMP_TO_EDGE, anisotropy = 0 }: Partial<KTXTextureOptions> = {}) {
+    constructor(gl, { buffer, wrapS = gl.CLAMP_TO_EDGE, wrapT = gl.CLAMP_TO_EDGE, anisotropy = 0, minFilter, magFilter }: Partial<KTXTextureOptions> = {}) {
         super(gl, {
             generateMipmaps: false,
             wrapS,
             wrapT,
             anisotropy,
+            minFilter,
+            magFilter
         });
 
         if (buffer) this.parseBuffer(buffer);
@@ -32,7 +36,7 @@ export class KTXTexture extends Texture {
             mipmaps: ktx.mipmaps,
         };
         this.internalFormat = ktx.glInternalFormat;
-        this.minFilter = ktx.numberOfMipmapLevels > 1 ? this.gl.NEAREST_MIPMAP_LINEAR : this.gl.LINEAR;
+        if (this.minFilter === this.gl.LINEAR && ktx.numberOfMipmapLevels > 1) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
 
         // TODO: support cube maps
         // ktx.numberOfFaces
@@ -43,7 +47,7 @@ class KhronosTextureContainer {
     glInternalFormat: number;
     numberOfFaces: number;
     numberOfMipmapLevels: number;
-    mipmaps: Array<{ data: Uint8Array; width: number; height: number }>;
+    mipmaps: Array<{ data: Uint8Array; width: number; height: number; }>;
     isCompressedTexture: boolean;
 
     constructor(buffer) {

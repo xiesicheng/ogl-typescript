@@ -120,6 +120,8 @@ export class TextureLoader {
                     wrapS,
                     wrapT,
                     anisotropy,
+                    minFilter,
+                    magFilter,
                 });
                 texture.loaded = this.loadKTX(src as string, texture);
                 break;

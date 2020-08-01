@@ -21,6 +21,7 @@ export default [
     buildExample('load-gltf'),
     buildExample('curves'),
     buildExample('torus'),
+    buildExample('compute-vertex-normal'),
 
     // Scenes
     buildExample('scene-graph'),

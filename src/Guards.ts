@@ -1,5 +1,5 @@
 import { Transform } from "./core/Transform";
-import { Mesh } from "./Core";
+import { Mesh } from "./core/Mesh";
 import { OGLRenderingContext } from "./core/Renderer";
 
 export const isArray = <T, U>(term: Array<T> | U): term is Array<T> => {

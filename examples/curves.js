@@ -378,10 +378,9 @@
       if (term.length) return true;
       return false;
     };
-
     const isMesh = node => {
       return !!node.draw;
-    }; // used in Skin and GLTFSkin
+    };
 
     class Vec3 extends Array {
       // TODO: only be used in Camera class
@@ -723,7 +722,7 @@
 
         if (this.isInstanced) {
           if (this.attributes.index) {
-            this.gl.renderer.drawElementsInstanced(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start, this.instancedCount);
+            this.gl.renderer.drawElementsInstanced(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2, this.instancedCount);
           } else {
             this.gl.renderer.drawArraysInstanced(mode, this.drawRange.start, this.drawRange.count, this.instancedCount);
           }
@@ -738,8 +737,8 @@
 
       getPositionArray() {
         // Use position buffer, or min/max if available
-        const attr = this.attributes.position;
-        if (attr.min) return [...attr.min, ...attr.max];
+        const attr = this.attributes.position; // if (attr.min) return [...attr.min, ...attr.max];
+
         if (attr.data) return attr.data;
         if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');
@@ -794,6 +793,105 @@
         }
 
         this.bounds.radius = Math.sqrt(maxRadiusSq);
+      }
+
+      computeVertexNormals() {
+        const positionAttribute = this.attributes['position'];
+        if (!positionAttribute) return;
+        let normalAttribute = this.attributes['normal'];
+
+        if (!normalAttribute) {
+          this.addAttribute('normal', {
+            size: 3,
+            data: new Float32Array(positionAttribute.count * 3)
+          });
+          normalAttribute = this.attributes['normal'];
+        } else {
+          normalAttribute.data.fill(0);
+        }
+
+        const pA = new Vec3(),
+              pB = new Vec3(),
+              pC = new Vec3();
+        const nA = new Vec3(),
+              nB = new Vec3(),
+              nC = new Vec3();
+        const cb = new Vec3(),
+              ab = new Vec3();
+        const indexAttribute = this.attributes['index'];
+
+        if (indexAttribute) {
+          let iA, iB, iC;
+
+          for (let i = 0, il = indexAttribute.count; i < il; i += 3) {
+            iA = indexAttribute.data[i];
+            iB = indexAttribute.data[i + 1];
+            iC = indexAttribute.data[i + 2]; // copy points
+
+            pA.fromArray(positionAttribute.data, iA * positionAttribute.size);
+            pB.fromArray(positionAttribute.data, iB * positionAttribute.size);
+            pC.fromArray(positionAttribute.data, iC * positionAttribute.size); // cross product two edges to get the face normal
+
+            cb.sub(pC, pB);
+            ab.sub(pA, pB);
+            cb.cross(ab); // read vertex normals 
+
+            nA.fromArray(normalAttribute.data, iA * normalAttribute.size);
+            nB.fromArray(normalAttribute.data, iB * normalAttribute.size);
+            nC.fromArray(normalAttribute.data, iC * normalAttribute.size); // add face normal
+
+            nA.add(cb);
+            nB.add(cb);
+            nC.add(cb); // write back
+
+            iA *= normalAttribute.size;
+            normalAttribute.data[iA] = nA.x;
+            normalAttribute.data[iA + 1] = nA.y;
+            normalAttribute.data[iA + 2] = nA.z;
+            iB *= normalAttribute.size;
+            normalAttribute.data[iB] = nB.x;
+            normalAttribute.data[iB + 1] = nB.y;
+            normalAttribute.data[iB + 2] = nB.z;
+            iC *= normalAttribute.size;
+            normalAttribute.data[iC] = nC.x;
+            normalAttribute.data[iC + 1] = nC.y;
+            normalAttribute.data[iC + 2] = nC.z;
+          }
+        } else {
+          // non-indexed elements (unconnected triangle soup)
+          for (let i = 0, il = positionAttribute.count; i < il; i += 3) {
+            pA.fromArray(positionAttribute.data, i * positionAttribute.size);
+            pB.fromArray(positionAttribute.data, (i + 1) * positionAttribute.size);
+            pC.fromArray(positionAttribute.data, (i + 2) * positionAttribute.size);
+            cb.sub(pC, pB);
+            ab.sub(pA, pB);
+            cb.cross(ab);
+            normalAttribute.data[i * normalAttribute.size] = cb.x;
+            normalAttribute.data[i * normalAttribute.size + 1] = cb.y;
+            normalAttribute.data[i * normalAttribute.size + 2] = cb.z;
+            normalAttribute.data[(i + 1) * normalAttribute.size] = cb.x;
+            normalAttribute.data[(i + 1) * normalAttribute.size + 1] = cb.y;
+            normalAttribute.data[(i + 1) * normalAttribute.size + 2] = cb.z;
+            normalAttribute.data[(i + 2) * normalAttribute.size] = cb.x;
+            normalAttribute.data[(i + 2) * normalAttribute.size + 1] = cb.y;
+            normalAttribute.data[(i + 2) * normalAttribute.size + 2] = cb.z;
+          }
+        }
+
+        this.normalizeNormals();
+        normalAttribute.needsUpdate = true;
+      }
+
+      normalizeNormals() {
+        const normals = this.attributes.normal;
+
+        for (let i = 0, il = normals.count; i < il; i++) {
+          tempVec3.fromArray(normals.data, i * normals.size);
+          tempVec3.normalize();
+          normals.data[i * normals.size] = tempVec3.x;
+          normals.data[i * normals.size + 1] = tempVec3.y;
+          normals.data[i * normals.size + 2] = tempVec3.z;
+        }
       }
 
       remove() {
@@ -950,7 +1048,7 @@
         this.gl.renderer.setDepthMask(this.depthWrite);
         this.gl.renderer.setDepthFunc(this.depthFunc);
         if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
-        if (this.blendEquation.modeRGB) this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+        this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
       }
 
       use({
@@ -1155,6 +1253,10 @@
     const tempVec3$1 = new Vec3();
     let ID$2 = 1;
     class Renderer {
+      get id() {
+        return this._id;
+      }
+
       constructor({
         canvas = document.createElement('canvas'),
         width = 300,
@@ -1193,7 +1295,7 @@
         this.drawBuffers = void 0;
         this.currentProgram = void 0;
         this.currentGeometry = void 0;
-        this.id = void 0;
+        this._id = void 0;
         const attributes = {
           alpha,
           depth,
@@ -1210,7 +1312,7 @@
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
-        this.id = ID$2++; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
+        this._id = ID$2++; // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
 
         if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
         this.isWebgl2 = !!this.gl;
@@ -1320,6 +1422,7 @@
       }
 
       setBlendEquation(modeRGB, modeAlpha) {
+        modeRGB = modeRGB || this.gl.FUNC_ADD;
         if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
         this.state.blendEquation.modeRGB = modeRGB;
         this.state.blendEquation.modeAlpha = modeAlpha;

@@ -4524,351 +4524,77 @@
 
     }
 
-    class Plane extends Geometry {
-      constructor(gl, {
-        width = 1,
-        height = 1,
-        widthSegments = 1,
-        heightSegments = 1,
-        attributes = {}
-      } = {}) {
-        const wSegs = widthSegments;
-        const hSegs = heightSegments; // Determine length of arrays
-
-        const num = (wSegs + 1) * (hSegs + 1);
-        const numIndices = wSegs * hSegs * 6; // Generate empty arrays once
-
-        const position = new Float32Array(num * 3);
-        const normal = new Float32Array(num * 3);
-        const uv = new Float32Array(num * 2);
-        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-        Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
-        Object.assign(attributes, {
-          position: {
-            size: 3,
-            data: position
-          },
-          normal: {
-            size: 3,
-            data: normal
-          },
-          uv: {
-            size: 2,
-            data: uv
-          },
-          index: {
-            data: index
-          }
-        });
-        super(gl, attributes);
-      }
-
-      static buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs, u = 0, v = 1, w = 2, uDir = 1, vDir = -1, i = 0, ii = 0) {
-        const io = i;
-        const segW = width / wSegs;
-        const segH = height / hSegs;
-
-        for (let iy = 0; iy <= hSegs; iy++) {
-          let y = iy * segH - height / 2;
-
-          for (let ix = 0; ix <= wSegs; ix++, i++) {
-            let x = ix * segW - width / 2;
-            position[i * 3 + u] = x * uDir;
-            position[i * 3 + v] = y * vDir;
-            position[i * 3 + w] = depth / 2;
-            normal[i * 3 + u] = 0;
-            normal[i * 3 + v] = 0;
-            normal[i * 3 + w] = depth >= 0 ? 1 : -1;
-            uv[i * 2] = ix / wSegs;
-            uv[i * 2 + 1] = 1 - iy / hSegs;
-            if (iy === hSegs || ix === wSegs) continue;
-            let a = io + ix + iy * (wSegs + 1);
-            let b = io + ix + (iy + 1) * (wSegs + 1);
-            let c = io + ix + (iy + 1) * (wSegs + 1) + 1;
-            let d = io + ix + iy * (wSegs + 1) + 1;
-            index[ii * 6] = a;
-            index[ii * 6 + 1] = b;
-            index[ii * 6 + 2] = d;
-            index[ii * 6 + 3] = b;
-            index[ii * 6 + 4] = c;
-            index[ii * 6 + 5] = d;
-            ii++;
-          }
-        }
-      }
-
-    }
-
-    class Box extends Geometry {
-      constructor(gl, {
-        width = 1,
-        height = 1,
-        depth = 1,
-        widthSegments = 1,
-        heightSegments = 1,
-        depthSegments = 1,
-        attributes = {}
-      } = {}) {
-        const wSegs = widthSegments;
-        const hSegs = heightSegments;
-        const dSegs = depthSegments;
-        const num = (wSegs + 1) * (hSegs + 1) * 2 + (wSegs + 1) * (dSegs + 1) * 2 + (hSegs + 1) * (dSegs + 1) * 2;
-        const numIndices = (wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2) * 6;
-        const position = new Float32Array(num * 3);
-        const normal = new Float32Array(num * 3);
-        const uv = new Float32Array(num * 2);
-        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-        let i = 0;
-        let ii = 0; // left, right
-
-        Plane.buildPlane(position, normal, uv, index, depth, height, width, dSegs, hSegs, 2, 1, 0, -1, -1, i, ii);
-        Plane.buildPlane(position, normal, uv, index, depth, height, -width, dSegs, hSegs, 2, 1, 0, 1, -1, i += (dSegs + 1) * (hSegs + 1), ii += dSegs * hSegs); // top, bottom
-
-        Plane.buildPlane(position, normal, uv, index, width, depth, height, dSegs, hSegs, 0, 2, 1, 1, 1, i += (dSegs + 1) * (hSegs + 1), ii += dSegs * hSegs);
-        Plane.buildPlane(position, normal, uv, index, width, depth, -height, dSegs, hSegs, 0, 2, 1, 1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs); // front, back
-
-        Plane.buildPlane(position, normal, uv, index, width, height, -depth, wSegs, hSegs, 0, 1, 2, -1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
-        Plane.buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs, 0, 1, 2, 1, -1, i += (wSegs + 1) * (hSegs + 1), ii += wSegs * hSegs);
-        Object.assign(attributes, {
-          position: {
-            size: 3,
-            data: position
-          },
-          normal: {
-            size: 3,
-            data: normal
-          },
-          uv: {
-            size: 2,
-            data: uv
-          },
-          index: {
-            data: index
-          }
-        });
-        super(gl, attributes);
-      }
-
-    }
-
-    class Sphere extends Geometry {
+    // https://github.com/mrdoob/three.js/blob/master/src/geometries/TorusGeometry.js
+    class Torus extends Geometry {
       constructor(gl, {
         radius = 0.5,
-        widthSegments = 16,
-        heightSegments = Math.ceil(widthSegments * 0.5),
-        phiStart = 0,
-        phiLength = Math.PI * 2,
-        thetaStart = 0,
-        thetaLength = Math.PI,
-        attributes = {}
-      } = {}) {
-        const wSegs = widthSegments;
-        const hSegs = heightSegments;
-        const pStart = phiStart;
-        const pLength = phiLength;
-        const tStart = thetaStart;
-        const tLength = thetaLength;
-        const num = (wSegs + 1) * (hSegs + 1);
-        const numIndices = wSegs * hSegs * 6;
-        const position = new Float32Array(num * 3);
-        const normal = new Float32Array(num * 3);
-        const uv = new Float32Array(num * 2);
-        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-        let i = 0;
-        let iv = 0;
-        let ii = 0;
-        let te = tStart + tLength;
-        const grid = [];
-        let n = new Vec3();
-
-        for (let iy = 0; iy <= hSegs; iy++) {
-          let vRow = [];
-          let v = iy / hSegs;
-
-          for (let ix = 0; ix <= wSegs; ix++, i++) {
-            let u = ix / wSegs;
-            let x = -radius * Math.cos(pStart + u * pLength) * Math.sin(tStart + v * tLength);
-            let y = radius * Math.cos(tStart + v * tLength);
-            let z = radius * Math.sin(pStart + u * pLength) * Math.sin(tStart + v * tLength);
-            position[i * 3] = x;
-            position[i * 3 + 1] = y;
-            position[i * 3 + 2] = z;
-            n.set(x, y, z).normalize();
-            normal[i * 3] = n.x;
-            normal[i * 3 + 1] = n.y;
-            normal[i * 3 + 2] = n.z;
-            uv[i * 2] = u;
-            uv[i * 2 + 1] = 1 - v;
-            vRow.push(iv++);
-          }
-
-          grid.push(vRow);
-        }
-
-        for (let iy = 0; iy < hSegs; iy++) {
-          for (let ix = 0; ix < wSegs; ix++) {
-            let a = grid[iy][ix + 1];
-            let b = grid[iy][ix];
-            let c = grid[iy + 1][ix];
-            let d = grid[iy + 1][ix + 1];
-
-            if (iy !== 0 || tStart > 0) {
-              index[ii * 3] = a;
-              index[ii * 3 + 1] = b;
-              index[ii * 3 + 2] = d;
-              ii++;
-            }
-
-            if (iy !== hSegs - 1 || te < Math.PI) {
-              index[ii * 3] = b;
-              index[ii * 3 + 1] = c;
-              index[ii * 3 + 2] = d;
-              ii++;
-            }
-          }
-        }
-
-        Object.assign(attributes, {
-          position: {
-            size: 3,
-            data: position
-          },
-          normal: {
-            size: 3,
-            data: normal
-          },
-          uv: {
-            size: 2,
-            data: uv
-          },
-          index: {
-            data: index
-          }
-        });
-        super(gl, attributes);
-      }
-
-    }
-
-    class Cylinder extends Geometry {
-      constructor(gl, {
-        radiusTop = 0.5,
-        radiusBottom = 0.5,
-        height = 1,
+        tube = 0.2,
         radialSegments = 8,
-        heightSegments = 1,
-        openEnded = false,
-        thetaStart = 0,
-        thetaLength = Math.PI * 2,
+        tubularSegments = 6,
+        arc = Math.PI * 2,
         attributes = {}
       } = {}) {
-        const rSegs = radialSegments;
-        const hSegs = heightSegments;
-        const tStart = thetaStart;
-        const tLength = thetaLength;
-        const numCaps = openEnded ? 0 : radiusBottom && radiusTop ? 2 : 1;
-        const num = (rSegs + 1) * (hSegs + 1 + numCaps) + numCaps;
-        const numIndices = rSegs * hSegs * 6 + numCaps * rSegs * 3;
-        const position = new Float32Array(num * 3);
-        const normal = new Float32Array(num * 3);
-        const uv = new Float32Array(num * 2);
-        const index = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
-        let i = 0;
-        let ii = 0;
-        const indexArray = [];
-        addHeight();
+        const num = (radialSegments + 1) * (tubularSegments + 1);
+        const numIndices = radialSegments * tubularSegments * 6;
+        const vertices = new Float32Array(num * 3);
+        const normals = new Float32Array(num * 3);
+        const uvs = new Float32Array(num * 2);
+        const indices = num > 65536 ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        const center = new Vec3();
+        const vertex = new Vec3();
+        const normal = new Vec3(); // generate vertices, normals and uvs
 
-        if (!openEnded) {
-          if (radiusTop) addCap(true);
-          if (radiusBottom) addCap(false);
-        }
+        let idx = 0;
 
-        function addHeight() {
-          let x, y;
-          const n = new Vec3();
-          const slope = (radiusBottom - radiusTop) / height;
+        for (let j = 0; j <= radialSegments; j++) {
+          for (let i = 0; i <= tubularSegments; i++, idx++) {
+            const u = i / tubularSegments * arc;
+            const v = j / radialSegments * Math.PI * 2; // vertex
 
-          for (y = 0; y <= hSegs; y++) {
-            const indexRow = [];
-            const v = y / hSegs;
-            const r = v * (radiusBottom - radiusTop) + radiusTop;
+            vertex.x = (radius + tube * Math.cos(v)) * Math.cos(u);
+            vertex.y = (radius + tube * Math.cos(v)) * Math.sin(u);
+            vertex.z = tube * Math.sin(v);
+            vertices.set([vertex.x, vertex.y, vertex.z], idx * 3); // normal
 
-            for (x = 0; x <= rSegs; x++) {
-              const u = x / rSegs;
-              const theta = u * tLength + tStart;
-              const sinTheta = Math.sin(theta);
-              const cosTheta = Math.cos(theta);
-              position.set([r * sinTheta, (0.5 - v) * height, r * cosTheta], i * 3);
-              n.set(sinTheta, slope, cosTheta).normalize();
-              normal.set([n.x, n.y, n.z], i * 3);
-              uv.set([u, 1 - v], i * 2);
-              indexRow.push(i++);
-            }
+            center.x = radius * Math.cos(u);
+            center.y = radius * Math.sin(u);
+            normal.sub(vertex, center).normalize();
+            normals.set([normal.x, normal.y, normal.z], idx * 3); // uv
 
-            indexArray.push(indexRow);
+            uvs.set([i / tubularSegments, j / radialSegments], idx * 2);
           }
+        } // generate indices
 
-          for (x = 0; x < rSegs; x++) {
-            for (y = 0; y < hSegs; y++) {
-              const a = indexArray[y][x];
-              const b = indexArray[y + 1][x];
-              const c = indexArray[y + 1][x + 1];
-              const d = indexArray[y][x + 1];
-              index.set([a, b, d, b, c, d], ii * 3);
-              ii += 2;
-            }
-          }
-        }
 
-        function addCap(isTop) {
-          let x;
-          const r = isTop === true ? radiusTop : radiusBottom;
-          const sign = isTop === true ? 1 : -1;
-          const centerIndex = i;
-          position.set([0, 0.5 * height * sign, 0], i * 3);
-          normal.set([0, sign, 0], i * 3);
-          uv.set([0.5, 0.5], i * 2);
-          i++;
+        idx = 0;
 
-          for (x = 0; x <= rSegs; x++) {
-            const u = x / rSegs;
-            const theta = u * tLength + tStart;
-            const cosTheta = Math.cos(theta);
-            const sinTheta = Math.sin(theta);
-            position.set([r * sinTheta, 0.5 * height * sign, r * cosTheta], i * 3);
-            normal.set([0, sign, 0], i * 3);
-            uv.set([cosTheta * 0.5 + 0.5, sinTheta * 0.5 * sign + 0.5], i * 2);
-            i++;
-          }
+        for (let j = 1; j <= radialSegments; j++) {
+          for (let i = 1; i <= tubularSegments; i++, idx++) {
+            // indices
+            const a = (tubularSegments + 1) * j + i - 1;
+            const b = (tubularSegments + 1) * (j - 1) + i - 1;
+            const c = (tubularSegments + 1) * (j - 1) + i;
+            const d = (tubularSegments + 1) * j + i; // faces
 
-          for (x = 0; x < rSegs; x++) {
-            const j = centerIndex + x + 1;
-
-            if (isTop) {
-              index.set([j, j + 1, centerIndex], ii * 3);
-            } else {
-              index.set([j + 1, j, centerIndex], ii * 3);
-            }
-
-            ii++;
+            indices.set([a, b, d, b, c, d], idx * 6);
           }
         }
 
         Object.assign(attributes, {
           position: {
             size: 3,
-            data: position
+            data: vertices
           },
           normal: {
             size: 3,
-            data: normal
+            data: normals
           },
           uv: {
             size: 2,
-            data: uv
+            data: uvs
           },
           index: {
-            data: index
+            data: indices
           }
         });
         super(gl, attributes);
@@ -5268,9 +4994,7 @@
 `
             precision highp float;
             precision highp int;
-
             varying vec3 vNormal;
-
             void main() {
                 vec3 normal = normalize(vNormal);
                 float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
@@ -5278,18 +5002,87 @@
                 gl_FragColor.a = 1.0;
             }
         `    ;
-    const renderer = new Renderer({
-      dpr: 2
-    });
-    const gl = renderer.gl;
-    document.body.appendChild(gl.canvas);
-    gl.clearColor(1, 1, 1, 1);
-    const camera = new Camera(gl, {
-      fov: 35
-    });
-    camera.position.set(0, 1, 7);
-    camera.lookAt([0, 0, 0]);
-    const controls = new Orbit(camera);
+    let renderer;
+    let camera;
+    let gl;
+    let scene;
+    let controls;
+    initOGL();
+    addTrimesh();
+    animate();
+
+    function initOGL() {
+      renderer = new Renderer({
+        dpr: 2
+      });
+      gl = renderer.gl;
+      document.body.appendChild(gl.canvas);
+      gl.clearColor(1, 1, 1, 1);
+      camera = new Camera(gl);
+      camera.perspective({
+        fov: 30,
+        aspect: gl.drawingBufferWidth / gl.drawingBufferHeight,
+        near: 1,
+        far: 10000
+      });
+      camera.position.set(0, 3, 20);
+      camera.up.set(0, 1, 0);
+      camera.lookAt([0, 0, 0]);
+      controls = new Orbit(camera);
+      scene = new Transform();
+    }
+
+    function addTrimesh() {
+      const program = new Program(gl, {
+        vertex,
+        fragment,
+        // Don't cull faces so that plane is double sided - default is gl.BACK
+        cullFace: null
+      });
+      let triGeo = new Torus(gl, {
+        radius: 1,
+        tube: 0.3,
+        radialSegments: 16,
+        tubularSegments: 16
+      });
+      const trimesh = new Mesh(gl, {
+        geometry: triGeo,
+        program
+      });
+      trimesh.setParent(scene);
+      trimesh.position.x = -2; // left
+      // copy Torus geometry without normal
+
+      const vertices = triGeo.attributes.position.data;
+      const indices = triGeo.attributes.index.data;
+      let geometry = new Geometry(gl, {
+        position: {
+          size: 3,
+          data: vertices
+        },
+        index: {
+          data: indices
+        } // normal: { size: 3, data: normals }
+
+      }); // runtime compute normal attribute
+
+      geometry.computeVertexNormals();
+      const trimesh2 = new Mesh(gl, {
+        geometry,
+        program
+      });
+      trimesh2.setParent(scene);
+      trimesh2.position.x = 2; // right
+    }
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render({
+        scene,
+        camera
+      });
+    }
 
     function resize() {
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -5300,57 +5093,6 @@
 
     window.addEventListener('resize', resize, false);
     resize();
-    const scene = new Transform();
-    const planeGeometry = new Plane(gl);
-    const sphereGeometry = new Sphere(gl);
-    const cubeGeometry = new Box(gl);
-    const cylinderGeometry = new Cylinder(gl);
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      // Don't cull faces so that plane is double sided - default is gl.BACK
-      cullFace: null
-    });
-    const plane = new Mesh(gl, {
-      geometry: planeGeometry,
-      program
-    });
-    plane.position.set(0, 1.3, 0);
-    plane.setParent(scene);
-    const sphere = new Mesh(gl, {
-      geometry: sphereGeometry,
-      program
-    });
-    sphere.position.set(1.3, 0, 0);
-    sphere.setParent(scene);
-    const cube = new Mesh(gl, {
-      geometry: cubeGeometry,
-      program
-    });
-    cube.position.set(0, -1.3, 0);
-    cube.setParent(scene);
-    const cylinder = new Mesh(gl, {
-      geometry: cylinderGeometry,
-      program
-    });
-    cylinder.position.set(-1.3, 0, 0);
-    cylinder.setParent(scene);
-    requestAnimationFrame(update);
-
-    function update() {
-      requestAnimationFrame(update);
-      controls.update();
-      plane.rotation.y -= 0.02;
-      sphere.rotation.y -= 0.03;
-      cube.rotation.y -= 0.04;
-      cylinder.rotation.y -= 0.02;
-      renderer.render({
-        scene,
-        camera
-      });
-    }
-
-    document.getElementsByClassName('Info')[0].innerHTML = 'Base Primitives - Plane, Cube, Sphere, Cylinder';
-    document.title = 'OGL • Base Primitives - Plane, Cube, Sphere, Cylinder';
+    document.title = 'OGL • Compute Vertex Normal';
 
 }());

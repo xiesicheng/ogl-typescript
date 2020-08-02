@@ -1,4 +1,4 @@
-import { Texture } from '../core/Texture';
+import { Texture, CompressedImage } from '../core/Texture';
 
 // TODO: Support cubemaps
 // Generate textures using https://github.com/TimvanScherpenzeel/texture-compressor
@@ -29,14 +29,16 @@ export class KTXTexture extends Texture {
 
     parseBuffer(buffer: ArrayBuffer) {
         const ktx = new KhronosTextureContainer(buffer);
+        ktx.mipmaps.isCompressedTexture = true;
 
         // Update texture
-        this.image = {
-            isCompressedTexture: true,
-            mipmaps: ktx.mipmaps,
-        };
+        this.image = ktx.mipmaps;
         this.internalFormat = ktx.glInternalFormat;
-        if (this.minFilter === this.gl.LINEAR && ktx.numberOfMipmapLevels > 1) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        if (ktx.numberOfMipmapLevels > 1) {
+            if (this.minFilter === this.gl.LINEAR) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        } else {
+            if (this.minFilter === this.gl.NEAREST_MIPMAP_LINEAR) this.minFilter = this.gl.LINEAR;
+        }
 
         // TODO: support cube maps
         // ktx.numberOfFaces
@@ -47,7 +49,7 @@ class KhronosTextureContainer {
     glInternalFormat: number;
     numberOfFaces: number;
     numberOfMipmapLevels: number;
-    mipmaps: Array<{ data: Uint8Array; width: number; height: number; }>;
+    mipmaps: CompressedImage;
     isCompressedTexture: boolean;
 
     constructor(buffer) {

@@ -35,10 +35,7 @@ export interface TextureOptions {
     anisotropy: number;
 }
 
-type CompressedImage = {
-    isCompressedTexture: boolean;
-    mipmaps: { data: Uint8Array; width: number; height: number; }[];
-};
+export type CompressedImage = { isCompressedTexture?: boolean; } & { data: Uint8Array; width: number; height: number; }[];
 
 const isCompressedImage = (image: any): image is CompressedImage => (image as CompressedImage).isCompressedTexture === true;
 
@@ -237,8 +234,8 @@ export class Texture {
             } else if (isCompressedImage(this.image)) {
                 // Compressed texture
                 let m;
-                for (let level = 0; level < this.image.mipmaps.length; level++) {
-                    m = this.image.mipmaps[level];
+                for (let level = 0; level < this.image.length; level++) {
+                    m = this.image[level];
                     this.gl.compressedTexImage2D(this.target, level, this.internalFormat, m.width, m.height, 0, m.data);
                 }
             } else {

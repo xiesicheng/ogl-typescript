@@ -71,6 +71,7 @@ yarn build:examples # npm run build:examples
 
 | OGL-TypeScript | OGL    |
 | -------------- | ------ |
+| 0.1.18         | 0.0.58 |
 | 0.1.17         | 0.0.57 |
 | 0.1.15         | 0.0.56 |
 | 0.1.14         | 0.0.55 |

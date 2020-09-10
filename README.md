@@ -21,7 +21,8 @@
 
 ⚠️ _Note: currently in alpha, so expect breaking changes._
 
-[See the Examples!](https://nshen.github.io/ogl-typescript/examples)
+- [See the Examples!](https://nshen.github.io/ogl-typescript/examples)
+- [gitee 镜像](http://nshen.gitee.io/ogl-typescript)
 
 OGL-TypeScript is TypeScript port of [OGL Minimal WebGL library](https://github.com/oframe/ogl) , so it add code completion feature to OGL.
 
